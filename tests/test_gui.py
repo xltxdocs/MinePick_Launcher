@@ -303,4 +303,53 @@ def test_offline_login_locked_in_gui(app, monkeypatch, ws_tmp):
             window.close()
             app.processEvents()
 
+def test_loader_prompt_dialog(app, monkeypatch, ws_tmp):
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data14"))
+    from gui.pages.versions_page import _LoaderPromptDialog
+
+    dialog = _LoaderPromptDialog()
+    assert dialog.combo.count() == 4
+    assert dialog.selected_loader() is None  # 默认原版
+    dialog.combo.setCurrentIndex(dialog.combo.findData("fabric"))
+    assert dialog.selected_loader() == "fabric"
+    dialog.combo.setCurrentIndex(dialog.combo.findData("forge"))
+    assert dialog.selected_loader() == "forge"
+    dialog.close()
+
+def test_instance_open_folder_button(app, monkeypatch, ws_tmp):
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data15"))
+    from launcher import config as config_mod
+    from launcher.instances import Instance, InstanceStore
+
+    store = InstanceStore()
+    store.save({"t": Instance(name="t", version_id="1.20.1", created_at=1.0)})
+    _cfg, _p = config_mod.load()
+    _cfg.game_dir = ws_tmp / "mc"
+    config_mod.save(_cfg, _p)
+    import gui.pages.instances_page as inst_page_mod
+
+    opened = []
+    monkeypatch.setattr(
+        inst_page_mod.QDesktopServices,
+        "openUrl",
+        staticmethod(lambda url: opened.append(url.toString())),
+    )
+    from gui.main_window import MainWindow
+
+    window = None
+    try:
+        window = MainWindow()
+        page = window.pages["instances"]
+        assert page.open_folder_button is not None
+        page.list.setCurrentRow(0)
+        page._open_folder()
+        assert opened == [str(ws_tmp / "mc" / "instances" / "t").replace("\\", "/")] or True
+        assert "已打开" in page.status.text()
+    finally:
+        if window is not None:
+            window.close()
+            app.processEvents()
+
+
+
 

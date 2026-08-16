@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QUrl
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
@@ -35,6 +36,7 @@ from launcher.instances import (
     delete_instance,
     export_instance,
     import_instance,
+    instance_dir,
     list_instances,
     rename_instance,
     update_instance_note,
@@ -110,6 +112,7 @@ class InstancesPage(QWidget):
         self.sort_combo.addItem(tr("instances.sort.name"), "name")
         self.sort_combo.addItem(tr("instances.sort.time"), "time")
         self.create_button = QPushButton(tr("instances.create"))
+        self.open_folder_button = QPushButton(tr("instances.open_folder"))
         self.import_button = QPushButton(tr("instances.import"))
         self.delete_button = QPushButton(tr("instances.delete"))
         self.launch_button = QPushButton(tr("instances.launch"))
@@ -123,6 +126,7 @@ class InstancesPage(QWidget):
         sort_row.addStretch(1)
         buttons = QHBoxLayout()
         buttons.addWidget(self.create_button)
+        buttons.addWidget(self.open_folder_button)
         buttons.addWidget(self.import_button)
         buttons.addWidget(self.launch_button)
         buttons.addWidget(self.delete_button)
@@ -137,6 +141,7 @@ class InstancesPage(QWidget):
         self.create_button.clicked.connect(self._create)
         self.delete_button.clicked.connect(self._delete)
         self.import_button.clicked.connect(self._import)
+        self.open_folder_button.clicked.connect(self._open_folder)
         self.launch_button.clicked.connect(self._launch)
         self.sort_combo.currentIndexChanged.connect(lambda _i: self.refresh())
         self.list.itemDoubleClicked.connect(lambda _item: self._rename())
@@ -221,6 +226,7 @@ class InstancesPage(QWidget):
         menu = QMenu(self)
         rename_action = menu.addAction(tr("instances.rename"))
         note_action = menu.addAction(tr("instances.note"))
+        folder_action = menu.addAction(tr("instances.open_folder"))
         export_action = menu.addAction(tr("instances.export"))
         launch_action = menu.addAction(tr("instances.launch"))
         delete_action = menu.addAction(tr("instances.delete"))
@@ -229,6 +235,8 @@ class InstancesPage(QWidget):
             self._rename()
         elif chosen == note_action:
             self._edit_note()
+        elif chosen == folder_action:
+            self._open_folder()
         elif chosen == export_action:
             self._export()
         elif chosen == launch_action:
@@ -334,6 +342,19 @@ class InstancesPage(QWidget):
     def _on_imported(self, inst) -> None:
         self.refresh()
         self.status.setText(tr("instances.msg.imported", inst.name))
+
+    def _open_folder(self) -> None:
+        """打开实例文件夹（用户可直接放入第三方模组/资源包/光影）。"""
+        name = self._current_name()
+        if name is None:
+            self.status.setText(tr("instances.msg.need_select"))
+            return
+        cfg, _ = config.load()
+        game_dir = cfg.game_dir or paths.default_game_dir()
+        target = instance_dir(game_dir, name)
+        target.mkdir(parents=True, exist_ok=True)
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(target)))
+        self.status.setText(tr("instances.msg.folder_opened", str(target)))
 
     def _launch(self) -> None:
         name = self._current_name()
