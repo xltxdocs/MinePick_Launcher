@@ -42,12 +42,29 @@ exe = EXE(
     icon="gui/resources/icon.ico",  # 由 icon.svg 渲染生成（钻石镐+齿轮）
 )
 
-# CLI 版：控制台（终端运行 mclauncher-cli.exe <命令> ...）
+# CLI 版：纯 CLI（run_cli.py 入口，不引用 GUI，排除 PySide6 减小体积）
+a_cli = Analysis(
+    ["run_cli.py"],
+    pathex=[],
+    binaries=[],
+    datas=[],
+    hiddenimports=[
+        "pydantic",
+        "pydantic.deprecated.decorator",
+    ],
+    hookspath=[],
+    runtime_hooks=[],
+    excludes=["tkinter", "PySide6", "shiboken6"],
+    noarchive=False,
+)
+
+pyz_cli = PYZ(a_cli.pure, a_cli.zipped_data)
+
 exe_cli = EXE(
-    pyz,
-    a.scripts,
-    a.binaries,
-    a.datas,
+    pyz_cli,
+    a_cli.scripts,
+    a_cli.binaries,
+    a_cli.datas,
     [],
     name="MinePick_Launcher_cli",
     debug=False,
