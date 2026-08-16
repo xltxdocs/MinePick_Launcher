@@ -1,0 +1,37 @@
+[project]
+name = "minecraft-launcher"
+version = "0.1.0"
+description = "Minecraft launcher core library + CLI + PySide6 thin GUI"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "httpx>=0.27",
+  "msal>=1.28",
+  "pydantic>=2.7",
+  "platformdirs>=4.2",
+  "tenacity>=8.2",
+  "rich>=13.7",
+  "packaging>=24.0",
+]
+
+[project.optional-dependencies]
+gui = ["PySide6>=6.6"]
+dev = ["pytest>=8.0", "respx>=0.21", "ruff>=0.4", "pytest-qt>=4.4"]
+
+[project.scripts]
+mclauncher = "launcher.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["launcher"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-p no:cacheprovider"

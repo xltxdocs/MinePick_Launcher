@@ -1,0 +1,105 @@
+/* mclauncher 深色主题（M6 基础版） */
+QMainWindow, QDialog { background: #14181f; }
+QWidget { color: #d8dee9; font-size: 13px; }
+QLabel#hint { color: #8b9bb4; }
+QLabel#warning { color: #e06c75; }
+QLabel#title { font-size: 16px; font-weight: bold; }
+
+QListWidget, QTableWidget, QPlainTextEdit, QTextEdit, QLineEdit,
+QComboBox, QSpinBox, QDoubleSpinBox {
+    background: #1e242e;
+    border: 1px solid #2e3a4a;
+    border-radius: 4px;
+    padding: 4px;
+    selection-background-color: #2f6f4f;
+}
+QTableWidget { gridline-color: #2e3a4a; }
+QHeaderView::section {
+    background: #1e242e;
+    border: none;
+    border-bottom: 1px solid #2e3a4a;
+    padding: 5px;
+}
+
+QPushButton {
+    background: #2f6f4f;
+    border: none;
+    border-radius: 4px;
+    padding: 7px 16px;
+    font-weight: bold;
+}
+QPushButton:hover { background: #3a8a63; }
+QPushButton:pressed { background: #285c41; }
+QPushButton:disabled { background: #33404f; color: #7a8aa0; }
+
+QProgressBar {
+    border: 1px solid #2e3a4a;
+    border-radius: 4px;
+    text-align: center;
+    background: #1e242e;
+    height: 18px;
+}
+QProgressBar::chunk { background: #2f9e6f; border-radius: 3px; }
+
+QCheckBox { spacing: 6px; }
+
+QListWidget::item { padding: 6px; border-radius: 4px; }
+QListWidget::item:selected { background: #2f6f4f; }
+
+QStatusBar { background: #1e242e; color: #8b9bb4; }
+
+/* 选项卡：完全扁平——无背景块、无圆角、无边框，仅文字高亮 + 绿色下划线 */
+QTabWidget { background: #14181f; }
+QTabWidget::pane {
+    border: none;
+    border-radius: 0px;
+    background: #14181f;
+}
+QTabBar { background: transparent; }
+QTabBar::tab {
+    background: transparent;
+    color: #8b9bb4;
+    padding: 8px 18px;
+    border: none;
+    border-bottom: 2px solid transparent;
+}
+QTabBar::tab:hover { color: #d8dee9; }
+QTabBar::tab:selected {
+    color: #ffffff;
+    background: transparent;
+    border-bottom: 2px solid #2f9e6f;
+}
+
+/* 下拉列表 / 菜单 / 提示：跟随深色主题，杜绝原生白色圆角框 */
+QComboBox QAbstractItemView {
+    background: #1e242e;
+    color: #d8dee9;
+    border: 1px solid #2e3a4a;
+    border-radius: 6px;
+    selection-background-color: #2f6f4f;
+    outline: none;
+}
+QMenu {
+    background: #1e242e;
+    color: #d8dee9;
+    border: 1px solid #2e3a4a;
+    border-radius: 6px;
+    padding: 4px;
+}
+QMenu::item { padding: 6px 24px; border-radius: 4px; }
+QMenu::item:selected { background: #2f6f4f; }
+QToolTip {
+    background: #1e242e;
+    color: #d8dee9;
+    border: 1px solid #2e3a4a;
+}
+
+/* 选中项焦点框与选中底色统一，去掉白色描边 */
+QListWidget::item:selected,
+QListWidget::item:selected:focus,
+QListWidget::item:selected:!focus { background: #2f6f4f; outline: none; }
+QTableWidget::item:selected {
+    background: #2f6f4f;
+    color: #d8dee9;
+    outline: none;
+}
