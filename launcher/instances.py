@@ -1,0 +1,264 @@
+"""实例管理：每个实例 = 游戏目录下独立的子游戏目录（共享全局 libraries/assets）。
+
+实例目录布局：<游戏目录>/instances/<名称>/
+  versions/<id>/<id>.json + <id>.jar   （创建时从全局 versions 复制）
+  saves/ mods/ config/ logs/ options.txt（启动后由游戏生成，天然独立）
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import re
+import shutil
+import time
+import zipfile
+from pathlib import Path
+
+from pydantic import BaseModel, ConfigDict
+
+from launcher import paths
+from launcher.i18n import tr_core
+from launcher.meta.version import load_version_json
+
+INSTANCES_FILENAME = "instances.json"
+_NAME_RE = re.compile(r"^[\w\u4e00-\u9fff][\w\u4e00-\u9fff ._-]{0,31}$")
+
+
+class Instance(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    name: str
+    version_id: str
+    created_at: float
+    note: str = ""  # 用户备注（#25）
+
+
+class InstancesError(Exception):
+    """实例操作错误（消息面向用户）。"""
+
+
+class InstanceStore:
+    def __init__(self, path: Path | None = None) -> None:
+        self.path = path or paths.launcher_dir() / INSTANCES_FILENAME
+
+    def load(self) -> dict[str, Instance]:
+        if not self.path.exists():
+            return {}
+        raw = json.loads(self.path.read_text(encoding="utf-8"))
+        if isinstance(raw, dict) and "instances" in raw:
+            raw = raw["instances"]
+        out: dict[str, Instance] = {}
+        for key, value in raw.items() if isinstance(raw, dict) else []:
+            try:
+                out[str(key)] = Instance.model_validate(value)
+            except Exception:  # noqa: BLE001 - 跳过损坏条目
+                logging.getLogger(__name__).warning("忽略损坏的实例记录: %s", key)
+                continue
+        return out
+
+    def save(self, instances: dict[str, Instance]) -> Path:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {"version": 1, "instances": {k: v.model_dump(mode="json") for k, v in instances.items()}}
+        tmp = self.path.with_name(self.path.name + ".tmp")
+        tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp.replace(self.path)
+        return self.path
+
+
+def default_instance_name(version_id: str) -> str:
+    """由版本/档案 id 生成默认实例名。
+
+    原版 → 版本号本身（如 1.20.1）；
+    模组档案 → 版本号_加载器名称_加载器版本号（如 1.21.11_fabric_0.19.3）。
+    """
+    if version_id.startswith("fabric-loader-"):
+        parts = version_id.split("-")
+        return parts[-1] + "_fabric_" + parts[2]
+    if version_id.startswith("neoforge-"):
+        base = version_id[len("neoforge-") :]
+        parts = base.split(".")
+        mc = ".".join(parts[:3]) if len(parts) >= 4 else "1." + ".".join(parts[:2])
+        return mc + "_neoforge_" + base
+    if "-forge-" in version_id:
+        mc, lv = version_id.split("-forge-")
+        return mc + "_forge_" + lv
+    return version_id
+
+
+def validate_name(name: str) -> str:
+    name = name.strip()
+    if not name or not _NAME_RE.match(name):
+        raise InstancesError(tr_core("instances.name_invalid"))
+    return name
+
+
+def instance_dir(game_dir: Path, name: str) -> Path:
+    return game_dir / "instances" / name
+
+
+def create_instance(
+    name: str | None,
+    version_id: str,
+    game_dir: Path,
+    *,
+    cache_dir: Path | None = None,
+) -> Instance:
+    """创建实例：复制版本 JSON 与客户端 jar 到实例目录并登记。
+
+    name 为空时按版本/档案 id 自动生成默认名（如 1.21.11-Fabric_0.19.3）。
+    """
+    name = validate_name(name or default_instance_name(version_id))
+    store = InstanceStore()
+    instances = store.load()
+    if name in instances:
+        raise InstancesError(tr_core("instances.exists", name))
+
+    gp = paths.GamePaths(game_dir)
+    version = load_version_json(
+        version_id,
+        versions_dir=gp.versions_dir,
+        cache_dir=cache_dir,
+    )
+    target = instance_dir(game_dir, name)
+    target_versions = target / "versions"
+    target_versions.mkdir(parents=True, exist_ok=True)
+
+    # 写合并后的版本 JSON（临时换 game_dir 复用 install 的写入逻辑）
+    version_dir = target_versions / version_id
+    version_dir.mkdir(parents=True, exist_ok=True)
+    payload = json.dumps(
+        version.model_dump(by_alias=True, exclude_none=True),
+        ensure_ascii=False,
+        indent=2,
+    )
+    (version_dir / (version_id + ".json")).write_text(payload, encoding="utf-8")
+    # 客户端 jar
+    source_jar = gp.version_dir(version_id) / version.client_jar_name
+    dest_jar = version_dir / version.client_jar_name
+    if source_jar.exists():
+        shutil.copyfile(source_jar, dest_jar)
+    # 延迟导入避免与 launcher.mods 包循环依赖
+    from launcher.mods.installer import _copy_game_jar
+
+    _copy_game_jar(version_id, target)  # 加载器档案的父 jar 副本
+
+    instance = Instance(name=name, version_id=version_id, created_at=time.time())
+    instances[name] = instance
+    store.save(instances)
+    return instance
+
+
+def rename_instance(name: str, new_name: str, game_dir: Path) -> Instance:
+    """重命名实例：重命名实例目录并更新登记。"""
+    name = validate_name(name)
+    new_name = validate_name(new_name)
+    store = InstanceStore()
+    instances = store.load()
+    if name not in instances:
+        raise InstancesError(tr_core("instances.missing", name))
+    if new_name in instances:
+        raise InstancesError(tr_core("instances.exists", new_name))
+    old_dir = instance_dir(game_dir, name)
+    new_dir = instance_dir(game_dir, new_name)
+    if new_dir.exists():
+        raise InstancesError(tr_core("instances.dir_exists", str(new_dir)))
+    inst = instances.pop(name)
+    if old_dir.exists():
+        old_dir.rename(new_dir)
+    inst.name = new_name
+    instances[new_name] = inst
+    store.save(instances)
+    return inst
+
+
+def update_instance_note(name: str, note: str) -> Instance:
+    """更新实例备注（#25）。"""
+    store = InstanceStore()
+    instances = store.load()
+    if name not in instances:
+        raise InstancesError(tr_core("instances.missing", name))
+    instances[name].note = note.strip()
+    store.save(instances)
+    return instances[name]
+
+
+def export_instance(name: str, dest_zip: Path, game_dir: Path) -> Path:
+    """导出实例为 zip 压缩包（含版本文件/存档/模组/配置与元数据，#26）。"""
+    store = InstanceStore()
+    instances = store.load()
+    if name not in instances:
+        raise InstancesError(tr_core("instances.missing", name))
+    source = instance_dir(game_dir, name)
+    if not source.exists():
+        raise InstancesError(tr_core("instances.dir_missing", str(source)))
+    dest_zip.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dest_zip.with_name(dest_zip.name + ".tmp")
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(
+            "instance.json",
+            json.dumps(
+                instances[name].model_dump(mode="json"), ensure_ascii=False, indent=2
+            ),
+        )
+        for path in source.rglob("*"):
+            if path.is_file():
+                zf.write(path, path.relative_to(source).as_posix())
+    tmp.replace(dest_zip)
+    return dest_zip
+
+
+def import_instance(
+    zip_path: Path, game_dir: Path, *, new_name: str | None = None
+) -> Instance:
+    """从 zip 导入实例：解压到实例目录并登记（#26）。"""
+    with zipfile.ZipFile(zip_path) as zf:
+        names = zf.namelist()
+        if "instance.json" not in names:
+            raise InstancesError(tr_core("instances.import_invalid"))
+        try:
+            meta = Instance.model_validate(json.loads(zf.read("instance.json")))
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise InstancesError(tr_core("instances.import_invalid")) from exc
+        name = validate_name(new_name or meta.name)
+        store = InstanceStore()
+        instances = store.load()
+        if name in instances:
+            raise InstancesError(tr_core("instances.exists", name))
+        target = instance_dir(game_dir, name)
+        if target.exists():
+            raise InstancesError(tr_core("instances.dir_exists", str(target)))
+        target.mkdir(parents=True)
+        for entry in names:
+            if entry == "instance.json" or entry.endswith(("/", "\\")):
+                continue
+            rel = Path(entry)
+            if ".." in rel.parts:  # zip-slip 防护
+                raise InstancesError(tr_core("instances.import_invalid"))
+            dest = target / rel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            with zf.open(entry) as src, dest.open("wb") as dst:
+                shutil.copyfileobj(src, dst)
+    inst = Instance(
+        name=name,
+        version_id=meta.version_id,
+        created_at=meta.created_at or time.time(),
+        note=meta.note or "",
+    )
+    instances[name] = inst
+    store.save(instances)
+    return inst
+
+
+def delete_instance(name: str, game_dir: Path) -> None:
+    store = InstanceStore()
+    instances = store.load()
+    if name not in instances:
+        raise InstancesError(tr_core("instances.missing", name))
+    instances.pop(name)
+    store.save(instances)
+    shutil.rmtree(instance_dir(game_dir, name), ignore_errors=True)
+
+
+def list_instances() -> dict[str, Instance]:
+    return InstanceStore().load()
