@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.devdata/
+tests/.work/
+logs/
+build/
+dist/
+*.egg-info/
+# 下载临时文件
+*.part
+*.mrpack
+# 签名私钥（勿提交）
+build/codesign.pfx
