@@ -1,0 +1,205 @@
+/* mclauncher 深色主题（M6 基础版） */
+QMainWindow, QDialog { background: #14181f; }
+QWidget { color: #d8dee9; font-size: 13px; }
+QLabel#hint { color: #8b9bb4; }
+QLabel#warning { color: #e06c75; }
+QLabel#title { font-size: 16px; font-weight: bold; }
+
+QListWidget, QTableWidget, QTableView, QPlainTextEdit, QTextEdit, QLineEdit,
+QComboBox, QSpinBox, QDoubleSpinBox {
+    background: #1e242e;
+    border: 1px solid #2e3a4a;
+    border-radius: 4px;
+    padding: 4px;
+    selection-background-color: #2f6f4f;
+}
+QTableWidget, QTableView { gridline-color: #2e3a4a; }
+QHeaderView::section {
+    background: #1e242e;
+    border: none;
+    border-bottom: 1px solid #2e3a4a;
+    padding: 5px;
+}
+
+QPushButton {
+    background: #2f6f4f;
+    border: none;
+    border-radius: 4px;
+    padding: 7px 16px;
+    font-weight: bold;
+}
+QPushButton:hover { background: #3a8a63; }
+QPushButton:pressed { background: #285c41; }
+QPushButton:disabled { background: #33404f; color: #7a8aa0; }
+
+QProgressBar {
+    border: 1px solid #2e3a4a;
+    border-radius: 4px;
+    text-align: center;
+    background: #1e242e;
+    height: 18px;
+}
+QProgressBar::chunk { background: #2f9e6f; border-radius: 3px; }
+
+QCheckBox { spacing: 6px; }
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #2e3a4a;
+    border-radius: 3px;
+    background: #1e242e;
+}
+QCheckBox::indicator:hover { border-color: #2f9e6f; }
+QCheckBox::indicator:checked {
+    background: #2f6f4f;
+    border-color: #2f6f4f;
+    image: url(__CHECK__);
+}
+QCheckBox::indicator:checked:hover { background: #3a8a63; border-color: #3a8a63; }
+
+QListWidget::item { padding: 6px; border-radius: 4px; }
+QListWidget::item:selected { background: #2f6f4f; }
+
+QStatusBar { background: #1e242e; color: #8b9bb4; }
+
+/* 选项卡：完全扁平——无背景块、无圆角、无边框，仅文字高亮 + 绿色下划线 */
+QTabWidget { background: #14181f; }
+QTabWidget::pane {
+    border: none;
+    border-radius: 0px;
+    background: #14181f;
+}
+QTabBar { background: transparent; }
+QTabBar::tab {
+    background: transparent;
+    color: #8b9bb4;
+    padding: 8px 18px;
+    border: none;
+    border-bottom: 2px solid transparent;
+}
+QTabBar::tab:hover { color: #d8dee9; }
+QTabBar::tab:selected {
+    color: #ffffff;
+    background: transparent;
+    border-bottom: 2px solid #2f9e6f;
+}
+
+/* 下拉按钮：扁平三角箭头（与主题统一） */
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 24px;
+    border: none;
+    background: transparent;
+}
+QComboBox::down-arrow {
+    image: url(__DOWN_ARROW__);
+    width: 10px;
+    height: 6px;
+    margin-right: 9px;
+}
+QComboBox QAbstractItemView {
+    background: #1e242e;
+    color: #d8dee9;
+    border: 1px solid #2e3a4a;
+    border-radius: 6px;
+    selection-background-color: #2f6f4f;
+    outline: none;
+}
+QComboBox QAbstractItemView::item {
+    padding: 9px 14px;
+    min-height: 28px;
+}
+
+/* 菜单 / 提示：跟随深色主题 */
+QMenu {
+    background: #1e242e;
+    color: #d8dee9;
+    border: 1px solid #2e3a4a;
+    border-radius: 6px;
+    padding: 4px;
+}
+QMenu::item { padding: 9px 30px; border-radius: 4px; }
+QMenu::item:selected { background: #2f6f4f; }
+QToolTip {
+    background: #1e242e;
+    color: #d8dee9;
+    border: 1px solid #2e3a4a;
+}
+
+/* 选中项焦点框与选中底色统一，去掉白色描边 */
+QListWidget::item:selected,
+QListWidget::item:selected:focus,
+QListWidget::item:selected:!focus { background: #2f6f4f; outline: none; }
+QTableWidget::item:selected {
+    background: #2f6f4f;
+    color: #d8dee9;
+    outline: none;
+}
+/* UI 打磨：扁平化输入框 / 按钮 / 滚动条 / 表格（#UI 优化） */
+QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
+    padding: 6px 10px;
+    min-height: 24px;
+}
+QPlainTextEdit, QTextEdit { padding: 6px 8px; }
+
+/* 输入框聚焦：绿色细边框（扁平，无虚线框） */
+QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus {
+    border: 1px solid #2f9e6f;
+}
+QPushButton:focus { outline: none; }
+
+/* 上下调整按钮扁平化（去掉凸起/边框） */
+QSpinBox::up-button, QSpinBox::down-button,
+QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
+    background: transparent;
+    border: none;
+    width: 20px;
+}
+QSpinBox::up-button:hover, QSpinBox::down-button:hover,
+QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover {
+    background: #2a3546;
+}
+
+/* Scrollbars are painted fully transparent (visually removed); the wheel still scrolls */
+QScrollBar:vertical { background: transparent; width: 10px; margin: 0; }
+QScrollBar::handle:vertical { background: transparent; border: none; }
+QScrollBar::handle:vertical:hover { background: transparent; }
+QScrollBar:horizontal { background: transparent; height: 10px; margin: 0; }
+QScrollBar::handle:horizontal { background: transparent; border: none; }
+QScrollBar::handle:horizontal:hover { background: transparent; }
+QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; background: transparent; }
+QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
+
+/* 表格行高与文字留白 */
+QTableWidget::item { padding: 6px; }
+QListWidget::item { padding: 8px 10px; }
+
+/* Scroll area keeps the page background (settings page) */
+QScrollArea { background: transparent; border: none; }
+QScrollArea > QWidget > QWidget { background: transparent; }
+
+/* 版本页：分类页签 + 最新版本卡片 */
+QPushButton#categoryTab {
+    background: transparent;
+    color: #8b9bb4;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 6px 16px;
+    font-weight: normal;
+}
+QPushButton#categoryTab:hover { color: #d8dee9; border-color: #2e3a4a; }
+QPushButton#categoryTab:checked {
+    background: #2f6f4f;
+    color: #ffffff;
+    border-color: #2f6f4f;
+    font-weight: bold;
+}
+QFrame#latestCard {
+    background: #1a212b;
+    border: 1px solid #2e3a4a;
+    border-radius: 6px;
+}
+QLabel#latestKind { color: #8b9bb4; }
+QLabel#latestVersion { font-size: 15px; font-weight: bold; color: #d8dee9; }
+
