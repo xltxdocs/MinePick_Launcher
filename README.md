@@ -94,7 +94,7 @@ ruff check launcher gui tests
 ```
 
 Build & sign: `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (see `docs/code_signing.md`).
-The spec expects the bundled CurseForge key at `build/cf_key.txt` (git-ignored) and produces a single GUI EXE.
+The spec produces a single GUI EXE (build prerequisites are listed in `docs/github_release.md`).
 
 One-command interface check (tests + lint + contrast/overflow/high-DPI + corner audit + screenshots):
 

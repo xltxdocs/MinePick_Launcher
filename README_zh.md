@@ -84,7 +84,7 @@ ruff check launcher gui tests
 ```
 
 打包与签名：`pyinstaller build_exe.spec` → `scripts/sign_exe.ps1`（见 `docs/code_signing.md`）。
-打包需要内置 CurseForge Key（`build/cf_key.txt`，已被 gitignore），产物为**单个 GUI 版 EXE**。
+打包产物为**单个 GUI 版 EXE**（构建前置条件见 `docs/github_release.md`）。
 
 一条命令跑完整界面检查（测试 + lint + 对比度/溢出/高 DPI + 角部审计 + 出图）：
 

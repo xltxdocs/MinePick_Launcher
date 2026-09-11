@@ -39,3 +39,12 @@ git push -u origin main
 - 仓库根目录已含 LICENSE（GNU GPL v3 官方全文）；
 - 分发二进制（Release 的 EXE）应同时提供源代码，Source_code.zip 即为此用途；
 - 若他人索取源码，指向仓库或 Source_code.zip 均可。
+
+## 四、构建前置（打包用）
+
+`pyinstaller build_exe.spec` 需要两项本地资源（都不进仓库，由 `.gitignore` 覆盖）：
+
+- `build/cf_key.txt` —— 随包内置的 CurseForge API Key（缺失时打包报 `Unable to find 'build/cf_key.txt'`）；
+- 代码签名证书 `CN=WDNDXLTX` —— 见 `docs/code_signing.md`。
+
+打包与签名：`python -m PyInstaller build_exe.spec --noconfirm` → `scripts\sign_exe.ps1`。
