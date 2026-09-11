@@ -19,7 +19,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation
+from PySide6.QtCore import QEasingCurve, QEvent, QPropertyAnimation, Qt
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
     QHBoxLayout,
@@ -65,12 +65,28 @@ class MainWindow(QMainWindow):
 
         self.stack = QStackedWidget()
 
-        central = QWidget()
-        layout = QHBoxLayout(central)
+        content = QWidget()
+        layout = QHBoxLayout(content)
         layout.setContentsMargins(12, 12, 12, 12)
         layout.addWidget(nav)
         layout.addWidget(self.stack, 1)
+
+        # Frameless window: the frame is ours, so it follows the theme instead of the OS
+        from PySide6.QtWidgets import QSizeGrip
+
+        from gui.title_bar import TitleBar
+
+        self.setWindowFlag(Qt.WindowType.FramelessWindowHint, True)
+        central = QWidget()
+        outer = QVBoxLayout(central)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+        self.title_bar = TitleBar(self, self.windowTitle())
+        outer.addWidget(self.title_bar)
+        outer.addWidget(content, 1)
         self.setCentralWidget(central)
+        # a frameless window loses the native resize border: keep a grip in the corner
+        self.statusBar().addPermanentWidget(QSizeGrip(self))
 
         self.sidebar.currentRowChanged.connect(self.stack.setCurrentIndex)
         self.sidebar.currentRowChanged.connect(self._on_nav_changed)
@@ -168,6 +184,12 @@ class MainWindow(QMainWindow):
                 )
             except (TypeError, ValueError):
                 pass
+
+    def changeEvent(self, event) -> None:
+        """Keep the custom title bar's maximize glyph in step with the window state."""
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.WindowStateChange and getattr(self, "title_bar", None):
+            self.title_bar.sync_state()
 
     def closeEvent(self, event) -> None:
         from launcher import config
