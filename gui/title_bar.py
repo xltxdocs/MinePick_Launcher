@@ -25,10 +25,7 @@ painted by the style sheet, so both themes match.
 from __future__ import annotations
 
 from PySide6.QtCore import QPoint, Qt
-from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QWidget
-
-from launcher import paths
 
 BAR_HEIGHT = 38
 
@@ -44,16 +41,6 @@ class TitleBar(QWidget):
         self.setObjectName("titleBar")
         self.setFixedHeight(BAR_HEIGHT)
 
-        icon_label = QLabel()
-        icon_label.setFixedSize(20, 20)
-        # Pre-scaled 2x bitmap (built by tools/make_titlebar_icon.py): scaling the busy
-        # illustration at runtime made it noticeably soft at 20px, and a 2x bitmap also
-        # stays crisp on high-DPI screens.
-        icon_path = paths.resource_path("gui/resources/titlebar_icon.png")
-        if icon_path.exists():
-            pixmap = QPixmap(str(icon_path))
-            pixmap.setDevicePixelRatio(2.0)
-            icon_label.setPixmap(pixmap)
         title_label = QLabel(title)
         title_label.setObjectName("titleBarTitle")
 
@@ -61,9 +48,8 @@ class TitleBar(QWidget):
         self.close_button = self._make_button("titleBarClose", "✕", window.close)
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(10, 0, 6, 0)
+        layout.setContentsMargins(14, 0, 6, 0)
         layout.setSpacing(8)
-        layout.addWidget(icon_label)
         layout.addWidget(title_label)
         layout.addStretch(1)
         for button in (self.minimize_button, self.close_button):
