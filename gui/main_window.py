@@ -63,6 +63,7 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget()
 
         content = QWidget()
+        content.setObjectName("appContent")
         layout = QHBoxLayout(content)
         layout.setContentsMargins(12, 12, 12, 12)
         layout.addWidget(nav)
@@ -75,6 +76,7 @@ class MainWindow(QMainWindow):
 
         self.setWindowFlag(Qt.WindowType.FramelessWindowHint, True)
         central = QWidget()
+        central.setObjectName("appRoot")
         outer = QVBoxLayout(central)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(0)

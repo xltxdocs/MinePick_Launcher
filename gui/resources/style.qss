@@ -420,3 +420,7 @@ QPushButton#titleBarMinimize:hover {
     color: #e6ecf5;
 }
 QPushButton#titleBarClose:hover { background: #d64545; color: #ffffff; }
+
+/* ---------- frameless window: root and content keep the window background ---------- */
+
+QWidget#appRoot, QWidget#appContent { background: #0f141b; }
