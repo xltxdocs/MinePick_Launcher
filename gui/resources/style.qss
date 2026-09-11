@@ -377,8 +377,6 @@ QLabel#pageSubtitle { color: #8fa2b8; font-size: 11px; }
 
 /* ---------- sidebar brand ---------- */
 
-QWidget#sidebarBrand { background: transparent; }
-QLabel#brandName { font-size: 15px; font-weight: 700; letter-spacing: 0.4px; color: #eef3fa; }
 
 /* ---------- empty state ---------- */
 
@@ -409,7 +407,7 @@ QWidget#titleBar {
 }
 QLabel#titleBarTitle { color: #e6ecf5; font-size: 13px; font-weight: 600; }
 
-QPushButton#titleBarMinimize, QPushButton#titleBarMaximize, QPushButton#titleBarClose {
+QPushButton#titleBarMinimize, QPushButton#titleBarClose {
     background: transparent;
     border: none;
     border-radius: __RADIUS_SM__;
@@ -417,7 +415,7 @@ QPushButton#titleBarMinimize, QPushButton#titleBarMaximize, QPushButton#titleBar
     font-size: 13px;
     padding: 0;
 }
-QPushButton#titleBarMinimize:hover, QPushButton#titleBarMaximize:hover {
+QPushButton#titleBarMinimize:hover {
     background: #1c2531;
     color: #e6ecf5;
 }

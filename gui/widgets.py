@@ -26,7 +26,6 @@ from PySide6.QtWidgets import (
     QAbstractSpinBox,
     QComboBox,
     QDoubleSpinBox,
-    QHBoxLayout,
     QLabel,
     QLineEdit,
     QPlainTextEdit,

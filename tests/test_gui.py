@@ -125,7 +125,6 @@ def test_every_page_has_a_header(app, monkeypatch, ws_tmp):
         subtitle = page.findChild(QLabel, "pageSubtitle")
         assert title is not None and title.text(), f"{key}: no page title"
         assert subtitle is not None and subtitle.text(), f"{key}: no page description"
-    assert window.findChild(QLabel, "brandName") is not None  # sidebar brand block
     window.close()
 
 
