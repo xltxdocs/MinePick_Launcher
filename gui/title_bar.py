@@ -45,12 +45,14 @@ class TitleBar(QWidget):
         self.setFixedHeight(BAR_HEIGHT)
 
         icon_label = QLabel()
-        icon_path = paths.resource_path("gui/resources/window_icon_24.png")
+        # the full pickaxe design (the simplified 16/24px variant is no longer needed: this
+        # icon is drawn by us, not by the OS title bar, so it can be scaled smoothly)
+        icon_path = paths.resource_path("gui/resources/icon.png")
         if icon_path.exists():
             icon_label.setPixmap(
                 QPixmap(str(icon_path)).scaled(
-                    18,
-                    18,
+                    20,
+                    20,
                     Qt.AspectRatioMode.KeepAspectRatio,
                     Qt.TransformationMode.SmoothTransformation,
                 )
