@@ -183,27 +183,14 @@ def build_page_header(title: str, subtitle: str) -> QWidget:
 
 
 def build_sidebar_brand() -> QWidget:
-    """Sidebar brand block: application icon plus the product name."""
-    from PySide6.QtGui import QPixmap
-
-    from launcher import paths
-
+    """Sidebar brand block: the product name only (the icon lives in the title bar)."""
     box = QWidget()
     box.setObjectName("sidebarBrand")
     layout = QHBoxLayout(box)
-    layout.setContentsMargins(10, 6, 8, 10)
+    layout.setContentsMargins(14, 6, 8, 10)
     layout.setSpacing(8)
-    icon_label = QLabel()
-    icon_path = paths.resource_path("gui/resources/icon.png")
-    if icon_path.exists():
-        icon_label.setPixmap(
-            QPixmap(str(icon_path)).scaled(
-                22, 22, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
-            )
-        )
     name_label = QLabel("MinePick")
     name_label.setObjectName("brandName")
-    layout.addWidget(icon_label)
     layout.addWidget(name_label)
     layout.addStretch(1)
     return box
