@@ -182,20 +182,6 @@ def build_page_header(title: str, subtitle: str) -> QWidget:
     return box
 
 
-def build_sidebar_brand() -> QWidget:
-    """Sidebar brand block: the product name only (the icon lives in the title bar)."""
-    box = QWidget()
-    box.setObjectName("sidebarBrand")
-    layout = QHBoxLayout(box)
-    layout.setContentsMargins(14, 6, 8, 10)
-    layout.setSpacing(8)
-    name_label = QLabel("MinePick")
-    name_label.setObjectName("brandName")
-    layout.addWidget(name_label)
-    layout.addStretch(1)
-    return box
-
-
 def style_page_layout(layout) -> None:
     """One spacing scale for every page: 14px outer margin, 8px between blocks."""
     layout.setContentsMargins(14, 12, 14, 6)

@@ -19,7 +19,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QEasingCurve, QEvent, QPropertyAnimation, Qt
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
     QHBoxLayout,
@@ -48,19 +48,16 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("MinePick Launcher")
         self.resize(1000, 600)
 
-        from gui.widgets import apply_no_focus_outline, build_sidebar_brand
+        from gui.widgets import apply_no_focus_outline
 
         self.sidebar = QListWidget()
         self.sidebar.setObjectName("sidebar")
         apply_no_focus_outline(self.sidebar)  # remove focus outline from the selected item's text
 
-        # Brand block above the navigation list, so the rail reads as one column
         nav = QWidget()
         nav.setFixedWidth(150)
         nav_layout = QVBoxLayout(nav)
         nav_layout.setContentsMargins(0, 0, 0, 0)
-        nav_layout.setSpacing(2)
-        nav_layout.addWidget(build_sidebar_brand())
         nav_layout.addWidget(self.sidebar, 1)
 
         self.stack = QStackedWidget()
@@ -184,12 +181,6 @@ class MainWindow(QMainWindow):
                 )
             except (TypeError, ValueError):
                 pass
-
-    def changeEvent(self, event) -> None:
-        """Keep the custom title bar's maximize glyph in step with the window state."""
-        super().changeEvent(event)
-        if event.type() == QEvent.Type.WindowStateChange and getattr(self, "title_bar", None):
-            self.title_bar.sync_state()
 
     def closeEvent(self, event) -> None:
         from launcher import config

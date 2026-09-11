@@ -59,7 +59,6 @@ class TitleBar(QWidget):
         title_label.setObjectName("titleBarTitle")
 
         self.minimize_button = self._make_button("titleBarMinimize", "—", window.showMinimized)
-        self.maximize_button = self._make_button("titleBarMaximize", "□", self.toggle_maximized)
         self.close_button = self._make_button("titleBarClose", "✕", window.close)
 
         layout = QHBoxLayout(self)
@@ -68,10 +67,8 @@ class TitleBar(QWidget):
         layout.addWidget(icon_label)
         layout.addWidget(title_label)
         layout.addStretch(1)
-        for button in (self.minimize_button, self.maximize_button, self.close_button):
+        for button in (self.minimize_button, self.close_button):
             layout.addWidget(button)
-
-        self.sync_state()
 
     @staticmethod
     def _make_button(name: str, glyph: str, slot) -> QPushButton:
@@ -90,13 +87,6 @@ class TitleBar(QWidget):
             self._window.showNormal()
         else:
             self._window.showMaximized()
-        self.sync_state()
-
-    def sync_state(self) -> None:
-        """Keep the glyph in step with the window state (also used after config-driven changes)."""
-        maximized = self._window.isMaximized()
-        self.maximize_button.setText("❐" if maximized else "□")
-        self.maximize_button.setToolTip("还原" if maximized else "最大化")
 
     def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
@@ -111,7 +101,6 @@ class TitleBar(QWidget):
             # dragging a maximized window restores it first, like the native frame
             ratio = event.position().x() / max(self.width(), 1)
             self._window.showNormal()
-            self.sync_state()
             self._drag_offset = QPoint(int(self._window.width() * ratio), event.position().toPoint().y())
         self._window.move(event.globalPosition().toPoint() - self._drag_offset)
 
