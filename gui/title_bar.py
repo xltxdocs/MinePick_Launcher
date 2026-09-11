@@ -44,8 +44,8 @@ class TitleBar(QWidget):
         title_label = QLabel(title)
         title_label.setObjectName("titleBarTitle")
 
-        self.minimize_button = self._make_button("titleBarMinimize", "—", window.showMinimized)
-        self.close_button = self._make_button("titleBarClose", "✕", window.close)
+        self.minimize_button = self._make_button("titleBarMinimize", "–", window.showMinimized)
+        self.close_button = self._make_button("titleBarClose", "×", window.close)
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(14, 0, 6, 0)
