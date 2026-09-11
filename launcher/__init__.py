@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2026 WDNDXLTX
+﻿# SPDX-FileCopyrightText: 2026 WDNDXLTX
 # SPDX-License-Identifier: GPL-3.0-only
 #
 # This file is part of MinePick Launcher.
@@ -20,4 +20,4 @@
 Current progress: project skeleton.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
