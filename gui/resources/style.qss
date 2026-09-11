@@ -1,0 +1,402 @@
+/* MinePick Launcher — dark theme (UI trial build)
+ *
+ * Palette: window #0f141b · surface #161d27 · raised #1c2531
+ *          border #27303d · text #e6ecf5 · muted #8fa2b8 · accent __ACCENT__
+ *
+ * Kept from the released theme on purpose (do not regress):
+ *   - tabs are flat: no background block, no radius, text + green underline only
+ *   - scrollbars stay invisible; the wheel still scrolls
+ *   - focus outlines are suppressed (code-side delegate + QSS outline: none)
+ *   - combo arrow / checkbox tick use PNG placeholders substituted in theme.py
+ */
+
+QMainWindow, QDialog { background: #0f141b; }
+
+QWidget {
+    color: #e6ecf5;
+    font-family: __FONT__;
+    font-size: 13px;
+}
+
+/* ---------- text roles ---------- */
+
+QLabel#hint { color: #8fa2b8; }
+QLabel#warning { color: #e5787f; }
+QLabel#title { font-size: 17px; font-weight: 700; }
+
+/* ---------- panels: lists, tables, log views ---------- */
+
+QListWidget, QTableWidget, QTableView, QPlainTextEdit, QTextEdit {
+    background: #161d27;
+    border: 1px solid #27303d;
+    border-radius: __RADIUS_LG__;
+    padding: 4px;
+    selection-background-color: __ACCENT_SEL__;
+    selection-color: #ffffff;
+}
+
+/* monospace only for log-like views: a plain text box (device code, notes) keeps the UI font */
+QPlainTextEdit {
+    font-family: "Cascadia Mono", Consolas, "Microsoft YaHei UI", monospace;
+    font-size: 12px;
+    padding: 8px 10px;
+}
+QTextEdit { padding: 6px 8px; }
+
+/* ---------- inputs ---------- */
+
+QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
+    background: #161d27;
+    border: 1px solid #27303d;
+    border-radius: __RADIUS_SM__;
+    padding: 6px 11px;
+    min-height: 24px;
+    selection-background-color: __ACCENT_SEL__;
+    selection-color: #ffffff;
+}
+QLineEdit:hover, QComboBox:hover, QSpinBox:hover, QDoubleSpinBox:hover { border-color: #33404f; }
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus { border: 1px solid __ACCENT__; }
+QLineEdit:disabled, QComboBox:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled {
+    color: #6b7c92;
+    background: #131a23;
+}
+
+/* ---------- tables ---------- */
+
+QTableWidget, QTableView { gridline-color: #212a36; }
+
+QHeaderView::section {
+    background: #1c2531;
+    color: #8fa2b8;
+    border: none;
+    border-bottom: 1px solid #27303d;
+    padding: 8px;
+    font-weight: 600;
+}
+/* Header corners stay square: rounding a section exposed the base style's light
+   default background in the clipped notch (light-grey wedges at both top corners). */
+QHeaderView { background: #1c2531; }
+QTableCornerButton::section { background: #1c2531; border: none; }
+
+QTableWidget::item, QTableView::item { padding: 7px 9px; border: none; }
+QTableWidget::item:hover, QTableView::item:hover { background: #1c2531; }
+QTableWidget::item:selected, QTableView::item:selected {
+    background: __ACCENT_SEL__;
+    color: #ffffff;
+    outline: none;
+}
+
+/* ---------- buttons ---------- */
+
+/* White text sits on the readable fill (AA contrast), the pure accent stays for borders */
+QPushButton {
+    background: __ACCENT_BUTTON__;
+    color: #ffffff;
+    border: none;
+    border-radius: __RADIUS_SM__;
+    padding: 8px 18px;
+    font-weight: 600;
+}
+QPushButton:hover { background: __ACCENT_BUTTON_HOVER__; }
+QPushButton:pressed { background: __ACCENT_BUTTON_PRESS__; }
+QPushButton:disabled { background: #232c39; color: #6b7c92; }
+QPushButton:focus { outline: none; }
+
+/* ---------- button variants: default = primary, plus secondary and danger ---------- */
+
+QPushButton#secondaryButton {
+    background: transparent;
+    color: #b9c6d6;
+    border: 1px solid #33404f;
+    font-weight: 600;
+}
+QPushButton#secondaryButton:hover {
+    background: #1c2531;
+    border-color: __ACCENT__;
+    color: #e6ecf5;
+}
+QPushButton#secondaryButton:pressed { background: #161d27; }
+QPushButton#secondaryButton:disabled {
+    background: transparent;
+    color: #6b7c92;
+    border-color: #232c39;
+}
+
+QPushButton#dangerButton {
+    background: transparent;
+    color: #e5787f;
+    border: 1px solid #6d3a40;
+    font-weight: 600;
+}
+QPushButton#dangerButton:hover { background: #2a1a1e; border-color: #e5787f; }
+QPushButton#dangerButton:pressed { background: #221317; }
+QPushButton#dangerButton:disabled {
+    background: transparent;
+    color: #7a5a5e;
+    border-color: #3a2a2d;
+}
+
+/* ---------- status text severity ---------- */
+
+QLabel#statusWarning { color: #e5c07b; }
+QLabel#statusError { color: #e5787f; }
+
+/* ---------- accent colour swatch in settings (outline follows the theme) ---------- */
+
+QLabel#accentSwatch { border: 1px solid #3a4757; border-radius: 5px; }
+
+/* ---------- list items (generic) ---------- */
+
+QListWidget::item { padding: 9px 12px; border-radius: __RADIUS_SM__; margin: 2px 0; }
+QListWidget::item:hover { background: #1c2531; }
+QListWidget::item:selected,
+QListWidget::item:selected:focus,
+QListWidget::item:selected:!focus { background: __ACCENT_SEL__; color: #ffffff; outline: none; }
+
+/* ---------- sidebar navigation rail ---------- */
+
+QListWidget#sidebar {
+    background: transparent;
+    border: none;
+    padding: 6px 4px;
+    outline: none;
+}
+QListWidget#sidebar::item {
+    color: #8fa2b8;
+    padding: 10px 12px;
+    margin: 3px 6px;
+    border-radius: __RADIUS_LG__;
+    border-left: 3px solid transparent;
+    font-weight: 500;
+}
+QListWidget#sidebar::item:hover { background: #1c2531; color: #e6ecf5; }
+/* Selected pill: rounded on both sides so the shape stays symmetric. */
+QListWidget#sidebar::item:selected {
+    background: __ACCENT_SOFT__;
+    color: #ffffff;
+    border-left: 3px solid __ACCENT__;
+    border-radius: __RADIUS_LG__;
+    font-weight: 700;
+}
+
+/* ---------- progress ---------- */
+
+QProgressBar {
+    background: #161d27;
+    border: 1px solid #27303d;
+    border-radius: __RADIUS_LG__;
+    height: 16px;
+    text-align: center;
+    color: #8fa2b8;
+    font-size: 11px;
+}
+QProgressBar::chunk { background: __ACCENT__; border-radius: 7px; }
+
+/* ---------- checkboxes ---------- */
+
+QCheckBox { spacing: 8px; }
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #33404f;
+    border-radius: __RADIUS_XS__;
+    background: #161d27;
+}
+QCheckBox::indicator:hover { border-color: __ACCENT__; }
+QCheckBox::indicator:checked {
+    background: __ACCENT__;
+    border-color: __ACCENT__;
+    image: url(__CHECK__);
+}
+QCheckBox::indicator:checked:hover { background: __ACCENT_HOVER__; border-color: __ACCENT_HOVER__; }
+
+/* ---------- status bar ---------- */
+
+QStatusBar { background: #131a23; color: #8fa2b8; border-top: 1px solid #27303d; }
+QStatusBar::item { border: none; }
+
+/* ---------- tabs: flat, text + green underline only ---------- */
+
+QTabWidget { background: #0f141b; }
+QTabWidget::pane {
+    border: none;
+    border-radius: 0px;
+    background: #0f141b;
+}
+QTabBar { background: transparent; }
+QTabBar::tab {
+    background: transparent;
+    color: #8fa2b8;
+    padding: 9px 20px;
+    border: none;
+    border-bottom: 2px solid transparent;
+}
+QTabBar::tab:hover { color: #e6ecf5; }
+QTabBar::tab:selected {
+    color: #ffffff;
+    background: transparent;
+    border-bottom: 2px solid __ACCENT__;
+}
+
+/* ---------- combo popup ---------- */
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 24px;
+    border: none;
+    background: transparent;
+}
+QComboBox::down-arrow {
+    image: url(__DOWN_ARROW__);
+    width: 10px;
+    height: 6px;
+    margin-right: 9px;
+}
+QComboBox QAbstractItemView {
+    background: #1c2531;
+    color: #e6ecf5;
+    border: 1px solid #27303d;
+    border-radius: __RADIUS_LG__;
+    padding: 4px;
+    selection-background-color: __ACCENT_SEL__;
+    selection-color: #ffffff;
+    outline: none;
+}
+QComboBox QAbstractItemView::item {
+    padding: 9px 14px;
+    min-height: 26px;
+    border-radius: __RADIUS_SM__;
+}
+
+/* ---------- menus and tooltips ---------- */
+
+QMenu {
+    background: #1c2531;
+    color: #e6ecf5;
+    border: 1px solid #27303d;
+    border-radius: __RADIUS_LG__;
+    padding: 6px;
+}
+QMenu::item { padding: 9px 28px; border-radius: __RADIUS_SM__; }
+QMenu::item:selected { background: __ACCENT_SEL__; color: #ffffff; }
+QMenu::separator { height: 1px; background: #27303d; margin: 5px 8px; }
+QToolTip {
+    background: #1c2531;
+    color: #e6ecf5;
+    border: 1px solid #33404f;
+    border-radius: __RADIUS_SM__;
+    padding: 5px 8px;
+}
+
+/* ---------- spin box buttons: flat ---------- */
+
+QSpinBox::up-button, QSpinBox::down-button,
+QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
+    background: transparent;
+    border: none;
+    width: 20px;
+}
+QSpinBox::up-button:hover, QSpinBox::down-button:hover,
+QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover {
+    background: #27303d;
+}
+
+/* ---------- scrollbars: invisible until the pointer enters the list, then a slim handle ---------- */
+
+QScrollBar:vertical { background: transparent; width: 7px; margin: 0; }
+QScrollBar:horizontal { background: transparent; height: 7px; margin: 0; }
+/* No min-height / min-width here on purpose: those propagate into the scroll area's own
+   minimum size and made the account page 17px taller than the 1000x600 window. */
+QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+    background: transparent;
+    border: none;
+    border-radius: 3px;
+}
+QScrollBar[active="true"]::handle:vertical,
+QScrollBar[active="true"]::handle:horizontal { background: #3d4b5e; }
+QScrollBar[active="true"]::handle:vertical:hover,
+QScrollBar[active="true"]::handle:horizontal:hover { background: __ACCENT__; }
+QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; background: transparent; }
+QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
+
+/* ---------- scroll area keeps the page background ---------- */
+
+QScrollArea { background: transparent; border: none; }
+QScrollArea > QWidget > QWidget { background: transparent; }
+
+/* ---------- grouped form sections ---------- */
+
+QGroupBox {
+    border: 1px solid #27303d;
+    border-radius: __RADIUS_LG__;
+    margin-top: 14px;
+    padding: 14px 12px 12px 12px;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 12px;
+    padding: 0 6px;
+    color: #8fa2b8;
+    font-weight: 600;
+}
+
+/* ---------- versions page: category chips + latest cards ---------- */
+
+QPushButton#categoryTab {
+    background: transparent;
+    color: #8fa2b8;
+    border: 1px solid transparent;
+    border-radius: 15px;
+    padding: 7px 17px;
+    font-weight: 500;
+}
+QPushButton#categoryTab:hover { color: #e6ecf5; background: #1c2531; }
+QPushButton#categoryTab:checked {
+    background: __ACCENT_BUTTON__;
+    color: #ffffff;
+    border-color: __ACCENT_BUTTON__;
+    font-weight: 700;
+}
+
+/* Uniform border width on purpose: a thicker left border pokes out of the rounded
+   corner in Qt, so the emphasis comes from the accent-colored 1px border instead. */
+QFrame#latestCard {
+    background: #1c2531;
+    border: 1px solid __ACCENT__;
+    border-radius: __RADIUS_LG__;
+}
+QLabel#latestKind { color: #8fa2b8; font-size: 12px; }
+QLabel#latestVersion { font-size: 16px; font-weight: 700; color: #ffffff; }
+
+/* ---------- page header ---------- */
+
+QWidget#pageHeader { background: transparent; }
+QLabel#pageTitle { font-size: 18px; font-weight: 700; color: #eef3fa; }
+QLabel#pageSubtitle { color: #8fa2b8; font-size: 11px; }
+
+/* ---------- sidebar brand ---------- */
+
+QWidget#sidebarBrand { background: transparent; }
+QLabel#brandName { font-size: 15px; font-weight: 700; letter-spacing: 0.4px; color: #eef3fa; }
+
+/* ---------- empty state ---------- */
+
+QLabel#emptyState {
+    color: #7b8ca3;
+    font-size: 12px;
+    padding: 16px 10px;
+    background: transparent;
+}
+
+/* ---------- keyboard focus: only shown when navigating with the keyboard ---------- */
+
+QListWidget[keyboardFocus="true"], QTableView[keyboardFocus="true"], QTableWidget[keyboardFocus="true"],
+QPlainTextEdit[keyboardFocus="true"], QTextEdit[keyboardFocus="true"], QComboBox[keyboardFocus="true"],
+QLineEdit[keyboardFocus="true"], QSpinBox[keyboardFocus="true"], QDoubleSpinBox[keyboardFocus="true"] {
+    border: 1px solid __ACCENT__;
+}
+QPushButton[keyboardFocus="true"] { background: __ACCENT_HOVER__; }
+QPushButton#secondaryButton[keyboardFocus="true"], QPushButton#dangerButton[keyboardFocus="true"] {
+    border: 1px solid __ACCENT__;
+}

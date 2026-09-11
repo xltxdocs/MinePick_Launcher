@@ -1,0 +1,22 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.devdata/
+tests/.work/
+logs/
+build/
+dist/
+*.egg-info/
+# 下载临时文件
+*.part
+*.mrpack
+# 签名私钥（勿提交）
+build/codesign.pfx
+
+# 运行期生成的界面状态（列宽记忆）与便携配置目录
+ui_state.ini
+config/
+# 发布附件目录（EXE 体积大，不进仓库）
+Releases/

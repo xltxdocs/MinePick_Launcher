@@ -1,0 +1,10 @@
+httpx>=0.27
+msal>=1.28
+pydantic>=2.7
+platformdirs>=4.2
+tenacity>=8.2
+rich>=13.7
+packaging>=24.0
+truststore>=0.10
+cryptography>=42
+PySide6>=6.6
