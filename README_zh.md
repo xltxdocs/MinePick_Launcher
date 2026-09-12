@@ -1,4 +1,4 @@
-[English](README.md) | [简体中文](README_zh.md) | [繁體中文](README_zh_TW.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [Русский](README_ru.md) | [Français](README_fr.md) | [Español](README_es.md) | [Deutsch](README_de.md)
+[English](README.md) | **简体中文** | [繁體中文](README_zh_TW.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [Русский](README_ru.md) | [Français](README_fr.md) | [Español](README_es.md) | [Deutsch](README_de.md)
 
 # MinePick Launcher — UI Trial
 
@@ -81,7 +81,7 @@ Fabric/Forge/NeoForge/Quilt 加载器、实例隔离管理 —— 打包为免�
 
 ```powershell
 pip install -r requirements-dev.txt
-python -m gui                # 运行 GUI
+python -m gui                # run the GUI
 pytest -q                    # 测试（240+）
 ruff check launcher gui tests
 ```
@@ -92,7 +92,7 @@ ruff check launcher gui tests
 一条命令跑完整界面检查（测试 + lint + 对比度/溢出/高 DPI + 角部审计 + 出图）：
 
 ```powershell
-python tools/ui_regression.py            # 加 --quick 跳过出图
+python tools/ui_regression.py            # add --quick to skip the screenshots
 ```
 
 主题机制（占位符、可调项挂钩、如何新增一个可调项）：`docs/theming.md`。
