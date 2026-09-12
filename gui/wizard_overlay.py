@@ -54,12 +54,19 @@ class WizardStep:
     rail: str = ""
 
 
+def _styled(widget: QWidget) -> QWidget:
+    """Let a plain QWidget actually paint its QSS background (Qt needs the attribute)."""
+    widget.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+    return widget
+
+
 class StepRail(QWidget):
     """Vertical list of the steps: tick when done, accent while current, muted afterwards."""
 
     def __init__(self, labels: list[str]) -> None:
         super().__init__()
         self.setObjectName("wizardRail")
+        _styled(self)
         self.setFixedWidth(220)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(18, 18, 14, 18)
@@ -158,6 +165,7 @@ class WizardOverlay(QWidget):
     def __init__(self, parent: QWidget, steps: list[WizardStep], labels: dict[str, str]) -> None:
         super().__init__(parent)
         self.setObjectName("wizardOverlay")
+        _styled(self)
         self._steps = steps
         self._labels = labels
         self._index = 0
@@ -176,6 +184,7 @@ class WizardOverlay(QWidget):
 
         right = QWidget()
         right.setObjectName("wizardContent")
+        _styled(right)
         right_layout = QVBoxLayout(right)
         right_layout.setContentsMargins(30, 24, 30, 12)
         right_layout.setSpacing(10)
@@ -200,6 +209,7 @@ class WizardOverlay(QWidget):
 
         actions = QWidget()
         actions.setObjectName("wizardActionBar")
+        _styled(actions)
         action_layout = QHBoxLayout(actions)
         action_layout.setContentsMargins(30, 12, 30, 14)
         action_layout.setSpacing(10)
@@ -210,6 +220,7 @@ class WizardOverlay(QWidget):
 
         card = QWidget()
         card.setObjectName("wizardCard")
+        _styled(card)
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(0, 0, 0, 0)
         card_layout.setSpacing(0)
