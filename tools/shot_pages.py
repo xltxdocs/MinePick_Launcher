@@ -252,6 +252,10 @@ def main() -> int:
         "C:/Windows/Fonts/msjh.ttc",
         "C:/Windows/Fonts/deng.ttf",
         "C:/Windows/Fonts/consola.ttf",
+        "C:/Windows/Fonts/malgun.ttf",
+        "C:/Windows/Fonts/malgunbd.ttf",
+        "C:/Windows/Fonts/YuGothM.ttc",
+        "C:/Windows/Fonts/meiryo.ttc",
     ):
         if Path(font_file).exists():
             QFontDatabase.addApplicationFont(font_file)

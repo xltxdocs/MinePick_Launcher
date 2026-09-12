@@ -75,8 +75,8 @@ executable here.
   metadata for Fabric / Quilt / NeoForge / Forge / mcmod.info, enable/disable, search & filter, drag-and-drop)
 
 ### Resources
-- Mods, resource packs, shaders and modpacks from **Modrinth** and **CurseForge**, popular top 30 per tab,
-  keyword search (Chinese community names included), one-click install, `.mrpack` modpack install
+- Mods, resource packs, shaders and modpacks from **Modrinth** and **CurseForge**, popular top 30 by downloads per tab,
+  keyword search using Chinese mod names (built-in community translation table), one-click install, `.mrpack` modpack install
 
 ## Download & usage
 

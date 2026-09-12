@@ -124,7 +124,7 @@ def check_text_overflow() -> int:
     ]
 
     app = create_app([])
-    for font_file in ("msyh.ttc", "simhei.ttf"):
+    for font_file in ("msyh.ttc", "simhei.ttf", "malgun.ttf", "YuGothM.ttc"):
         path = Path("C:/Windows/Fonts") / font_file
         if path.exists():
             QFontDatabase.addApplicationFont(str(path))
@@ -209,7 +209,7 @@ def _dpi_probe() -> int:
     from gui.main_window import MainWindow
 
     app = create_app([])
-    for font_file in ("msyh.ttc", "simhei.ttf"):
+    for font_file in ("msyh.ttc", "simhei.ttf", "malgun.ttf", "YuGothM.ttc"):
         path = Path("C:/Windows/Fonts") / font_file
         if path.exists():
             QFontDatabase.addApplicationFont(str(path))

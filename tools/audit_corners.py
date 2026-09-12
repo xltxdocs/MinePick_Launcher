@@ -90,7 +90,7 @@ def main() -> int:
     from gui.main import create_app
 
     app = create_app([])
-    for font_file in ("msyh.ttc", "simhei.ttf"):
+    for font_file in ("msyh.ttc", "simhei.ttf", "malgun.ttf", "YuGothM.ttc"):
         font_path = Path("C:/Windows/Fonts") / font_file
         if font_path.exists():
             QFontDatabase.addApplicationFont(str(font_path))

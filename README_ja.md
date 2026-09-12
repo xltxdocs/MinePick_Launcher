@@ -101,13 +101,13 @@ ruff check launcher gui tests
 ビルドと署名：`pyinstaller build_exe.spec` → `scripts/sign_exe.ps1`（`docs/code_signing_en.md`を参照）。
 この spec は単一の GUI EXE を生成します（ビルドの前提条件は `docs/github_release_en.md`に記載されています）。
 
-コマンド 1 つでインターフェースをチェック（テスト + lint + コントラスト/オーバーフロー/高 DPI + 角の検査 + スクリーンショット）:
+コマンド 1 つでインターフェースをチェック（テスト + lint + コントラスト/オーバーフロー/高 DPI + 角の検査 + スクリーンショット）：
 
 ```powershell
 python tools/ui_regression.py            # add --quick to skip the screenshots
 ```
 
-テーマの内部構造（プレースホルダー、カスタマイズ用フック、新しいオプションの追加方法）: `docs/theming_en.md`。
+テーマの内部構造（プレースホルダー、カスタマイズ用フック、新しいオプションの追加方法）： `docs/theming_en.md`。
 
 ## ライセンス
 
