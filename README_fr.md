@@ -1,6 +1,6 @@
 [English](README.md) | [简体中文](README_zh.md) | [繁體中文](README_zh_TW.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [Русский](README_ru.md) | [Français](README_fr.md) | [Español](README_es.md) | [Deutsch](README_de.md)
 
-# MinePick Launcher — Essai de l'interface
+# MinePick Launcher — UI Trial
 
 Un lanceur Minecraft portable écrit en Python + PySide6 : comptes Microsoft/hors ligne, installation de versions,
 ressources Modrinth et CurseForge, chargeurs Fabric/Forge/NeoForge/Quilt, instances isolées — le tout empaqueté

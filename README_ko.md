@@ -1,6 +1,6 @@
 [English](README.md) | [简体中文](README_zh.md) | [繁體中文](README_zh_TW.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [Русский](README_ru.md) | [Français](README_fr.md) | [Español](README_es.md) | [Deutsch](README_de.md)
 
-# MinePick Launcher — UI 시험판
+# MinePick Launcher — UI Trial
 
 Python + PySide6로 만든 포터블 Minecraft 런처: Microsoft/오프라인 계정, 버전 설치,
 Modrinth & CurseForge 리소스, Fabric/Forge/NeoForge/Quilt 로더, 격리된 인스턴스 — 단일

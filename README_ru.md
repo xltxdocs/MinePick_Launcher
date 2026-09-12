@@ -1,6 +1,6 @@
 [English](README.md) | [简体中文](README_zh.md) | [繁體中文](README_zh_TW.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [Русский](README_ru.md) | [Français](README_fr.md) | [Español](README_es.md) | [Deutsch](README_de.md)
 
-# MinePick Launcher — пробная версия интерфейса
+# MinePick Launcher — UI Trial
 
 Портативный лаунчер Minecraft на Python + PySide6: аккаунты Microsoft и офлайн-режим, установка версий,
 ресурсы Modrinth и CurseForge, загрузчики Fabric/Forge/NeoForge/Quilt, изолированные экземпляры — всё

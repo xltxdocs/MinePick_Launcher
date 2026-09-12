@@ -1,6 +1,6 @@
 [English](README.md) | [简体中文](README_zh.md) | [繁體中文](README_zh_TW.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [Русский](README_ru.md) | [Français](README_fr.md) | [Español](README_es.md) | [Deutsch](README_de.md)
 
-# MinePick Launcher —— UI 試用版
+# MinePick Launcher — UI Trial
 
 以 Python + PySide6 打造的免安裝 Minecraft 啟動器：Microsoft/離線帳號、版本安裝、
 Modrinth 與 CurseForge 資源、Fabric/Forge/NeoForge/Quilt 載入器、隔離實例 ——
