@@ -40,8 +40,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-FADE_MS = 130
-FADE_OUT_MS = 110
+FADE_MS = 90  # step content only: cheap, one small subtree
 LIFT_PX = 8
 
 
@@ -266,34 +265,26 @@ class WizardOverlay(QWidget):
         animation.start(QPropertyAnimation.DeletionPolicy.DeleteWhenStopped)
         self._animation = animation
 
-    def _fade_window(self, start: float, end: float, curve, then=None, duration: int = FADE_MS) -> None:
-        effect = QGraphicsOpacityEffect(self)
-        self.setGraphicsEffect(effect)
-        animation = QPropertyAnimation(effect, b"opacity", self)
-        animation.setDuration(duration)
-        animation.setStartValue(start)
-        animation.setEndValue(end)
-        animation.setEasingCurve(curve)
-        if then is None:
-            animation.finished.connect(lambda: self.setGraphicsEffect(None))
-        else:
-            animation.finished.connect(lambda: (self.setGraphicsEffect(None), self.hide(), then()))
-        animation.start(QPropertyAnimation.DeletionPolicy.DeleteWhenStopped)
-        self._animation = animation
-
     def show_overlay(self) -> None:
-        """Fade the overlay in over the content area below the title bar."""
+        """Show the overlay over the content area below the title bar.
+
+        No opacity effect here on purpose: fading a subtree this large had to be composited
+        offscreen every frame (visibly laggy) and left the overlay see-through while it ran.
+        """
         parent = self.parentWidget()
         if parent is not None:
             parent.installEventFilter(self)
             self.setGeometry(parent.rect())  # correct size even before the first resize event
         self._fit_parent()
+        self.setGraphicsEffect(None)
         self.show()
         self.raise_()
-        self._fade_window(0.0, 1.0, QEasingCurve.Type.OutCubic)
 
     def fade_out(self, then) -> None:
-        self._fade_window(1.0, 0.0, QEasingCurve.Type.InCubic, then, duration=FADE_OUT_MS)
+        """Hide at once, then let the caller rebuild: no fade to sit through while it works."""
+        self.setGraphicsEffect(None)
+        self.hide()
+        then()
 
     # ---------- geometry ----------
 

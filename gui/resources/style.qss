@@ -212,7 +212,7 @@ QCheckBox::indicator:checked:hover { background: __ACCENT_HOVER__; border-color:
 
 /* ---------- status bar ---------- */
 
-QStatusBar { background: #131a23; color: #8fa2b8; border-top: 1px solid #27303d; }
+QStatusBar { background: #0f141b; color: #8fa2b8; border-top: 1px solid #27303d; }
 QStatusBar::item { border: none; }
 
 /* ---------- tabs: flat, text + green underline only ---------- */
@@ -402,7 +402,7 @@ QPushButton#secondaryButton[keyboardFocus="true"], QPushButton#dangerButton[keyb
 /* ---------- custom title bar (frameless window) ---------- */
 
 QWidget#titleBar {
-    background: #131a23;
+    background: #0f141b;
     border-bottom: 1px solid #27303d;
 }
 QLabel#titleBarTitle { color: #e6ecf5; font-size: 13px; font-weight: 600; }
