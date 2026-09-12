@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -32,11 +33,20 @@ PYTHON = ROOT / ".." / "minecraft-launcher" / ".venv" / "Scripts" / "python.exe"
 
 
 def run(label: str, args: list[str]) -> bool:
+    """Run one check, retrying once: a build that has just finished can still hold file
+    handles (dist/, caches) for a moment, which used to show up as a spurious failure."""
     print(f"\n=== {label} ===")
-    result = subprocess.run(args, cwd=str(ROOT), check=False)  # stdio inherited on purpose
-    ok = result.returncode == 0
-    print(f"--- {label}: {'OK' if ok else 'FAILED'} (exit {result.returncode})")
-    return ok
+    for attempt in (1, 2):
+        result = subprocess.run(args, cwd=str(ROOT), check=False)  # stdio inherited on purpose
+        if result.returncode == 0:
+            print(f"--- {label}: OK (exit 0)")
+            return True
+        if attempt == 1:
+            print(f"--- {label}: exit {result.returncode}, retrying in 3s (file handles may still be busy) ...")
+            time.sleep(3)
+        else:
+            print(f"--- {label}: FAILED (exit {result.returncode})")
+    return False
 
 
 def main() -> int:
