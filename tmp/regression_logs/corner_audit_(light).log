@@ -1,0 +1,71 @@
+This plugin does not support propagateSizeHints()
+QBasicTimer::stop: Failed. Possibly trying to stop from a different thread
+QBasicTimer::stop: Failed. Possibly trying to stop from a different thread
+--- launch (page background (242, 245, 248)) ---
+  QLabel               66x28   TL:round TR:round BL:round BR:round
+  QComboBox           659x38   TL:round TR:round BL:round BR:round
+  QComboBox           659x38   TL:round TR:round BL:round BR:round
+  QLabel               65x28   TL:round TR:round BL:round BR:round
+  QLineEdit           659x38   TL:round TR:round BL:round BR:round
+  QLabel               52x28   TL:round TR:round BL:round BR:round
+  QLabel               52x28   TL:round TR:round BL:round BR:round
+  QComboBox           659x38   TL:round TR:round BL:round BR:round
+  QLabel               57x28   TL:round TR:round BL:round BR:round
+  QLineEdit           659x38   TL:round TR:round BL:round BR:round
+  QLabel              117x28   TL:round TR:round BL:round BR:round
+  QLineEdit           520x38   TL:round TR:round BL:round BR:round
+  QPlainTextEdit      792x62   TL:round TR:round BL:round BR:round
+--- instances (page background (242, 245, 248)) ---
+  QComboBox           172x38   TL:round TR:round BL:round BR:round
+  QListWidget         792x155  TL:round TR:round BL:round BR:round
+  QLineEdit           173x38   TL:round TR:round BL:round BR:round
+  QComboBox            88x38   TL:round TR:round BL:round BR:round
+  _ModsTable          792x104  TL:round TR:round BL:round BR:round
+  QHeaderView         782x37   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+--- versions (page background (242, 245, 248)) ---
+  QLineEdit           173x38   TL:round TR:round BL:round BR:round
+  QFrame               82x99   TL:round TR:round BL:round BR:round
+  QFrame               84x99   TL:round TR:round BL:round BR:round
+  QTableView          792x169  TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QHeaderView         757x37   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+--- java (page background (242, 245, 248)) ---
+  QTableWidget        792x122  TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QHeaderView         753x37   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QTableWidget        792x121  TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QHeaderView         753x37   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QComboBox            65x38   TL:round TR:round BL:round BR:round
+--- account (page background (242, 245, 248)) ---
+  QLabel               42x42   TL:round TR:round BL:round BR:round
+  QLabel              371x42   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QListWidget         792x31   TL:round TR:round BL:round BR:round
+  QTextEdit           792x110  TL:round TR:round BL:round BR:round
+  QLineEdit           694x38   TL:round TR:round BL:round BR:round
+--- mods (page background (242, 245, 248)) ---
+  QStackedWidget      792x442  TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLineEdit           503x38   TL:round TR:round BL:round BR:round
+  QComboBox           110x38   TL:round TR:round BL:round BR:round
+  QLabel               52x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLineEdit           147x38   TL:round TR:round BL:round BR:round
+  QLineEdit           308x38   TL:round TR:round BL:round BR:round
+  QListWidget         256x314  TL:round TR:round BL:round BR:round
+  QComboBox           127x38   TL:round TR:round BL:round BR:round
+--- settings (page background (242, 245, 248)) ---
+  QScrollArea         792x478  TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLabel               52x28   TL:round TR:round BL:round BR:round
+  QLineEdit           489x38   TL:round TR:round BL:round BR:round
+  QLabel              160x28   TL:round TR:round BL:round BR:round
+  QLineEdit           489x38   TL:round TR:round BL:round BR:round
+  QLabel               52x28   TL:round TR:round BL:round BR:round
+  QLabel               65x28   TL:round TR:round BL:round BR:round
+  QLabel              189x28   TL:round TR:round BL:round BR:round
+  QLabel              104x28   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLineEdit           562x38   TL:round TR:round BL:round BR:round
+  QLabel              121x28   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLineEdit           562x38   TL:round TR:round BL:round BR:round
+  QLabel               78x28   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QComboBox           562x38   TL:round TR:round BL:round BR:round
+  QLabel               52x28   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QComboBox           562x38   TL:round TR:round BL:round BR:round
+  QLineEdit           401x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+
+artifacts found: 0

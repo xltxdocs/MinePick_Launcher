@@ -1,0 +1,69 @@
+This plugin does not support propagateSizeHints()
+--- launch (page background (15, 20, 27)) ---
+  QLabel               66x28   TL:round TR:round BL:round BR:round
+  QComboBox           659x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QComboBox           659x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLabel               65x28   TL:round TR:round BL:round BR:round
+  QLineEdit           659x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLabel               52x28   TL:round TR:round BL:round BR:round
+  QLabel               52x28   TL:round TR:round BL:round BR:round
+  QComboBox           659x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLabel               57x28   TL:round TR:round BL:round BR:round
+  QLineEdit           659x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLabel              117x28   TL:round TR:round BL:round BR:round
+  QLineEdit           520x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QPlainTextEdit      792x62   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+--- instances (page background (15, 20, 27)) ---
+  QComboBox           172x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QListWidget         792x155  TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLineEdit           173x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QComboBox            88x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  _ModsTable          792x104  TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QHeaderView         782x37   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+--- versions (page background (15, 20, 27)) ---
+  QLineEdit           173x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QFrame               82x99   TL:round TR:round BL:round BR:round
+  QFrame               84x99   TL:round TR:round BL:round BR:round
+  QTableView          792x169  TL:round TR:round BL:round BR:round
+  QHeaderView         757x37   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+--- java (page background (15, 20, 27)) ---
+  QTableWidget        792x122  TL:round TR:round BL:round BR:round
+  QHeaderView         753x37   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QTableWidget        792x121  TL:round TR:round BL:round BR:round
+  QHeaderView         753x37   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QComboBox            65x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+--- account (page background (15, 20, 27)) ---
+  QLabel               42x42   TL:round TR:round BL:round BR:round
+  QLabel              371x42   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QListWidget         792x31   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QTextEdit           792x110  TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLineEdit           694x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+--- mods (page background (15, 20, 27)) ---
+  QStackedWidget      792x442  TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLineEdit           503x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QComboBox           110x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLabel               52x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLineEdit           147x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLineEdit           308x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QListWidget         256x314  TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QComboBox           127x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+--- settings (page background (15, 20, 27)) ---
+  QScrollArea         792x478  TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLabel               52x28   TL:round TR:round BL:round BR:round
+  QLineEdit           489x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLabel              160x28   TL:round TR:round BL:round BR:round
+  QLineEdit           489x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLabel               52x28   TL:round TR:round BL:round BR:round
+  QLabel               65x28   TL:round TR:round BL:round BR:round
+  QLabel              189x28   TL:round TR:round BL:round BR:round
+  QLabel              104x28   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLineEdit           562x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLabel              121x28   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLineEdit           562x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLabel               78x28   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QComboBox           562x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLabel               52x28   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QComboBox           562x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+  QLineEdit           401x38   TL:SQUARE TR:SQUARE BL:SQUARE BR:SQUARE
+
+artifacts found: 0

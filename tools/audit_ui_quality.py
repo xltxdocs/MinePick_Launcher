@@ -24,6 +24,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 import time
@@ -229,6 +230,7 @@ def _dpi_probe() -> int:
 def main() -> int:
     if "--dpi" in sys.argv:  # worker mode: no QApplication may exist yet
         return _dpi_probe()
+    wants_json = "--json" in sys.argv
     root = Path(os.environ.get("TRIAL_ROOT", r"D:\dsh-workspace\MinePick_UI_Trial")).resolve()
     os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
     sys.path.insert(0, str(root))
@@ -241,6 +243,18 @@ def main() -> int:
     print("\n=== 3. high DPI ===")
     check_high_dpi(1.25)
     print("\nsummary: contrast failures =", contrast_failures, "| overflow =", overflow)
+    if wants_json:
+        # machine-readable verdict: callers should judge by this, not by the exit code
+        print(
+            json.dumps(
+                {
+                    "contrast_failures": contrast_failures,
+                    "overflow": overflow,
+                    "ok": not (contrast_failures or overflow),
+                }
+            )
+        )
+        return 0
     return 1 if (contrast_failures or overflow) else 0
 
 

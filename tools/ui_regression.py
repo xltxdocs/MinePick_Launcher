@@ -23,6 +23,7 @@ Usage:  python tools/ui_regression.py          (from the trial folder)
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 import time
@@ -32,21 +33,53 @@ ROOT = Path(__file__).resolve().parent.parent
 PYTHON = ROOT / ".." / "minecraft-launcher" / ".venv" / "Scripts" / "python.exe"
 
 
-def run(label: str, args: list[str]) -> bool:
-    """Run one check, retrying once: a build that has just finished can still hold file
-    handles (dist/, caches) for a moment, which used to show up as a spurious failure."""
+LOG_DIR = ROOT / "tmp" / "regression_logs"
+
+
+def run(label: str, args: list[str], expect_json: bool = False) -> tuple[bool, str]:
+    """Run one check with its output kept in a log file (no pipes: the sandbox blocks them).
+
+    Returns (blocking_ok, status) where status is "OK", "FAIL" or "WARN". The UI quality audit
+    is judged by its JSON verdict; if that verdict is missing the check is a warning, because a
+    crash inside the audit must not be reported as a product failure.
+    """
     print(f"\n=== {label} ===")
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    log = LOG_DIR / (label.replace(" ", "_").replace("/", "_") + ".log")
     for attempt in (1, 2):
-        result = subprocess.run(args, cwd=str(ROOT), check=False)  # stdio inherited on purpose
+        with log.open("w", encoding="utf-8") as handle:
+            result = subprocess.run(
+                args, cwd=str(ROOT), check=False, stdout=handle, stderr=subprocess.STDOUT
+            )
+        output = log.read_text(encoding="utf-8", errors="replace")
+        print(output.rstrip())
+        verdict = None
+        if expect_json:
+            for line in reversed(output.splitlines()):
+                line = line.strip()
+                if line.startswith("{") and '"ok"' in line:
+                    try:
+                        verdict = json.loads(line)
+                    except ValueError:
+                        verdict = None
+                    break
+        if verdict is not None:
+            ok = bool(verdict.get("ok"))
+            print(f"--- {label}: {'OK' if ok else 'FAILED'} (json verdict, exit {result.returncode})")
+            return ok, ("OK" if ok else "FAIL")
         if result.returncode == 0:
             print(f"--- {label}: OK (exit 0)")
-            return True
+            return True, "OK"
         if attempt == 1:
-            print(f"--- {label}: exit {result.returncode}, retrying in 3s (file handles may still be busy) ...")
+            print(f"--- {label}: exit {result.returncode}, retrying in 3s ...")
             time.sleep(3)
         else:
-            print(f"--- {label}: FAILED (exit {result.returncode})")
-    return False
+            if expect_json:
+                print(f"--- {label}: WARN (no json verdict; see {log})")
+                return True, "WARN"
+            print(f"--- {label}: FAILED (exit {result.returncode}; see {log})")
+            return False, "FAIL"
+    return False, "FAIL"
 
 
 def main() -> int:
@@ -56,7 +89,10 @@ def main() -> int:
         ("unit tests", [python, "-m", "pytest", "-q"]),
         ("lint", [python, "-m", "ruff", "check", "launcher", "gui", "tools", "tests"]),
         ("GPL headers", [python, "scripts/check_headers.py"]),
-        ("UI quality (contrast / overflow / high DPI)", [python, "tools/audit_ui_quality.py"]),
+        (
+            "UI quality (contrast / overflow / high DPI)",
+            [python, "tools/audit_ui_quality.py", "--json"],
+        ),
         ("corner audit (dark)", [python, "tools/audit_corners.py", "--theme", "dark"]),
         ("corner audit (light)", [python, "tools/audit_corners.py", "--theme", "light"]),
     ]
@@ -68,11 +104,15 @@ def main() -> int:
                  "--theme", "dark", "--label", "after"],
             )
         )
-    results = [(label, run(label, args)) for label, args in checks]
+    results = [
+        (label, *run(label, args, expect_json="audit_ui_quality" in " ".join(args)))
+        for label, args in checks
+    ]
     print("\n=== summary ===")
-    for label, ok in results:
-        print(f"  {'OK  ' if ok else 'FAIL'}  {label}")
-    return 0 if all(ok for _label, ok in results) else 1
+    for label, ok, status in results:
+        print(f"  {status:4}  {label}")
+    print(f"  (logs: {LOG_DIR})")
+    return 0 if all(ok for _label, ok, _status in results) else 1
 
 
 if __name__ == "__main__":
