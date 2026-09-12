@@ -9,22 +9,23 @@ Modrinth 與 CurseForge 資源、Fabric/Forge/NeoForge/Quilt 載入器、隔離�
 **本儲存庫是介面試驗線（版本 0.1.2）。** 啟動器功能與主專案相同，再加上以下介面重製；
 而且**只提供 GUI 版** —— 這裡沒有 CLI 執行檔。
 
+> Developer documents are written in Chinese; English versions: [theming](docs/theming_en.md), [code signing](docs/code_signing_en.md), [github release](docs/github_release_en.md).
 > 主線啟動器：[xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
 
 ## 介面截圖
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/launch_en.png" width="480" alt="啟動頁面"/></td>
-    <td><img src="docs/screenshots/versions_en.png" width="480" alt="版本頁面"/></td>
+    <td><img src="docs/screenshots/launch_zh_TW.png" width="480" alt="啟動頁面"/></td>
+    <td><img src="docs/screenshots/versions_zh_TW.png" width="480" alt="版本頁面"/></td>
   </tr>
   <tr>
     <td align="center"><sub>啟動</sub></td>
     <td align="center"><sub>版本</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/instances_mods_en.png" width="480" alt="實例與本機模組管理"/></td>
-    <td><img src="docs/screenshots/settings_en.png" width="480" alt="設定"/></td>
+    <td><img src="docs/screenshots/instances_mods_zh_TW.png" width="480" alt="實例與本機模組管理"/></td>
+    <td><img src="docs/screenshots/settings_zh_TW.png" width="480" alt="設定"/></td>
   </tr>
   <tr>
     <td align="center"><sub>實例與本機模組管理</sub></td>

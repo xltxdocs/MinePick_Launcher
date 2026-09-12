@@ -10,22 +10,23 @@
 лаунчера, что и в основном проекте, плюс описанная ниже переработка интерфейса, а поставляется он
 **только как GUI-сборка** — исполняемого файла CLI здесь нет.
 
+> Developer documents are written in Chinese; English versions: [theming](docs/theming_en.md), [code signing](docs/code_signing_en.md), [github release](docs/github_release_en.md).
 > Основной лаунчер: [xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
 
 ## Скриншоты
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/launch_en.png" width="480" alt="Страница запуска"/></td>
-    <td><img src="docs/screenshots/versions_en.png" width="480" alt="Страница версий"/></td>
+    <td><img src="docs/screenshots/launch_ru.png" width="480" alt="Страница запуска"/></td>
+    <td><img src="docs/screenshots/versions_ru.png" width="480" alt="Страница версий"/></td>
   </tr>
   <tr>
     <td align="center"><sub>Запуск</sub></td>
     <td align="center"><sub>Версии</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/instances_mods_en.png" width="480" alt="Экземпляры и локальный менеджер модов"/></td>
-    <td><img src="docs/screenshots/settings_en.png" width="480" alt="Настройки"/></td>
+    <td><img src="docs/screenshots/instances_mods_ru.png" width="480" alt="Экземпляры и локальный менеджер модов"/></td>
+    <td><img src="docs/screenshots/settings_ru.png" width="480" alt="Настройки"/></td>
   </tr>
   <tr>
     <td align="center"><sub>Экземпляры и локальный менеджер модов</sub></td>

@@ -10,22 +10,23 @@ Python + PySide6 で作られたポータブルな Minecraft ランチャー：M
 ランチャー機能に、以下で説明するインターフェースの刷新を加えたもので、**GUI ビルドのみ**を提供します —
 ここに CLI 実行ファイルはありません。
 
+> Developer documents are written in Chinese; English versions: [theming](docs/theming_en.md), [code signing](docs/code_signing_en.md), [github release](docs/github_release_en.md).
 > 本体のランチャー: [xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
 
 ## スクリーンショット
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/launch_en.png" width="480" alt="起動ページ"/></td>
-    <td><img src="docs/screenshots/versions_en.png" width="480" alt="バージョンページ"/></td>
+    <td><img src="docs/screenshots/launch_ja.png" width="480" alt="起動ページ"/></td>
+    <td><img src="docs/screenshots/versions_ja.png" width="480" alt="バージョンページ"/></td>
   </tr>
   <tr>
     <td align="center"><sub>起動</sub></td>
     <td align="center"><sub>バージョン</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/instances_mods_en.png" width="480" alt="インスタンスとローカル Mod 管理"/></td>
-    <td><img src="docs/screenshots/settings_en.png" width="480" alt="設定"/></td>
+    <td><img src="docs/screenshots/instances_mods_ja.png" width="480" alt="インスタンスとローカル Mod 管理"/></td>
+    <td><img src="docs/screenshots/settings_ja.png" width="480" alt="設定"/></td>
   </tr>
   <tr>
     <td align="center"><sub>インスタンスとローカル Mod 管理</sub></td>

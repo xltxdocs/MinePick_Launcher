@@ -10,22 +10,23 @@ einzelne portable EXE.
 Hauptprojekt plus die unten beschriebene Oberflächen-Überarbeitung und liefert **nur einen GUI-Build** — eine
 Befehlszeilen-EXE gibt es hier nicht.
 
+> Developer documents are written in Chinese; English versions: [theming](docs/theming_en.md), [code signing](docs/code_signing_en.md), [github release](docs/github_release_en.md).
 > Haupt-Launcher: [xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
 
 ## Screenshots
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/launch_en.png" width="480" alt="Startseite"/></td>
-    <td><img src="docs/screenshots/versions_en.png" width="480" alt="Versionsseite"/></td>
+    <td><img src="docs/screenshots/launch_de.png" width="480" alt="Startseite"/></td>
+    <td><img src="docs/screenshots/versions_de.png" width="480" alt="Versionsseite"/></td>
   </tr>
   <tr>
     <td align="center"><sub>Start</sub></td>
     <td align="center"><sub>Versionen</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/instances_mods_en.png" width="480" alt="Instanzen und lokaler Mod-Manager"/></td>
-    <td><img src="docs/screenshots/settings_en.png" width="480" alt="Einstellungen"/></td>
+    <td><img src="docs/screenshots/instances_mods_de.png" width="480" alt="Instanzen und lokaler Mod-Manager"/></td>
+    <td><img src="docs/screenshots/settings_de.png" width="480" alt="Einstellungen"/></td>
   </tr>
   <tr>
     <td align="center"><sub>Instanzen &amp; lokaler Mod-Manager</sub></td>

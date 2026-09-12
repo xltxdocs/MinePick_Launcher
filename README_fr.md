@@ -10,22 +10,23 @@ dans un seul EXE portable.
 que le projet principal, plus la refonte de l'interface décrite ci-dessous, et il ne fournit **qu'une version GUI**
 — aucun exécutable CLI n'est proposé ici.
 
+> Developer documents are written in Chinese; English versions: [theming](docs/theming_en.md), [code signing](docs/code_signing_en.md), [github release](docs/github_release_en.md).
 > Lanceur principal : [xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
 
 ## Captures d'écran
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/launch_en.png" width="480" alt="Page de lancement"/></td>
-    <td><img src="docs/screenshots/versions_en.png" width="480" alt="Page des versions"/></td>
+    <td><img src="docs/screenshots/launch_fr.png" width="480" alt="Page de lancement"/></td>
+    <td><img src="docs/screenshots/versions_fr.png" width="480" alt="Page des versions"/></td>
   </tr>
   <tr>
     <td align="center"><sub>Lancement</sub></td>
     <td align="center"><sub>Versions</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/instances_mods_en.png" width="480" alt="Instances et gestionnaire de mods local"/></td>
-    <td><img src="docs/screenshots/settings_en.png" width="480" alt="Paramètres"/></td>
+    <td><img src="docs/screenshots/instances_mods_fr.png" width="480" alt="Instances et gestionnaire de mods local"/></td>
+    <td><img src="docs/screenshots/settings_fr.png" width="480" alt="Paramètres"/></td>
   </tr>
   <tr>
     <td align="center"><sub>Instances et gestionnaire de mods local</sub></td>

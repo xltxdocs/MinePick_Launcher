@@ -10,6 +10,7 @@ single portable EXE.
 main project plus the interface rework described below, and it ships a **GUI build only** — there is no CLI
 executable here.
 
+> Developer documents are written in Chinese; English versions: [theming](docs/theming_en.md), [code signing](docs/code_signing_en.md), [github release](docs/github_release_en.md).
 > Main launcher: [xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
 
 ## Screenshots

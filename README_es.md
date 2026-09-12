@@ -10,22 +10,23 @@ recursos de Modrinth y CurseForge, cargadores Fabric/Forge/NeoForge/Quilt, insta
 que el proyecto principal, más el rediseño de interfaz que se describe a continuación, y solo distribuye una
 **compilación con GUI**: aquí no hay ejecutable de CLI.
 
+> Developer documents are written in Chinese; English versions: [theming](docs/theming_en.md), [code signing](docs/code_signing_en.md), [github release](docs/github_release_en.md).
 > Launcher principal: [xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
 
 ## Capturas de pantalla
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/launch_en.png" width="480" alt="Página de inicio"/></td>
-    <td><img src="docs/screenshots/versions_en.png" width="480" alt="Página de versiones"/></td>
+    <td><img src="docs/screenshots/launch_es.png" width="480" alt="Página de inicio"/></td>
+    <td><img src="docs/screenshots/versions_es.png" width="480" alt="Página de versiones"/></td>
   </tr>
   <tr>
     <td align="center"><sub>Inicio</sub></td>
     <td align="center"><sub>Versiones</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/instances_mods_en.png" width="480" alt="Instancias y gestor de mods local"/></td>
-    <td><img src="docs/screenshots/settings_en.png" width="480" alt="Ajustes"/></td>
+    <td><img src="docs/screenshots/instances_mods_es.png" width="480" alt="Instancias y gestor de mods local"/></td>
+    <td><img src="docs/screenshots/settings_es.png" width="480" alt="Ajustes"/></td>
   </tr>
   <tr>
     <td align="center"><sub>Instancias &amp; gestor de mods local</sub></td>

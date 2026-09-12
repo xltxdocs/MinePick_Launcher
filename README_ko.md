@@ -10,22 +10,23 @@ Modrinth & CurseForge 리소스, Fabric/Forge/NeoForge/Quilt 로더, 격리된 �
 아래에 설명된 인터페이스 개편을 더했으며, **GUI 빌드만** 제공합니다 — 여기에는 CLI
 실행 파일이 없습니다.
 
+> Developer documents are written in Chinese; English versions: [theming](docs/theming_en.md), [code signing](docs/code_signing_en.md), [github release](docs/github_release_en.md).
 > 메인 런처: [xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
 
 ## 스크린샷
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/launch_en.png" width="480" alt="실행 페이지"/></td>
-    <td><img src="docs/screenshots/versions_en.png" width="480" alt="버전 페이지"/></td>
+    <td><img src="docs/screenshots/launch_ko.png" width="480" alt="실행 페이지"/></td>
+    <td><img src="docs/screenshots/versions_ko.png" width="480" alt="버전 페이지"/></td>
   </tr>
   <tr>
     <td align="center"><sub>실행</sub></td>
     <td align="center"><sub>버전</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/instances_mods_en.png" width="480" alt="인스턴스 및 로컬 모드 관리자"/></td>
-    <td><img src="docs/screenshots/settings_en.png" width="480" alt="설정"/></td>
+    <td><img src="docs/screenshots/instances_mods_ko.png" width="480" alt="인스턴스 및 로컬 모드 관리자"/></td>
+    <td><img src="docs/screenshots/settings_ko.png" width="480" alt="설정"/></td>
   </tr>
   <tr>
     <td align="center"><sub>인스턴스 &amp; 로컬 모드 관리자</sub></td>
