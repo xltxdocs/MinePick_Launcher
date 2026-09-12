@@ -41,14 +41,14 @@ Befehlszeilen-EXE gibt es hier nicht.
 - **Eigener Fensterrahmen** — die Titelleiste wird vom Launcher selbst gezeichnet, sodass die
   Fensterdekoration zum Design passt; das Fenstericon ist überall und in jeder Größe das Spitzhacken-Design
 - **Anpassbares Aussehen** — Akzentfarbe (beliebiger Hex-Wert, acht Voreinstellungen oder die
-  System-Farbauswahl), Schriftart der Oberfläche (alle installierten Familien, häufige angeheftet, Tippen
+  System-Farbauswahl), Schriftart der Oberfläche (alle installierten Familien, die häufigsten oben angeheftet, Tippen
   zum Filtern), Eckenradius (Kompakt / Standard / Rund), Design (Dunkel / Hell / Systemeinstellung folgen)
 - **Klareres Layout** — ein Seitenkopf mit einzeiliger Beschreibung auf jeder Seite, ein Markenblock über
   der Seitenleiste, eine gemeinsame Abstandsskala auf allen Seiten, Lupensymbole in Suchfeldern
-- **Ruhigere Interaktion** — Scrollbalken erscheinen nur, solange der Zeiger in einer Liste ist; eine
+- **Ruhigeres Verhalten** — Scrollbalken erscheinen nur, solange der Zeiger in einer Liste ist; eine
   Fokusumrandung wird nur bei Tastaturnavigation angezeigt; kurzes Einblenden beim Seitenwechsel;
   Spaltenbreiten von Tabellen werden gemerkt; Kopfzeilen lassen sich per Klick sortieren
-- **Lesbare Zustände** — Schaltflächen sind abgestuft (primär / sekundär / gefährlich umrandet),
+- **Klar lesbare Zustände** — Schaltflächen sind abgestuft (primär / sekundär / gefährlich umrandet),
   Statusmeldungen sind nach Schweregrad eingefärbt, leere Listen erklären die nächsten Schritte
 - **Standardmäßig barrierefrei** — jedes Text-/Hintergrund-Paar erfüllt den WCAG-AA-Kontrast (Akzentflächen
   mit weißer Schrift werden automatisch abgedunkelt), und die Oberfläche ist in 9 Sprachen verfügbar

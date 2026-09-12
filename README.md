@@ -41,7 +41,7 @@ executable here.
 - **Custom window frame** — the title bar is drawn by the launcher itself, so the chrome matches
   the theme; the window icon is the pickaxe design everywhere, at every size
 - **Customisable look** — accent colour (any hex value, eight presets, or the system colour picker),
-  UI font (every installed family, common ones pinned, type to filter), corner radius (compact / default /
+  UI font (every installed family, the most common ones pinned on top, type to filter), corner radius (compact / default /
   round), theme (dark / light / follow the system)
 - **Clearer layout** — a page header with a one-line description on every page, a brand block above the
   sidebar, one spacing scale across all pages, magnifier icons in search fields
