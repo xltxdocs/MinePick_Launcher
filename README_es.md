@@ -6,7 +6,7 @@ Un launcher portátil de Minecraft creado con Python + PySide6: cuentas de Micro
 recursos de Modrinth y CurseForge, cargadores Fabric/Forge/NeoForge/Quilt, instancias aisladas — empaquetado como un
 único EXE portátil.
 
-**Este repositorio es la línea de prueba de interfaz (versión 0.1.2).** Ofrece el mismo conjunto de funciones del launcher
+**Este repositorio es la línea de prueba de interfaz (versión 0.1.3).** Ofrece el mismo conjunto de funciones del launcher
 que el proyecto principal, más el rediseño de interfaz que se describe a continuación, y solo distribuye una
 **compilación con GUI**: aquí no hay ejecutable de CLI.
 
@@ -48,9 +48,9 @@ que el proyecto principal, más el rediseño de interfaz que se describe a conti
 - **Interacción más discreta** — las barras de desplazamiento solo aparecen mientras el puntero está dentro de una lista,
   el contorno de foco se muestra solo para la navegación con teclado, un breve fundido al cambiar de página, se recuerda
   el ancho de las columnas de las tablas, las cabeceras se ordenan con un clic
-- **Estados legibles** — los botones tienen jerarquía (principal / secundario / peligro con contorno), los mensajes de
-  estado se colorean según su gravedad, las listas vacías explican qué hacer a continuación
-- **Accesible de forma predeterminada** — cada combinación de texto y fondo cumple el contraste WCAG AA (los rellenos
+- **Estados legibles de un vistazo** — los botones tienen jerarquía (principal / secundario / peligro con contorno), los
+  mensajes de estado se colorean según su gravedad, las listas vacías explican qué hacer a continuación
+- **Accesible por defecto** — cada combinación de texto y fondo cumple el contraste WCAG AA (los rellenos
   de acento con texto blanco se oscurecen automáticamente) y la interfaz está disponible en 9 idiomas
 
 ## Funciones del launcher
@@ -77,7 +77,7 @@ que el proyecto principal, más el rediseño de interfaz que se describe a conti
 
 ### Recursos
 - Mods, paquetes de recursos, shaders y modpacks de **Modrinth** y **CurseForge**, top 30 de populares por descargas en cada pestaña,
-  búsqueda por palabra clave (incluidos los nombres chinos de la comunidad), instalación en un clic, instalación de
+  búsqueda por palabra clave (incluidos los nombres chinos de los mods), instalación en un clic, instalación de
   modpacks `.mrpack`
 
 ## Descarga y uso

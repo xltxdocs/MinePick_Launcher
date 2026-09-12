@@ -6,7 +6,7 @@ Ein portabler Minecraft-Launcher auf Basis von Python + PySide6: Microsoft-/Offl
 Modrinth- & CurseForge-Ressourcen, Fabric/Forge/NeoForge/Quilt-Loader, isolierte Instanzen — verpackt als
 einzelne portable EXE.
 
-**Dieses Repository ist die Oberflächen-Testlinie (Version 0.1.2).** Sie bietet denselben Funktionsumfang wie das
+**Dieses Repository ist die Oberflächen-Testlinie (Version 0.1.3).** Sie bietet denselben Funktionsumfang wie das
 Hauptprojekt plus die unten beschriebene Oberflächen-Überarbeitung und liefert **nur einen GUI-Build** — eine
 Befehlszeilen-EXE gibt es hier nicht.
 
@@ -39,10 +39,10 @@ Befehlszeilen-EXE gibt es hier nicht.
   (Schrittleiste links, Inhalt rechts, Aktionsleiste unten) statt eines separaten Dialogs und
   blendet sich beim Abschluss aus
 - **Eigener Fensterrahmen** — die Titelleiste wird vom Launcher selbst gezeichnet, sodass die
-  Fensterdekoration zum Design passt; das Fenstericon ist überall und in jeder Größe das Spitzhacken-Design
+  Fensterdekoration zum Design passt; das Fenstersymbol ist überall und in jeder Größe das Spitzhacken-Design
 - **Anpassbares Aussehen** — Akzentfarbe (beliebiger Hex-Wert, acht Voreinstellungen oder die
   System-Farbauswahl), Schriftart der Oberfläche (alle installierten Familien, die häufigsten oben angeheftet, Tippen
-  zum Filtern), Eckenradius (Kompakt / Standard / Rund), Design (Dunkel / Hell / Systemeinstellung folgen)
+  zum Filtern), Eckenradius (Kompakt / Standard / Rund), Design (Dunkel / Hell / der Systemeinstellung folgen)
 - **Klareres Layout** — ein Seitenkopf mit einzeiliger Beschreibung auf jeder Seite, ein Markenblock über
   der Seitenleiste, eine gemeinsame Abstandsskala auf allen Seiten, Lupensymbole in Suchfeldern
 - **Ruhigeres Verhalten** — Scrollbalken erscheinen nur, solange der Zeiger in einer Liste ist; eine

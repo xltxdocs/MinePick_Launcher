@@ -1,6 +1,6 @@
 [project]
 name = "minecraft-launcher"
-version = "0.1.2"
+version = "0.1.3"
 description = "Minecraft launcher core library + CLI + PySide6 thin GUI"
 readme = "README.md"
 license = "GPL-3.0-only"

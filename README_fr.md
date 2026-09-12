@@ -6,7 +6,7 @@ Un lanceur Minecraft portable écrit en Python + PySide6 : comptes Microsoft/hor
 ressources Modrinth et CurseForge, chargeurs Fabric/Forge/NeoForge/Quilt, instances isolées — le tout empaqueté
 dans un seul EXE portable.
 
-**Ce dépôt est la ligne d'essai de l'interface (version 0.1.2).** Il embarque les mêmes fonctionnalités de lanceur
+**Ce dépôt est la ligne d'essai de l'interface (version 0.1.3).** Il embarque les mêmes fonctionnalités de lanceur
 que le projet principal, plus la refonte de l'interface décrite ci-dessous, et il ne fournit **qu'une version GUI**
 — aucun exécutable CLI n'est proposé ici.
 
@@ -50,8 +50,8 @@ que le projet principal, plus la refonte de l'interface décrite ci-dessous, et 
 - **Interactions plus sobres** — les barres de défilement n'apparaissent que lorsque le pointeur est dans une
   liste, le contour de focus n'est affiché que pour la navigation au clavier, un court fondu au changement de page,
   la largeur des colonnes des tableaux est mémorisée, un clic sur un en-tête trie la colonne
-- **États lisibles** — les boutons sont hiérarchisés (principal / secondaire / danger en contour), les messages
-  d'état sont colorés selon leur gravité, les listes vides expliquent quoi faire ensuite
+- **États lisibles d'un coup d'œil** — les boutons sont hiérarchisés (principal / secondaire / danger en contour), les
+  messages d'état sont colorés selon leur gravité, les listes vides expliquent quoi faire ensuite
 - **Accessible par défaut** — chaque paire texte/fond respecte le contraste WCAG AA (les aplats d'accent
   portant du texte blanc sont assombris automatiquement), et l'interface est disponible en 9 langues
 
@@ -80,8 +80,8 @@ que le projet principal, plus la refonte de l'interface décrite ci-dessous, et 
   filtrage, glisser-déposer)
 
 ### Ressources
-- Mods, packs de ressources, shaders et modpacks depuis **Modrinth** et **CurseForge**, top 30 des populaires par
-  onglet, recherche par mot-clé (noms de la communauté chinoise inclus), installation en un clic, installation de
+- Mods, packs de ressources, shaders et modpacks depuis **Modrinth** et **CurseForge**, top 30 des plus téléchargés
+  par onglet, recherche par mot-clé (noms chinois des mods inclus), installation en un clic, installation de
   modpacks `.mrpack`
 
 ## Téléchargement et utilisation
