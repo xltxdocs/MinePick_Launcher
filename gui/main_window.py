@@ -38,6 +38,7 @@ from gui.pages.login_page import LoginPage
 from gui.pages.mods_page import ResourcesPage
 from gui.pages.settings_page import SettingsPage
 from gui.pages.versions_page import VersionsPage
+from gui.wizard_overlay import WizardStep
 
 NAV_KEYS = ["launch", "instances", "versions", "java", "account", "mods", "settings"]
 
@@ -183,6 +184,104 @@ class MainWindow(QMainWindow):
                 )
             except (TypeError, ValueError):
                 pass
+
+
+    # ---------- first-run wizard (in-window overlay) ----------
+
+    def show_wizard(self) -> None:
+        """First run: cover the content area with the wizard instead of opening a dialog."""
+
+        overlay = self._build_wizard_overlay()
+        overlay.setParent(self)
+        overlay.setGeometry(self.rect())
+        overlay.finished.connect(self._on_wizard_finished)
+        overlay.show_overlay()
+        self.wizard_overlay = overlay
+
+    def _build_wizard_overlay(self):
+        from PySide6.QtWidgets import QComboBox, QFileDialog, QLineEdit, QPushButton
+
+        from gui import i18n
+        from gui.widgets import NoWheelDoubleSpinBox
+        from launcher import config, paths
+
+        cfg, _ = config.load()
+
+        # step 1: welcome
+        welcome = QLabel("MinePick Launcher")
+        welcome.setObjectName("wizardHeadingBig")
+
+        # step 2: launcher language
+        self._wz_ui_language = QComboBox()
+        for code, name in i18n.UI_LANGUAGES:
+            self._wz_ui_language.addItem(name, code)
+        index = self._wz_ui_language.findData(cfg.ui_language)
+        self._wz_ui_language.setCurrentIndex(max(index, 0))
+
+        # step 3: game language
+        self._wz_game_language = QComboBox()
+        for code, name in config.GAME_LANGUAGES:
+            self._wz_game_language.addItem(name, code)
+        index = self._wz_game_language.findData(cfg.game_language)
+        self._wz_game_language.setCurrentIndex(max(index, 0))
+
+        # step 4: game directory
+        self._wz_game_dir = QLineEdit(str(cfg.game_dir) if cfg.game_dir else "")
+        self._wz_game_dir.setPlaceholderText(str(paths.default_game_dir()))
+        browse = QPushButton(tr("settings.browse"))
+        browse.setObjectName("secondaryButton")
+
+        def pick_directory() -> None:
+            chosen = QFileDialog.getExistingDirectory(
+                self, tr("wizard.game_dir"), str(paths.default_game_dir())
+            )
+            if chosen:
+                self._wz_game_dir.setText(chosen)
+
+        browse.clicked.connect(pick_directory)
+        dir_row = QWidget()
+        dir_layout = QHBoxLayout(dir_row)
+        dir_layout.setContentsMargins(0, 0, 0, 0)
+        dir_layout.addWidget(self._wz_game_dir, 1)
+        dir_layout.addWidget(browse)
+
+        # step 5: memory
+        self._wz_memory = NoWheelDoubleSpinBox()
+        self._wz_memory.setRange(0.5, 64.0)
+        self._wz_memory.setSingleStep(0.5)
+        self._wz_memory.setValue(cfg.memory_gb or 4.0)
+        self._wz_memory.setSuffix(" " + tr("unit.gb"))
+
+        steps = [
+            WizardStep("MinePick Launcher", tr("wizard.welcome.desc"), welcome),
+            WizardStep(tr("settings.ui_language"), tr("wizard.hint"), self._wz_ui_language),
+            WizardStep(tr("settings.game_language"), tr("wizard.hint"), self._wz_game_language),
+            WizardStep(tr("wizard.game_dir"), tr("wizard.default_dir.hint"), dir_row),
+            WizardStep(tr("wizard.memory"), tr("wizard.hint"), self._wz_memory),
+        ]
+        labels = {"back": "‹", "next": "›", "done": "✓", "skip": "✕"}
+        return WizardOverlay(self, steps, labels)
+
+    def _on_wizard_finished(self) -> None:
+        """Persist the wizard choices (never clobbering what the user already had) and switch theme."""
+        from gui import i18n
+        from gui.theme import apply_theme
+        from launcher import config
+
+        cfg, cfg_path = config.load()
+        cfg.ui_language = self._wz_ui_language.currentData() or cfg.ui_language
+        cfg.game_language = self._wz_game_language.currentData() or cfg.game_language
+        chosen_dir = self._wz_game_dir.text().strip()
+        if chosen_dir:
+            cfg.game_dir = chosen_dir
+        cfg.memory_gb = self._wz_memory.value()
+        cfg.wizard_done = True
+        config.save(cfg, cfg_path)
+        config.initialize_language(cfg, cfg_path)
+        i18n.set_language(cfg.ui_language)
+        apply_theme(cfg.theme, cfg.accent_color, cfg.ui_font, cfg.ui_radius)
+        self.build_pages()
+        self.statusBar().showMessage(i18n.tr("status.ready"))
 
     def closeEvent(self, event) -> None:
         from launcher import config

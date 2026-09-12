@@ -127,22 +127,13 @@ def main() -> int:
 
     cfg, cfg_path = config_mod.load()
     auto_quit = __import__("os").environ.get("MCLAUNCHER_GUI_AUTOQUIT_MS")
-    if not cfg.wizard_done and not auto_quit:
-        from PySide6.QtWidgets import QDialog
-
-        from gui.pages.wizard import FirstRunWizard
-
-        wizard = FirstRunWizard()
-        if wizard.exec() == QDialog.DialogCode.Accepted:
-            wizard.apply(cfg, cfg_path)
-            from gui import i18n
-
-            i18n.set_language(cfg.ui_language)
-
     from gui.main_window import MainWindow
 
     window = MainWindow()
     window.show()
+    # First run: the wizard is an overlay inside the main window, not a separate dialog
+    if not cfg.wizard_done and not auto_quit:
+        window.show_wizard()
     window.apply_window_mode()
 
     # Headless/CI verification: auto-quit when MCLAUNCHER_GUI_AUTOQUIT_MS=3000

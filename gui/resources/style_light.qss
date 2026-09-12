@@ -424,3 +424,17 @@ QPushButton#titleBarClose:hover { background: #d64545; color: #ffffff; }
 /* ---------- frameless window: root and content keep the window background ---------- */
 
 QWidget#appRoot, QWidget#appContent { background: #f2f5f8; }
+
+/* ---------- first-run wizard overlay ---------- */
+
+QWidget#wizardOverlay { background: #f2f5f8; }
+QWidget#wizardCard {
+    background: #ffffff;
+    border: 1px solid #d5dde6;
+    border-radius: __RADIUS_LG__;
+}
+QLabel#wizardHeading { font-size: 19px; font-weight: 700; color: #16202b; }
+QLabel#wizardHeadingBig { font-size: 26px; font-weight: 700; color: #16202b; }
+QLabel#wizardDescription { color: #64748b; font-size: 13px; }
+QLabel#wizardDot { background: #c3ccd6; border-radius: 4px; }
+QLabel#wizardDot[current="true"] { background: __ACCENT__; }
