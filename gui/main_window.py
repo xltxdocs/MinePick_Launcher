@@ -207,7 +207,7 @@ class MainWindow(QMainWindow):
         self.wizard_overlay = overlay
 
     def _build_wizard_overlay(self):
-        from PySide6.QtWidgets import QFileDialog, QLineEdit, QPushButton, QSlider
+        from PySide6.QtWidgets import QAbstractSpinBox, QFileDialog, QLineEdit, QPushButton, QSlider
 
         from gui import i18n
         from gui.widgets import NoWheelDoubleSpinBox
@@ -274,6 +274,8 @@ class MainWindow(QMainWindow):
         # 5 / memory: one-line box with its own steppers plus a slider
         self._wz_memory = NoWheelDoubleSpinBox()
         self._wz_memory.setObjectName("wizardMemory")
+        # the slider is the control here: the spin box is a read-out, not a stepper
+        self._wz_memory.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
         self._wz_memory.setRange(0.5, 64.0)
         self._wz_memory.setSingleStep(0.5)
         self._wz_memory.setValue(cfg.memory_gb or 4.0)

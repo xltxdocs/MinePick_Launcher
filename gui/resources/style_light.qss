@@ -472,11 +472,3 @@ QPushButton#wizardOption[selected="true"] {
 QLabel#wizardStatus { color: #64748b; font-size: 12px; }
 QLabel#wizardBullet { color: #26313d; font-size: 13px; }
 QDoubleSpinBox#wizardMemory { min-height: 30px; }
-QDoubleSpinBox#wizardMemory::up-button, QDoubleSpinBox#wizardMemory::down-button {
-    background: #d5dde6;
-    border: none;
-    width: 22px;
-}
-QDoubleSpinBox#wizardMemory::up-button:hover, QDoubleSpinBox#wizardMemory::down-button:hover {
-    background: #b9c5d2;
-}
