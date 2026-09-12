@@ -1,4 +1,4 @@
-[English](README.md) | [简体中文](README_zh.md)
+[English](README.md) | [简体中文](README_zh.md) | [繁體中文](README_zh_TW.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [Русский](README_ru.md) | [Français](README_fr.md) | [Español](README_es.md) | [Deutsch](README_de.md)
 
 # MinePick Launcher — UI Trial
 
@@ -35,6 +35,11 @@ executable here.
 
 ## Interface (what this line changes)
 
+- **First-run wizard, in the window** — the welcome flow is an overlay inside the main window
+  (step rail on the left, content on the right, action bar at the bottom) instead of a separate
+  dialog, and it fades out of the way when you finish
+- **Custom window frame** — the title bar is drawn by the launcher itself, so the chrome matches
+  the theme; the window icon is the pickaxe design everywhere, at every size
 - **Customisable look** — accent colour (any hex value, eight presets, or the system colour picker),
   UI font (every installed family, common ones pinned, type to filter), corner radius (compact / default /
   round), theme (dark / light / follow the system)
