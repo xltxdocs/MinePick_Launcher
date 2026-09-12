@@ -31,7 +31,7 @@ CONFIG_FILENAME = "config.json"
 
 # Common game languages (code, display name); en_us is built into the game, the rest are the game's bundled language packs
 GAME_LANGUAGES: list[tuple[str, str]] = [
-    ("", "跟随游戏内设置"),
+    ("", ""),
     ("zh_cn", "简体中文"),
     ("zh_tw", "繁體中文"),
     ("en_us", "English (US)"),

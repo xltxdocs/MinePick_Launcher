@@ -104,6 +104,7 @@ class SettingsPage(QWidget):
         self.encrypt_button.setObjectName("secondaryButton")
         self.language_combo = QComboBox()
         for code, label in config.GAME_LANGUAGES:
+            label = label if code else tr("settings.game_language.follow")
             self.language_combo.addItem(label, code)
         self.ui_language_combo = QComboBox()
         for code, label in i18n.UI_LANGUAGES:

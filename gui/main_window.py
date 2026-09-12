@@ -221,7 +221,11 @@ class MainWindow(QMainWindow):
         # 2 + 3 / languages: every option is visible, nothing hidden inside a dropdown
         self._wz_ui_language = OptionGrid(list(i18n.UI_LANGUAGES), columns=3)
         self._wz_ui_language.set_value(cfg.ui_language)
-        self._wz_game_language = OptionGrid(list(config.GAME_LANGUAGES), columns=3)
+        game_languages = [
+            (code, label if code else tr("settings.game_language.follow"))
+            for code, label in config.GAME_LANGUAGES
+        ]
+        self._wz_game_language = OptionGrid(game_languages, columns=3)
         self._wz_game_language.set_value(cfg.game_language)
 
         # 4 / game directory: field + browse + a live status line

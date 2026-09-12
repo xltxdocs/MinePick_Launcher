@@ -75,6 +75,7 @@ class LaunchPage(QWidget):
         self.memory_spin.setSuffix(" " + tr("unit.gb"))
         self.language_combo = QComboBox()
         for code, label in config.GAME_LANGUAGES:
+            label = label if code else tr("settings.game_language.follow")
             self.language_combo.addItem(label, code)
         self.jvm_args_edit = QLineEdit()
         self.jvm_args_edit.setPlaceholderText(tr("launch.jvm_args.placeholder"))
