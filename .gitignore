@@ -20,3 +20,8 @@ ui_state.ini
 config/
 # 发布附件目录（EXE 体积大，不进仓库）
 Releases/
+
+# 工具运行产物
+_preview/
+_selfcheck/
+
