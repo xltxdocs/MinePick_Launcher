@@ -1,50 +1,88 @@
-# 发布到 GitHub（MinePick Launcher）
+# 发布到 GitHub（MinePick Launcher — UI Trial）
 
-本机（当前开发环境）未安装 git/gh CLI，以下流程可在任意装有 git 的机器执行。
+本仓库为 **MinePick_UI_Trial**（UI Trial 产品线）：远端 `https://github.com/xltxdocs/MinePick_UI_Trial.git`，分支 `main`，当前版本 `0.1.2`。
+本产品线**只发布 GUI 版**，没有 CLI 可执行文件（既不构建 `MinePick_Launcher_cli.exe`，也不打包 `run_cli.py`）。
+以下命令均在 Windows 的 **CMD** 中执行；本机未安装 gh CLI，Release 在 GitHub 网页上创建。
 
 ## 一、首次发布（仓库）
 
 1. GitHub 网页 → New repository（公开/私有自选），**不要**勾选自动生成 README/LICENSE；
 2. 本地推送：
 
-```powershell
+```cmd
 git init
 git add .
-git commit -m "MinePick Launcher 首个版本"
+git commit -m "MinePick Launcher UI Trial 首个版本"
 git branch -M main
-git remote add origin https://github.com/<你的用户名>/<仓库名>.git
+git remote add origin https://github.com/xltxdocs/MinePick_UI_Trial.git
 git push -u origin main
 ```
 
-> 注意：build/、dist/、.devdata/、tests/.work/ 等已在 .gitignore 排除；
+> 注意：build/、dist/、Releases/、.devdata/、tests/.work/ 等已在 .gitignore 排除；
 > 签名私钥 build/codesign.pfx 也在忽略列表内，**切勿**上传。
 
 ## 二、发 Release（附带成品）
 
-打包好的成品：
-- `dist/MinePick_Launcher.exe`（GUI，已签名）
-- `dist/MinePick_Launcher_cli.exe`（CLI，已签名）
-- `Source_code.zip`（源代码包，供 GPL-3.0 合规分发）
+打包好的成品先暂存在仓库的 `Releases\` 文件夹（该文件夹已进 .gitignore，不随 git 提交），同时也会产出到 `dist\`：
 
-1. GitHub 仓库页 → Releases → Draft a new release，Tag 填 `v0.1.0`；
-2. 把上面三个文件拖进附件区；
-3. Release 说明建议写：
+- `MinePick_UI_Trial.exe`（GUI 单文件 EXE，已签名，约 65 MB）
+- `Source_code.zip`（源代码包，供 GPL-3.0 合规分发，约 1 MB）
+
+1. GitHub 仓库页 → Releases → Draft a new release，Tag 填 `v0.1.2`（当前版本；仓库已有 `v0.1.0`、`v0.1.1`、`v0.1.2`）；
+2. 把上面两个文件拖进附件区；
+3. Release 说明按第四节的规范撰写，并写清：
    - 功能简介（参考 README 功能列表）；
    - 便携模式说明（EXE 旁生成 config/ 文件夹）；
    - 提示：签名为自签名证书（WDNDXLTX），他人电脑的 SmartScreen 可能提示“未知发布者”，属预期；
    - 许可证：GPL-3.0。
 
-## 三、GPL-3.0 合规提示
+## 三、推送提交与标签（CMD）
+
+版本号写在 `launcher/__init__.py` 与 `pyproject.toml`；提交后在 CMD 中推送：
+
+```cmd
+cd /d D:\dsh-workspace\Source_code_UI
+git push
+git push origin v0.1.2
+```
+
+> 注意：普通 `git push` **不会**推送标签，必须再执行一次 `git push origin vX.Y.Z`，否则 Release 页面选不到该 Tag。
+
+## 四、发版说明（Release Notes）规范
+
+先写英文，再用一行 `---` 分隔、用中文写同样内容；两部分都按下面的顺序写三个小节：
+
+```markdown
+## ✨ New
+## 🔧 Improvements
+## 🐛 Fixes
+
+---
+
+## ✨ 新增
+## 🔧 改进
+## 🐛 修复
+```
+
+内容只写**上一个已发布版本**的用户能观察到的变化；本版本开发过程中引入又修掉的 bug **不要**写进发版说明。
+
+## 五、GPL-3.0 合规提示
 
 - 仓库根目录已含 LICENSE（GNU GPL v3 官方全文）；
 - 分发二进制（Release 的 EXE）应同时提供源代码，Source_code.zip 即为此用途；
 - 若他人索取源码，指向仓库或 Source_code.zip 均可。
 
-## 四、构建前置（打包用）
+## 六、构建前置（打包用）
 
-`pyinstaller build_exe.spec` 需要两项本地资源（都不进仓库，由 `.gitignore` 覆盖）：
+`python -m PyInstaller build_exe.spec --noconfirm` 需要两项本地资源（都不进仓库，由 `.gitignore` 覆盖）：
 
 - `build/cf_key.txt` —— 随包内置的 CurseForge API Key（缺失时打包报 `Unable to find 'build/cf_key.txt'`）；
 - 代码签名证书 `CN=WDNDXLTX` —— 见 `docs/code_signing.md`。
 
 打包与签名：`python -m PyInstaller build_exe.spec --noconfirm` → `scripts\sign_exe.ps1`。
+
+源码包重打：README 或 docs 改动后必须重新生成 `Source_code.zip`（包内含 `docs/screenshots/` 与所有 README 翻译）：
+
+```cmd
+python tools/build_source_zip.py
+```
