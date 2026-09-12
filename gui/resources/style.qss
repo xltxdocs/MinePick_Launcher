@@ -438,3 +438,45 @@ QLabel#wizardHeadingBig { font-size: 26px; font-weight: 700; color: #eef3fa; }
 QLabel#wizardDescription { color: #8fa2b8; font-size: 13px; }
 QLabel#wizardDot { background: #33404f; border-radius: 4px; }
 QLabel#wizardDot[current="true"] { background: __ACCENT__; }
+
+/* ---------- wizard: rail, action bar, bigger buttons ---------- */
+
+QWidget#wizardRail { background: #161d27; border-right: 1px solid #27303d; }
+QLabel#wizardRailItem { color: #7b8ca3; font-size: 13px; padding: 9px 6px; }
+QLabel#wizardRailItem[state="current"] { color: #eef3fa; font-weight: 700; }
+QLabel#wizardRailItem[state="done"] { color: #8fa2b8; }
+QWidget#wizardContent { background: #1c2531; }
+QWidget#wizardActionBar { background: #161d27; border-top: 1px solid #27303d; }
+QWidget#wizardActionBar QPushButton {
+    min-height: 40px;
+    padding: 0 24px;
+    font-size: 14px;
+    border-radius: __RADIUS_SM__;
+}
+QPushButton#wizardOption, QPushButton#wizardBrowse {
+    background: #161d27;
+    border: 1px solid #27303d;
+    border-radius: __RADIUS_SM__;
+    color: #d8dee9;
+    padding: 10px 12px;
+    font-weight: 500;
+    min-height: 22px;
+}
+QPushButton#wizardOption:hover, QPushButton#wizardBrowse:hover { border-color: #33404f; color: #ffffff; }
+QPushButton#wizardOption[selected="true"] {
+    background: __ACCENT_SOFT__;
+    border: 1px solid __ACCENT__;
+    color: #ffffff;
+    font-weight: 700;
+}
+QLabel#wizardStatus { color: #8fa2b8; font-size: 12px; }
+QLabel#wizardBullet { color: #d8dee9; font-size: 13px; }
+QDoubleSpinBox#wizardMemory { min-height: 30px; }
+QDoubleSpinBox#wizardMemory::up-button, QDoubleSpinBox#wizardMemory::down-button {
+    background: #27303d;
+    border: none;
+    width: 22px;
+}
+QDoubleSpinBox#wizardMemory::up-button:hover, QDoubleSpinBox#wizardMemory::down-button:hover {
+    background: #33404f;
+}

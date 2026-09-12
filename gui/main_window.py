@@ -262,7 +262,12 @@ class MainWindow(QMainWindow):
             WizardStep(tr("wizard.game_dir"), tr("wizard.default_dir.hint"), dir_row),
             WizardStep(tr("wizard.memory"), tr("wizard.hint"), self._wz_memory),
         ]
-        labels = {"back": "‹", "next": "›", "done": "✓", "skip": "✕"}
+        labels = {
+            "back": tr("wizard.back"),
+            "next": tr("wizard.next"),
+            "done": tr("wizard.done"),
+            "skip": tr("wizard.skip"),
+        }
         return WizardOverlay(self, steps, labels)
 
     def _on_wizard_finished(self) -> None:
