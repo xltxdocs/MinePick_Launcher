@@ -299,9 +299,7 @@ class WizardOverlay(QWidget):
 
     def eventFilter(self, obj, event) -> bool:
         """An unmanaged child is never resized by Qt, so follow the parent's own resize events."""
-        if event.type() == QEvent.Type.Resize and obj is self.parentWidget():
-            self._fit_parent()
-        elif event.type() == QEvent.Type.Show and obj is self.parentWidget():
+        if event.type() == QEvent.Type.Resize and obj is self.parentWidget() or event.type() == QEvent.Type.Show and obj is self.parentWidget():
             self._fit_parent()
         return False
 
