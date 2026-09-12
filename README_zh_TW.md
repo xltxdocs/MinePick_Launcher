@@ -9,7 +9,6 @@ Modrinth 與 CurseForge 資源、Fabric/Forge/NeoForge/Quilt 載入器、隔離�
 **本儲存庫是介面試驗線（版本 0.1.2）。** 啟動器功能與主專案相同，再加上以下介面重製；
 而且**只提供 GUI 版** —— 這裡沒有 CLI 執行檔。
 
-> Developer documents are written in Chinese; English versions: [theming](docs/theming_en.md), [code signing](docs/code_signing_en.md), [github release](docs/github_release_en.md).
 > 主線啟動器：[xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
 
 ## 介面截圖
@@ -94,8 +93,8 @@ pytest -q                    # tests (240+)
 ruff check launcher gui tests
 ```
 
-建置與簽署：`pyinstaller build_exe.spec` → `scripts/sign_exe.ps1`（見 `docs/code_signing.md`）。
-此 spec 會產生單一 GUI 版 EXE（建置前置條件列於 `docs/github_release.md`）。
+建置與簽署：`pyinstaller build_exe.spec` → `scripts/sign_exe.ps1`（見 `docs/code_signing_en.md`）。
+此 spec 會產生單一 GUI 版 EXE（建置前置條件列於 `docs/github_release_en.md`）。
 
 一行指令完成介面檢查（測試 + lint + 對比度/溢出/高 DPI + 圓角稽核 + 畫面截圖）：
 
@@ -103,7 +102,7 @@ ruff check launcher gui tests
 python tools/ui_regression.py            # add --quick to skip the screenshots
 ```
 
-主題內部機制（預留位置、自訂掛鉤、如何新增選項）：`docs/theming.md`。
+主題內部機制（預留位置、自訂掛鉤、如何新增選項）：`docs/theming_en.md`。
 
 ## 授權條款
 

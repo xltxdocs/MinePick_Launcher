@@ -10,7 +10,6 @@ Python + PySide6 で作られたポータブルな Minecraft ランチャー：M
 ランチャー機能に、以下で説明するインターフェースの刷新を加えたもので、**GUI ビルドのみ**を提供します —
 ここに CLI 実行ファイルはありません。
 
-> Developer documents are written in Chinese; English versions: [theming](docs/theming_en.md), [code signing](docs/code_signing_en.md), [github release](docs/github_release_en.md).
 > 本体のランチャー: [xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
 
 ## スクリーンショット
@@ -99,8 +98,8 @@ pytest -q                    # tests (240+)
 ruff check launcher gui tests
 ```
 
-ビルドと署名：`pyinstaller build_exe.spec` → `scripts/sign_exe.ps1`（`docs/code_signing.md`（中国語）を参照）。
-この spec は単一の GUI EXE を生成します（ビルドの前提条件は `docs/github_release.md`（中国語）に記載されています）。
+ビルドと署名：`pyinstaller build_exe.spec` → `scripts/sign_exe.ps1`（`docs/code_signing_en.md`を参照）。
+この spec は単一の GUI EXE を生成します（ビルドの前提条件は `docs/github_release_en.md`に記載されています）。
 
 コマンド 1 つでインターフェースをチェック（テスト + lint + コントラスト/オーバーフロー/高 DPI + 角の検査 + スクリーンショット）:
 
@@ -108,7 +107,7 @@ ruff check launcher gui tests
 python tools/ui_regression.py            # add --quick to skip the screenshots
 ```
 
-テーマの内部構造（プレースホルダー、カスタマイズ用フック、新しいオプションの追加方法）: `docs/theming.md`（中国語）。
+テーマの内部構造（プレースホルダー、カスタマイズ用フック、新しいオプションの追加方法）: `docs/theming_en.md`。
 
 ## ライセンス
 

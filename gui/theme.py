@@ -36,7 +36,9 @@ RADIUS_SCALES = {
 }
 DEFAULT_RADIUS = "default"
 DEFAULT_FONT = "Microsoft YaHei UI"
-FONT_FALLBACKS = '"Segoe UI", "Microsoft YaHei", sans-serif'
+# 韩文(Hangul)与日文需要在链里各有一个覆盖字体:雅黑只有简体字形,Segoe UI 只有拉丁/西里尔,
+# 末尾的 sans-serif 在中文 Windows 上会映射回雅黑 —— 缺了这两项,韩语界面会整片显示成方块
+FONT_FALLBACKS = '"Segoe UI", "Malgun Gothic", "Yu Gothic UI", "Microsoft YaHei", sans-serif'
 
 _HEX_RE = re.compile(r"^#?([0-9a-fA-F]{6})$")
 

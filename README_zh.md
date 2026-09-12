@@ -82,7 +82,7 @@ Fabric/Forge/NeoForge/Quilt 加载器、实例隔离管理 —— 打包为免�
 ```powershell
 pip install -r requirements-dev.txt
 python -m gui                # run the GUI
-pytest -q                    # 测试（240+）
+pytest -q                    # tests (240+)
 ruff check launcher gui tests
 ```
 

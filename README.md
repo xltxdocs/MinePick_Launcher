@@ -10,7 +10,6 @@ single portable EXE.
 main project plus the interface rework described below, and it ships a **GUI build only** — there is no CLI
 executable here.
 
-> Developer documents are written in Chinese; English versions: [theming](docs/theming_en.md), [code signing](docs/code_signing_en.md), [github release](docs/github_release_en.md).
 > Main launcher: [xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
 
 ## Screenshots
@@ -99,8 +98,8 @@ pytest -q                    # tests (240+)
 ruff check launcher gui tests
 ```
 
-Build & sign: `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (see `docs/code_signing.md`, in Chinese).
-The spec produces a single GUI EXE (build prerequisites are listed in `docs/github_release.md`, in Chinese).
+Build & sign: `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (see `docs/code_signing_en.md`).
+The spec produces a single GUI EXE (build prerequisites are listed in `docs/github_release_en.md`).
 
 One-command interface check (tests + lint + contrast/overflow/high-DPI + corner audit + screenshots):
 
@@ -108,7 +107,7 @@ One-command interface check (tests + lint + contrast/overflow/high-DPI + corner 
 python tools/ui_regression.py            # add --quick to skip the screenshots
 ```
 
-Theme internals (placeholders, customisation hooks, how to add a new option): `docs/theming.md`, in Chinese.
+Theme internals (placeholders, customisation hooks, how to add a new option): `docs/theming_en.md`.
 
 ## License
 

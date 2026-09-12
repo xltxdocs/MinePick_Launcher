@@ -10,7 +10,6 @@ recursos de Modrinth y CurseForge, cargadores Fabric/Forge/NeoForge/Quilt, insta
 que el proyecto principal, más el rediseño de interfaz que se describe a continuación, y solo distribuye una
 **compilación con GUI**: aquí no hay ejecutable de CLI.
 
-> Developer documents are written in Chinese; English versions: [theming](docs/theming_en.md), [code signing](docs/code_signing_en.md), [github release](docs/github_release_en.md).
 > Launcher principal: [xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
 
 ## Capturas de pantalla
@@ -101,8 +100,8 @@ pytest -q                    # tests (240+)
 ruff check launcher gui tests
 ```
 
-Compilar y firmar: `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (ver `docs/code_signing.md`, en chino).
-El spec genera un único EXE con GUI (los requisitos previos de compilación se indican en `docs/github_release.md`, en chino).
+Compilar y firmar: `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (ver `docs/code_signing_en.md`).
+El spec genera un único EXE con GUI (los requisitos previos de compilación se indican en `docs/github_release_en.md`).
 
 Comprobación de la interfaz con un solo comando (pruebas + lint + contraste/desbordamiento/alta DPI + auditoría de
 esquinas + capturas):
@@ -112,7 +111,7 @@ python tools/ui_regression.py            # add --quick to skip the screenshots
 ```
 
 Funcionamiento interno de los temas (marcadores de posición, puntos de enganche de personalización, cómo añadir una nueva
-opción): `docs/theming.md` (en chino).
+opción): `docs/theming_en.md` (en chino).
 
 ## Licencia
 

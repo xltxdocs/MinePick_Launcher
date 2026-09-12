@@ -10,7 +10,6 @@ dans un seul EXE portable.
 que le projet principal, plus la refonte de l'interface décrite ci-dessous, et il ne fournit **qu'une version GUI**
 — aucun exécutable CLI n'est proposé ici.
 
-> Developer documents are written in Chinese; English versions: [theming](docs/theming_en.md), [code signing](docs/code_signing_en.md), [github release](docs/github_release_en.md).
 > Lanceur principal : [xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
 
 ## Captures d'écran
@@ -106,9 +105,9 @@ pytest -q                    # tests (240+)
 ruff check launcher gui tests
 ```
 
-Compilation et signature : `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (voir `docs/code_signing.md`, en chinois).
+Compilation et signature : `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (voir `docs/code_signing_en.md`).
 Le fichier spec produit un seul EXE en version GUI (les prérequis de compilation sont listés dans
-`docs/github_release.md`, en chinois).
+`docs/github_release_en.md`).
 
 Vérification de l'interface en une seule commande (tests + lint + contraste/débordement/haute résolution (high-DPI)
 + audit des coins + captures d'écran) :
@@ -118,7 +117,7 @@ python tools/ui_regression.py            # add --quick to skip the screenshots
 ```
 
 Fonctionnement interne des thèmes (variables de substitution, points d'extension, ajout d'une nouvelle option) :
-`docs/theming.md` (en chinois).
+`docs/theming_en.md` (en chinois).
 
 ## Licence
 

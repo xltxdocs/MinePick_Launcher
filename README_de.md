@@ -10,7 +10,6 @@ einzelne portable EXE.
 Hauptprojekt plus die unten beschriebene Oberflächen-Überarbeitung und liefert **nur einen GUI-Build** — eine
 Befehlszeilen-EXE gibt es hier nicht.
 
-> Developer documents are written in Chinese; English versions: [theming](docs/theming_en.md), [code signing](docs/code_signing_en.md), [github release](docs/github_release_en.md).
 > Haupt-Launcher: [xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
 
 ## Screenshots
@@ -99,8 +98,8 @@ pytest -q                    # tests (240+)
 ruff check launcher gui tests
 ```
 
-Build & Signieren: `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (siehe `docs/code_signing.md`, auf Chinesisch).
-Die Spec-Datei erzeugt eine einzelne GUI-EXE (die Build-Voraussetzungen stehen in `docs/github_release.md`, auf Chinesisch).
+Build & Signieren: `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (siehe `docs/code_signing_en.md`).
+Die Spec-Datei erzeugt eine einzelne GUI-EXE (die Build-Voraussetzungen stehen in `docs/github_release_en.md`).
 
 Oberflächenprüfung mit einem Befehl (Tests + Lint + Kontrast/Überlauf/Hoch-DPI + Eckenradius-Audit + Screenshots):
 
@@ -108,7 +107,7 @@ Oberflächenprüfung mit einem Befehl (Tests + Lint + Kontrast/Überlauf/Hoch-DP
 python tools/ui_regression.py            # add --quick to skip the screenshots
 ```
 
-Design-Interna (Platzhalter, Anpassungs-Hooks, neue Option hinzufügen): `docs/theming.md` (auf Chinesisch).
+Design-Interna (Platzhalter, Anpassungs-Hooks, neue Option hinzufügen): `docs/theming_en.md` (auf Chinesisch).
 
 ## Lizenz
 

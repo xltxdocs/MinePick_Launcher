@@ -10,7 +10,6 @@ Modrinth & CurseForge 리소스, Fabric/Forge/NeoForge/Quilt 로더, 격리된 �
 아래에 설명된 인터페이스 개편을 더했으며, **GUI 빌드만** 제공합니다 — 여기에는 CLI
 실행 파일이 없습니다.
 
-> Developer documents are written in Chinese; English versions: [theming](docs/theming_en.md), [code signing](docs/code_signing_en.md), [github release](docs/github_release_en.md).
 > 메인 런처: [xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
 
 ## 스크린샷
@@ -99,8 +98,8 @@ pytest -q                    # tests (240+)
 ruff check launcher gui tests
 ```
 
-빌드 및 서명: `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (`docs/code_signing.md`(중국어) 참고).
-이 spec 파일은 단일 GUI EXE를 생성합니다(빌드 사전 요구 사항은 `docs/github_release.md`(중국어)에 나열되어 있습니다).
+빌드 및 서명: `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (`docs/code_signing_en.md` 참고).
+이 spec 파일은 단일 GUI EXE를 생성합니다(빌드 사전 요구 사항은 `docs/github_release_en.md`에 나열되어 있습니다).
 
 한 명령으로 끝내는 인터페이스 검사(테스트 + 린트 + 명도 대비/오버플로/고DPI + 모서리 감사 + 스크린샷):
 
@@ -108,7 +107,7 @@ ruff check launcher gui tests
 python tools/ui_regression.py            # add --quick to skip the screenshots
 ```
 
-테마 내부 구조(플레이스홀더, 사용자 지정 훅, 새 옵션을 추가하는 방법): `docs/theming.md`(중국어).
+테마 내부 구조(플레이스홀더, 사용자 지정 훅, 새 옵션을 추가하는 방법): `docs/theming_en.md`.
 
 ## 라이선스
 

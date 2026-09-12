@@ -10,7 +10,6 @@
 лаунчера, что и в основном проекте, плюс описанная ниже переработка интерфейса, а поставляется он
 **только как GUI-сборка** — исполняемого файла CLI здесь нет.
 
-> Developer documents are written in Chinese; English versions: [theming](docs/theming_en.md), [code signing](docs/code_signing_en.md), [github release](docs/github_release_en.md).
 > Основной лаунчер: [xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
 
 ## Скриншоты
@@ -103,8 +102,8 @@ pytest -q                    # tests (240+)
 ruff check launcher gui tests
 ```
 
-Сборка и подпись: `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (см. `docs/code_signing.md` — на китайском).
-Spec-файл собирает один GUI EXE (предварительные требования для сборки перечислены в `docs/github_release.md` — на китайском).
+Сборка и подпись: `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (см. `docs/code_signing_en.md` — на китайском).
+Spec-файл собирает один GUI EXE (предварительные требования для сборки перечислены в `docs/github_release_en.md` — на китайском).
 
 Проверка интерфейса одной командой (тесты + lint + контраст/переполнение/высокий DPI + аудит скруглений + скриншоты):
 
@@ -112,7 +111,7 @@ Spec-файл собирает один GUI EXE (предварительные 
 python tools/ui_regression.py            # add --quick to skip the screenshots
 ```
 
-Внутреннее устройство тем (плейсхолдеры, хуки настройки, как добавить новый параметр): `docs/theming.md` (на китайском).
+Внутреннее устройство тем (плейсхолдеры, хуки настройки, как добавить новый параметр): `docs/theming_en.md` (на китайском).
 
 ## Лицензия
 
