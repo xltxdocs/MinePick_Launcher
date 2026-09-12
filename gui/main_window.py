@@ -221,6 +221,8 @@ class MainWindow(QMainWindow):
         # 2 + 3 / languages: every option is visible, nothing hidden inside a dropdown
         self._wz_ui_language = OptionGrid(list(i18n.UI_LANGUAGES), columns=3)
         self._wz_ui_language.set_value(cfg.ui_language)
+        # settings apply immediately everywhere — including the interface language chosen here
+        self._wz_ui_language.selected.connect(self._on_wizard_language_selected)
         game_languages = [
             (code, label if code else tr("settings.game_language.follow"))
             for code, label in config.GAME_LANGUAGES
@@ -309,6 +311,35 @@ class MainWindow(QMainWindow):
             "skip": tr("wizard.skip"),
         }
         return WizardOverlay(self, steps, labels)
+
+    def _on_wizard_language_selected(self, code: str) -> None:
+        """Apply the chosen interface language at once: re-translate and rebuild the wizard."""
+        from gui import i18n
+        from gui.theme import apply_theme
+        from launcher import config
+
+        cfg, cfg_path = config.load()
+        cfg.ui_language = code
+        config.save(cfg, cfg_path)
+        i18n.set_language(code)
+        apply_theme(cfg.theme, cfg.accent_color, cfg.ui_font, cfg.ui_radius)
+        self._rebuild_wizard()
+
+    def _rebuild_wizard(self) -> None:
+        """Rebuild the overlay in the new language, staying on the same step."""
+        overlay = getattr(self, "wizard_overlay", None)
+        step = getattr(overlay, "_index", 0)
+        if overlay is not None:
+            overlay.hide()
+            overlay.deleteLater()
+        fresh = self._build_wizard_overlay()
+        fresh.setParent(self)
+        fresh.setGeometry(self.rect())
+        fresh.finished.connect(self._on_wizard_finished)
+        fresh._index = step
+        fresh._sync()
+        fresh.show_overlay()
+        self.wizard_overlay = fresh
 
     def _on_wizard_finished(self) -> None:
         """Persist the wizard choices (never clobbering what the user already had) and switch theme."""
