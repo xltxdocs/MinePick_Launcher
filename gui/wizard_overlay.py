@@ -27,7 +27,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, Signal
+from PySide6.QtCore import QEasingCurve, QEvent, QPropertyAnimation, Qt, Signal
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
     QGridLayout,
@@ -40,7 +40,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-FADE_MS = 180
+FADE_MS = 130
+FADE_OUT_MS = 110
 LIFT_PX = 8
 
 
@@ -265,11 +266,11 @@ class WizardOverlay(QWidget):
         animation.start(QPropertyAnimation.DeletionPolicy.DeleteWhenStopped)
         self._animation = animation
 
-    def _fade_window(self, start: float, end: float, curve, then=None) -> None:
+    def _fade_window(self, start: float, end: float, curve, then=None, duration: int = FADE_MS) -> None:
         effect = QGraphicsOpacityEffect(self)
         self.setGraphicsEffect(effect)
         animation = QPropertyAnimation(effect, b"opacity", self)
-        animation.setDuration(FADE_MS)
+        animation.setDuration(duration)
         animation.setStartValue(start)
         animation.setEndValue(end)
         animation.setEasingCurve(curve)
@@ -282,15 +283,27 @@ class WizardOverlay(QWidget):
 
     def show_overlay(self) -> None:
         """Fade the overlay in over the content area below the title bar."""
+        parent = self.parentWidget()
+        if parent is not None:
+            parent.installEventFilter(self)
+            self.setGeometry(parent.rect())  # correct size even before the first resize event
         self._fit_parent()
         self.show()
         self.raise_()
         self._fade_window(0.0, 1.0, QEasingCurve.Type.OutCubic)
 
     def fade_out(self, then) -> None:
-        self._fade_window(1.0, 0.0, QEasingCurve.Type.InCubic, then)
+        self._fade_window(1.0, 0.0, QEasingCurve.Type.InCubic, then, duration=FADE_OUT_MS)
 
     # ---------- geometry ----------
+
+    def eventFilter(self, obj, event) -> bool:
+        """An unmanaged child is never resized by Qt, so follow the parent's own resize events."""
+        if event.type() == QEvent.Type.Resize and obj is self.parentWidget():
+            self._fit_parent()
+        elif event.type() == QEvent.Type.Show and obj is self.parentWidget():
+            self._fit_parent()
+        return False
 
     def _fit_parent(self) -> None:
         """Cover everything below the custom title bar (status bar included)."""
