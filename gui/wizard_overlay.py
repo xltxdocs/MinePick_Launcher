@@ -227,9 +227,12 @@ class WizardOverlay(QWidget):
         card_layout.addLayout(body, 1)
         card_layout.addWidget(actions)
 
+        # the card fills the whole overlay: any margin here would be a strip where the
+        # window behind shows the same colour and reads as "not covered"
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(24, 20, 24, 20)
-        outer.addWidget(card, 1)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.addWidget(card, 0)
+        outer.addStretch(0)
 
         self._sync()
 

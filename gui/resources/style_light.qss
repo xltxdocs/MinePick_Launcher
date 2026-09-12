@@ -430,8 +430,8 @@ QWidget#appRoot, QWidget#appContent { background: #f2f5f8; }
 QWidget#wizardOverlay { background: #f2f5f8; }
 QWidget#wizardCard {
     background: #ffffff;
-    border: 1px solid #d5dde6;
-    border-radius: __RADIUS_LG__;
+    border: none;
+    border-radius: 0;
 }
 QLabel#wizardHeading { font-size: 19px; font-weight: 700; color: #16202b; }
 QLabel#wizardHeadingBig { font-size: 26px; font-weight: 700; color: #16202b; }
