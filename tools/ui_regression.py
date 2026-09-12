@@ -24,6 +24,7 @@ Usage:  python tools/ui_regression.py          (from the trial folder)
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import time
@@ -49,7 +50,13 @@ def run(label: str, args: list[str], expect_json: bool = False) -> tuple[bool, s
     for attempt in (1, 2):
         with log.open("w", encoding="utf-8") as handle:
             result = subprocess.run(
-                args, cwd=str(ROOT), check=False, stdout=handle, stderr=subprocess.STDOUT
+                args,
+                cwd=str(ROOT),
+                check=False,
+                stdout=handle,
+                stderr=subprocess.STDOUT,
+                # a GBK console cannot encode Korean/Japanese diagnostics: pin the children to UTF-8
+                env={**os.environ, "PYTHONIOENCODING": "utf-8"},
             )
         output = log.read_text(encoding="utf-8", errors="replace")
         # a GBK console cannot encode the replacement characters of a decoded log

@@ -228,6 +228,7 @@ def _dpi_probe() -> int:
 
 
 def main() -> int:
+    sys.stdout.reconfigure(errors="replace")  # never crash on console encoding
     if "--dpi" in sys.argv:  # worker mode: no QApplication may exist yet
         return _dpi_probe()
     wants_json = "--json" in sys.argv

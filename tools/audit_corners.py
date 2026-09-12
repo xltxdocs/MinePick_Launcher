@@ -40,6 +40,7 @@ sys.dont_write_bytecode = True
 
 
 def main() -> int:
+    sys.stdout.reconfigure(errors="replace")  # never crash on console encoding
     import argparse
 
     parser = argparse.ArgumentParser()

@@ -172,6 +172,7 @@ def _scroll_page_to_bottom(page) -> None:
 
 
 def main() -> int:
+    sys.stdout.reconfigure(errors="replace")  # never crash on console encoding
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", required=True, help="project tree to import from")
     parser.add_argument("--out", required=True, help="output directory for PNGs")
