@@ -808,6 +808,8 @@ def set_language(lang: str) -> None:
     set_core_language(current_language())
 
 
+    install_qt_translations(lang)
+
 def current_language() -> str:
     for lang, table in TRANSLATIONS.items():
         if table is _current:
@@ -878,3 +880,28 @@ def _merge_extra_languages() -> None:
 
 
 _merge_extra_languages()
+
+
+_qt_translator = None
+
+
+def install_qt_translations(lang: str) -> None:
+    """Load Qt's own translation catalogue so built-in dialogs (colour picker, file browser)
+    speak the launcher's language instead of English."""
+    global _qt_translator
+    try:
+        from PySide6.QtCore import QLibraryInfo, QTranslator
+        from PySide6.QtWidgets import QApplication
+    except ImportError:  # headless tooling without Qt: nothing to translate
+        return
+    app = QApplication.instance()
+    if app is None:
+        return
+    if _qt_translator is not None:
+        app.removeTranslator(_qt_translator)
+        _qt_translator = None
+    folder = QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
+    translator = QTranslator()
+    if translator.load(f"qtbase_{lang}", folder) or translator.load(f"qt_{lang}", folder):
+        app.installTranslator(translator)
+        _qt_translator = translator
