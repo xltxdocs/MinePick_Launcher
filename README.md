@@ -76,7 +76,7 @@ executable here.
 
 ### Resources
 - Mods, resource packs, shaders and modpacks from **Modrinth** and **CurseForge**, popular top 30 by downloads per tab,
-  keyword search using Chinese mod names (built-in community translation table), one-click install, `.mrpack` modpack install
+  keyword search, one-click install, `.mrpack` modpack install
 
 ## Download & usage
 

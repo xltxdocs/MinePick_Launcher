@@ -76,7 +76,7 @@ Befehlszeilen-EXE gibt es hier nicht.
 
 ### Ressourcen
 - Mods, Ressourcenpakete, Shader und Modpacks von **Modrinth** und **CurseForge**, pro Tab die Top 30 nach
-  Downloads, Stichwortsuche (inklusive chinesischer Community-Namen), Ein-Klick-Installation, `.mrpack`-Modpack-Installation
+  Downloads, Stichwortsuche, Ein-Klick-Installation, `.mrpack`-Modpack-Installation
 
 ## Download & Verwendung
 
@@ -107,7 +107,7 @@ Oberflächenprüfung mit einem Befehl (Tests + Lint + Kontrast/Überlauf/Hoch-DP
 python tools/ui_regression.py            # add --quick to skip the screenshots
 ```
 
-Design-Interna (Platzhalter, Anpassungs-Hooks, neue Option hinzufügen): `docs/theming_en.md` (auf Chinesisch).
+Design-Interna (Platzhalter, Anpassungs-Hooks, neue Option hinzufügen): `docs/theming_en.md`.
 
 ## Lizenz
 

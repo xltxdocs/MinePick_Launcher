@@ -76,7 +76,7 @@ Modrinth & CurseForge 리소스, Fabric/Forge/NeoForge/Quilt 로더, 격리된 �
 
 ### 리소스
 - **Modrinth**와 **CurseForge**의 모드, 리소스팩, 셰이더, 모드팩, 탭별 다운로드 수 기준 인기 Top 30,
-  키워드 검색(중국어 커뮤니티 번역명 포함), 원클릭 설치, `.mrpack` 모드팩 설치
+  키워드 검색, 원클릭 설치, `.mrpack` 모드팩 설치
 
 ## 다운로드 및 사용법
 

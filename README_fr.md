@@ -81,7 +81,7 @@ que le projet principal, plus la refonte de l'interface décrite ci-dessous, et 
 
 ### Ressources
 - Mods, packs de ressources, shaders et modpacks depuis **Modrinth** et **CurseForge**, top 30 des plus téléchargés
-  par onglet, recherche par mot-clé (noms chinois des mods inclus), installation en un clic, installation de
+  par onglet, recherche par mot-clé, installation en un clic, installation de
   modpacks `.mrpack`
 
 ## Téléchargement et utilisation
@@ -117,7 +117,7 @@ python tools/ui_regression.py            # add --quick to skip the screenshots
 ```
 
 Fonctionnement interne des thèmes (variables de substitution, points d'extension, ajout d'une nouvelle option) :
-`docs/theming_en.md` (en chinois).
+`docs/theming_en.md`.
 
 ## Licence
 
