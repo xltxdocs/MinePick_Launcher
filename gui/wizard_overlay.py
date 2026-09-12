@@ -17,10 +17,10 @@
 
 """First-run wizard drawn inside the main window instead of a separate dialog.
 
-The wizard is an overlay: the window frame, sidebar and page stack stay where they are, the
-overlay simply covers the content area until the user finishes (or skips). All texts are passed
-in by the caller, so this module holds no translations and no launcher logic — it only lays out
-the cards, the step indicator and the (restrained) transitions.
+Layout: a step rail on the left (done = tick, current = accent, later = muted), the current
+step on the right, and a fixed action bar at the bottom. Texts are injected by the caller, so
+this module holds no translations and no launcher logic — it only lays out the steps, the
+tiled option pickers and the restrained transitions (fade in/out, step fade + small lift).
 """
 
 from __future__ import annotations
@@ -30,9 +30,11 @@ from dataclasses import dataclass
 from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, Signal
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QScrollArea,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -44,41 +46,112 @@ LIFT_PX = 8
 
 @dataclass
 class WizardStep:
-    """One page of the wizard: heading, explanation and the widget the caller provides."""
+    """One page of the wizard: rail label, heading, explanation and the caller's widget."""
 
     title: str
     description: str
     widget: QWidget
+    rail: str = ""
 
 
-class StepDots(QWidget):
-    """Small step indicator: one dot per step, the current one filled with the accent colour."""
+class StepRail(QWidget):
+    """Vertical list of the steps: tick when done, accent while current, muted afterwards."""
 
-    def __init__(self, count: int) -> None:
+    def __init__(self, labels: list[str]) -> None:
         super().__init__()
-        self.setObjectName("wizardDots")
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(6)
-        self._dots = []
-        for _ in range(count):
-            dot = QLabel()
-            dot.setObjectName("wizardDot")
-            dot.setFixedSize(8, 8)
-            self._dots.append(dot)
-            layout.addWidget(dot)
+        self.setObjectName("wizardRail")
+        self.setFixedWidth(220)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(18, 18, 14, 18)
+        layout.setSpacing(4)
+        self._items: list[QLabel] = []
+        for index, text in enumerate(labels):
+            item = QLabel(f"{index + 1}.  {text}")
+            item.setObjectName("wizardRailItem")
+            self._items.append(item)
+            layout.addWidget(item)
         layout.addStretch(1)
 
     def set_current(self, index: int) -> None:
-        for position, dot in enumerate(self._dots):
-            dot.setProperty("current", position == index)
-            style = dot.style()
-            style.unpolish(dot)
-            style.polish(dot)
+        for position, item in enumerate(self._items):
+            state = "current" if position == index else ("done" if position < index else "todo")
+            if position < index and not item.text().startswith("✓"):
+                item.setText("✓  " + item.text().split("  ", 1)[-1])
+            item.setProperty("state", state)
+            style = item.style()
+            style.unpolish(item)
+            style.polish(item)
+
+
+class OptionGrid(QWidget):
+    """Tiled radio-like picker: every option is one cell, the chosen one is highlighted."""
+
+    selected = Signal(str)
+
+    def __init__(self, options: list[tuple[str, str]], columns: int = 3) -> None:
+        super().__init__()
+        self.setObjectName("wizardOptions")
+        self._buttons: dict[str, QPushButton] = {}
+        self._value = options[0][0] if options else ""
+
+        inner = QWidget()
+        inner.setObjectName("wizardOptionsInner")
+        grid = QGridLayout(inner)
+        grid.setContentsMargins(0, 0, 0, 0)
+        grid.setSpacing(8)
+        for position, (value, label) in enumerate(options):
+            button = QPushButton(label)
+            button.setObjectName("wizardOption")
+            button.setCheckable(True)
+            button.setCursor(Qt.CursorShape.PointingHandCursor)
+            button.clicked.connect(lambda _checked=False, v=value: self.set_value(v, emit=True))
+            grid.addWidget(button, position // columns, position % columns)
+            self._buttons[value] = button
+
+        scroll = QScrollArea()
+        scroll.setObjectName("wizardOptionsScroll")
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        scroll.setWidget(inner)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.addWidget(scroll)
+        self.set_value(self._value)
+
+    def set_value(self, value: str, emit: bool = False) -> None:
+        self._value = value
+        for key, button in self._buttons.items():
+            button.setChecked(key == value)
+            button.setProperty("selected", key == value)
+            style = button.style()
+            style.unpolish(button)
+            style.polish(button)
+        if emit:
+            self.selected.emit(value)
+
+    def value(self) -> str:
+        return self._value
+
+
+class BulletList(QWidget):
+    """Short list of bullet points, used to fill the welcome step."""
+
+    def __init__(self, points: list[str]) -> None:
+        super().__init__()
+        self.setObjectName("wizardBullets")
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(6)
+        for point in points:
+            label = QLabel("•   " + point)
+            label.setObjectName("wizardBullet")
+            label.setWordWrap(True)
+            layout.addWidget(label)
+        layout.addStretch(1)
 
 
 class WizardOverlay(QWidget):
-    """Full-area overlay with a card per step, Back / Next / Skip and a short fade per step."""
+    """Overlay with a step rail, one card per step and a fixed action bar."""
 
     finished = Signal()
 
@@ -90,7 +163,7 @@ class WizardOverlay(QWidget):
         self._index = 0
         self._animation: QPropertyAnimation | None = None
 
-        self.dots = StepDots(len(steps))
+        self.rail = StepRail([step.rail or step.title for step in steps])
         self.heading = QLabel()
         self.heading.setObjectName("wizardHeading")
         self.description = QLabel()
@@ -101,6 +174,21 @@ class WizardOverlay(QWidget):
         for step in steps:
             self.pages.addWidget(step.widget)
 
+        right = QWidget()
+        right.setObjectName("wizardContent")
+        right_layout = QVBoxLayout(right)
+        right_layout.setContentsMargins(30, 24, 30, 12)
+        right_layout.setSpacing(10)
+        right_layout.addWidget(self.heading)
+        right_layout.addWidget(self.description)
+        right_layout.addWidget(self.pages, 1)
+
+        body = QHBoxLayout()
+        body.setContentsMargins(0, 0, 0, 0)
+        body.setSpacing(0)
+        body.addWidget(self.rail)
+        body.addWidget(right, 1)
+
         self.back_button = QPushButton(labels["back"])
         self.back_button.setObjectName("secondaryButton")
         self.back_button.clicked.connect(self.go_back)
@@ -110,26 +198,26 @@ class WizardOverlay(QWidget):
         self.skip_button.setObjectName("secondaryButton")
         self.skip_button.clicked.connect(self.finish)
 
+        actions = QWidget()
+        actions.setObjectName("wizardActionBar")
+        action_layout = QHBoxLayout(actions)
+        action_layout.setContentsMargins(30, 12, 30, 14)
+        action_layout.setSpacing(10)
+        action_layout.addWidget(self.skip_button)
+        action_layout.addStretch(1)
+        action_layout.addWidget(self.back_button)
+        action_layout.addWidget(self.next_button)
+
         card = QWidget()
         card.setObjectName("wizardCard")
         card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(28, 26, 28, 24)
-        card_layout.setSpacing(12)
-        card_layout.addWidget(self.dots)
-        card_layout.addWidget(self.heading)
-        card_layout.addWidget(self.description)
-        card_layout.addWidget(self.pages, 1)
-
-        buttons = QHBoxLayout()
-        buttons.setSpacing(8)
-        buttons.addWidget(self.skip_button)
-        buttons.addStretch(1)
-        buttons.addWidget(self.back_button)
-        buttons.addWidget(self.next_button)
-        card_layout.addLayout(buttons)
+        card_layout.setContentsMargins(0, 0, 0, 0)
+        card_layout.setSpacing(0)
+        card_layout.addLayout(body, 1)
+        card_layout.addWidget(actions)
 
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(34, 26, 34, 26)
+        outer.setContentsMargins(24, 20, 24, 20)
         outer.addWidget(card, 1)
 
         self._sync()
@@ -155,7 +243,7 @@ class WizardOverlay(QWidget):
         step = self._steps[self._index]
         self.heading.setText(step.title)
         self.description.setText(step.description)
-        self.dots.set_current(self._index)
+        self.rail.set_current(self._index)
         self.pages.setCurrentIndex(self._index)
         self.back_button.setEnabled(self._index > 0)
         last = self._index == len(self._steps) - 1
@@ -163,7 +251,7 @@ class WizardOverlay(QWidget):
         if fade:
             self._fade_page(step.widget)
 
-    # ---------- restrained animation: fade + a small lift ----------
+    # ---------- restrained animation ----------
 
     def _fade_page(self, page: QWidget) -> None:
         effect = QGraphicsOpacityEffect(page)
@@ -177,40 +265,46 @@ class WizardOverlay(QWidget):
         animation.start(QPropertyAnimation.DeletionPolicy.DeleteWhenStopped)
         self._animation = animation
 
+    def _fade_window(self, start: float, end: float, curve, then=None) -> None:
+        effect = QGraphicsOpacityEffect(self)
+        self.setGraphicsEffect(effect)
+        animation = QPropertyAnimation(effect, b"opacity", self)
+        animation.setDuration(FADE_MS)
+        animation.setStartValue(start)
+        animation.setEndValue(end)
+        animation.setEasingCurve(curve)
+        if then is None:
+            animation.finished.connect(lambda: self.setGraphicsEffect(None))
+        else:
+            animation.finished.connect(lambda: (self.setGraphicsEffect(None), self.hide(), then()))
+        animation.start(QPropertyAnimation.DeletionPolicy.DeleteWhenStopped)
+        self._animation = animation
+
     def show_overlay(self) -> None:
-        """Fade the whole overlay in over the content area."""
+        """Fade the overlay in over the content area below the title bar."""
+        self._fit_parent()
         self.show()
         self.raise_()
-        effect = QGraphicsOpacityEffect(self)
-        self.setGraphicsEffect(effect)
-        animation = QPropertyAnimation(effect, b"opacity", self)
-        animation.setDuration(FADE_MS)
-        animation.setStartValue(0.0)
-        animation.setEndValue(1.0)
-        animation.setEasingCurve(QEasingCurve.Type.OutCubic)
-        animation.finished.connect(lambda: self.setGraphicsEffect(None))
-        animation.start(QPropertyAnimation.DeletionPolicy.DeleteWhenStopped)
-        self._animation = animation
+        self._fade_window(0.0, 1.0, QEasingCurve.Type.OutCubic)
 
     def fade_out(self, then) -> None:
-        effect = QGraphicsOpacityEffect(self)
-        self.setGraphicsEffect(effect)
-        animation = QPropertyAnimation(effect, b"opacity", self)
-        animation.setDuration(FADE_MS)
-        animation.setStartValue(1.0)
-        animation.setEndValue(0.0)
-        animation.setEasingCurve(QEasingCurve.Type.InCubic)
-        animation.finished.connect(lambda: (self.setGraphicsEffect(None), self.hide(), then()))
-        animation.start(QPropertyAnimation.DeletionPolicy.DeleteWhenStopped)
-        self._animation = animation
+        self._fade_window(1.0, 0.0, QEasingCurve.Type.InCubic, then)
 
-    def resizeEvent(self, event) -> None:  # keep covering the whole content area
+    # ---------- geometry ----------
+
+    def _fit_parent(self) -> None:
+        """Cover everything below the custom title bar (status bar included)."""
         parent = self.parentWidget()
-        if parent is not None:
-            self.setGeometry(parent.rect())
+        if parent is None:
+            return
+        bar = getattr(parent, "title_bar", None)
+        offset = bar.height() if bar is not None else 0
+        rect = parent.rect()
+        self.setGeometry(rect.x(), rect.y() + offset, rect.width(), rect.height() - offset)
+
+    def resizeEvent(self, event) -> None:
+        self._fit_parent()
         super().resizeEvent(event)
 
     def mousePressEvent(self, event) -> None:
         event.accept()  # swallow clicks so the covered UI cannot be used
-        if event.button() == Qt.MouseButton.LeftButton:
-            return
