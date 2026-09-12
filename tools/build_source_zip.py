@@ -40,7 +40,7 @@ INCLUDE_FILES = (
     "_bootstrap_pip.py",
     "_fetch_gpl2.py",
 )
-FORBIDDEN_PARTS = {".git", ".venv", "build", "dist", "__pycache__", ".pytest_cache", "_preview", "preview"}
+FORBIDDEN_PARTS = {".git", ".venv", "build", "dist", "__pycache__", ".pytest_cache", "_preview", "preview", ".work"}
 FORBIDDEN_FILES = {"cf_key.txt", "codesign.pfx", "Source_code.zip"}
 
 
@@ -49,6 +49,10 @@ def collect() -> list[Path]:
     for name in INCLUDE_FILES:
         path = ROOT / name
         if path.exists():
+            files.append(path)
+    # every README translation (README_zh_TW.md, README_ja.md, …), not just the two listed above
+    for path in sorted(ROOT.glob("README*.md")):
+        if path not in files:
             files.append(path)
     for directory in INCLUDE_DIRS:
         base = ROOT / directory
