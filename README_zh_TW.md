@@ -6,7 +6,7 @@
 Modrinth 與 CurseForge 資源、Fabric/Forge/NeoForge/Quilt 載入器、隔離實例 ——
 打包成單一免安裝 EXE。
 
-**本儲存庫是介面試驗線（版本 0.1.3）。** 啟動器功能與主專案相同，再加上以下介面重製；
+**本儲存庫是介面試驗線（版本 0.1.3）。** 啟動器功能與主專案相同，再加上以下介面重做；
 而且**只提供 GUI 版** —— 這裡沒有 CLI 執行檔。
 
 > 主線啟動器：[xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
@@ -71,7 +71,7 @@ Modrinth 與 CurseForge 資源、Fabric/Forge/NeoForge/Quilt 載入器、隔離�
   Fabric / Quilt / NeoForge / Forge / mcmod.info 的 jar 中介資料、啟用/停用、搜尋與篩選、拖放）
 
 ### 資源
-- 來自 **Modrinth** 與 **CurseForge** 的模組、資源包、光影與整合包，每個頁籤的熱門 Top 30、
+- 來自 **Modrinth** 與 **CurseForge** 的模組、資源包、光影與整合包，每個頁籤依下載次數排序的 Top 30、
   關鍵字搜尋（包含中文社群譯名）、一鍵安裝、`.mrpack` 整合包安裝
 
 ## 下載與使用
@@ -81,7 +81,7 @@ Modrinth 與 CurseForge 資源、Fabric/Forge/NeoForge/Quilt 載入器、隔離�
 
 所有設定都在應用程式內調整：**設定即時生效，沒有儲存按鈕。**
 
-> 本建置使用自我簽署憑證（WDNDXLTX），因此其他電腦的 SmartScreen 可能警告為未知的發行者 ——
+> 本建置使用自我簽署憑證（WDNDXLTX），因此其他電腦的 SmartScreen 可能會顯示未知發行者的警告 ——
 > 請選擇「更多資訊 → 仍要執行」。
 
 ## 開發
@@ -112,4 +112,4 @@ GPL-3.0-only —— 見 [LICENSE](LICENSE)。每次發布隨附的原始碼套�
 ## 相關專案
 
 - [MinePick Launcher](https://github.com/xltxdocs/MinePick_Launcher) —— 主線啟動器（GUI + CLI）
-- [MinePick Launcher Revision](https://github.com/TheDarkLord234/MinePick_Launcher_Revision) —— 由社群夥伴製作的修訂版
+- [MinePick Launcher Revision](https://github.com/TheDarkLord234/MinePick_Launcher_Revision) —— 由社群成員製作的修訂版

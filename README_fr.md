@@ -40,7 +40,7 @@ que le projet principal, plus la refonte de l'interface décrite ci-dessous, et 
   dialogue séparée, et il se ferme à la fin en rendant la main à la fenêtre principale
 - **Cadre de fenêtre personnalisé** — la barre de titre est dessinée par le lanceur lui-même, l'habillage suit
   donc le thème ; elle n'affiche aucune icône : seulement le texte du titre à gauche et deux boutons à droite
-  (réduire, fermer) ; l'icône de pioche sert pour la barre des tâches, le fichier et les dialogues
+  (réduire, fermer) ; l'icône de pioche est utilisée pour la barre des tâches, l'icône de fichier et les dialogues
 - **Apparence personnalisable** — couleur d'accent (n'importe quelle valeur hexadécimale, huit préréglages ou le
   sélecteur de couleur du système), police de l'interface (toutes les familles installées, les plus courantes
   épinglées, filtrage à la saisie), arrondi des coins (compact / par défaut / arrondi), thème (sombre / clair /
@@ -52,7 +52,7 @@ que le projet principal, plus la refonte de l'interface décrite ci-dessous, et 
   la largeur des colonnes des tableaux est mémorisée, un clic sur un en-tête trie la colonne
 - **États lisibles d'un coup d'œil** — les boutons sont hiérarchisés (principal / secondaire / danger en contour), les
   messages d'état sont colorés selon leur gravité, les listes vides expliquent quoi faire ensuite
-- **Accessible par défaut** — chaque paire texte/fond respecte le contraste WCAG AA (les aplats d'accent
+- **Accessible par défaut** — chaque combinaison texte/fond respecte le contraste WCAG AA (les aplats d'accent
   portant du texte blanc sont assombris automatiquement), et l'interface est disponible en 9 langues
 
 ## Fonctionnalités du lanceur
@@ -86,14 +86,14 @@ que le projet principal, plus la refonte de l'interface décrite ci-dessous, et 
 
 ## Téléchargement et utilisation
 
-Récupérez `MinePick_UI_Trial.exe` sur la page Releases et double-cliquez dessus — pas d'installateur, pas de
+Téléchargez `MinePick_UI_Trial.exe` depuis la page Releases et double-cliquez dessus — pas d'installateur, pas de
 fenêtre de console. Au premier lancement, un dossier `config/` est créé à côté de l'EXE : les paramètres, les
 comptes et les instances restent ainsi dans un seul dossier.
 
 Tout se configure dans l'application : **les paramètres s'appliquent immédiatement, il n'y a pas de bouton
 Enregistrer.**
 
-> La version est signée avec un certificat auto-signé (WDNDXLTX), le SmartScreen des autres machines peut donc
+> La version est signée avec un certificat auto-signé (WDNDXLTX), SmartScreen peut donc, sur d'autres machines,
 > signaler un éditeur inconnu — choisissez « Plus d'informations → Exécuter quand même ».
 
 ## Développement
@@ -109,8 +109,8 @@ Compilation et signature : `pyinstaller build_exe.spec` → `scripts/sign_exe.ps
 Le fichier spec produit un seul EXE en version GUI (les prérequis de compilation sont listés dans
 `docs/github_release_en.md`).
 
-Vérification de l'interface en une seule commande (tests + lint + contraste/débordement/haute résolution (high-DPI)
-+ audit des coins + captures d'écran) :
+Vérification de l'interface en une seule commande (tests + lint + contraste/débordement/high-DPI + audit des
+coins + captures d'écran) :
 
 ```powershell
 python tools/ui_regression.py            # add --quick to skip the screenshots

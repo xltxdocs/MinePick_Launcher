@@ -24,6 +24,7 @@ import time
 import uuid as uuidlib
 
 from launcher.auth.models import Account
+from launcher.i18n import tr_core
 
 
 def offline_uuid(username: str) -> str:
@@ -36,9 +37,9 @@ def create_offline_account(username: str) -> Account:
     """Create an offline account from a username. Username is 1~16 chars (same as Minecraft)."""
     name = username.strip()
     if not name:
-        raise ValueError("用户名不能为空")
+        raise ValueError(tr_core("offline.username_empty"))
     if len(name) > 16:
-        raise ValueError("用户名不能超过 16 个字符")
+        raise ValueError(tr_core("offline.username_too_long"))
     uuid = offline_uuid(name)
     return Account(
         id=uuid, type="offline", username=name, uuid=uuid, created_at=time.time()

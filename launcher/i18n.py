@@ -92,6 +92,7 @@ CORE_TRANSLATIONS: dict[str, dict[str, str]] = {
         "vault.decrypt_failed": "令牌解密失败（密码可能已更改）",
         "vault.wrong_password": "令牌加密密码不正确",
         "vault.env_wrong_password": "MCLAUNCHER_TOKEN_PASSWORD 提供的令牌密码不正确",
+        "vault.file_corrupt": "保险库文件损坏: {}",
         "vault.password_required": "令牌加密已开启但未提供密码（请先输入密码解锁，或设置 MCLAUNCHER_TOKEN_PASSWORD 环境变量）",
         "vault.password_prompt": "令牌加密密码: ",
         "vault.account_decrypt_failed": "账号 {} 解密失败: {}",
@@ -116,6 +117,8 @@ CORE_TRANSLATIONS: dict[str, dict[str, str]] = {
         "auth.xsts.adult": "该账号需要成人验证（仅韩国地区要求）。",
         "auth.xsts.child": "该账号是未成年人账号，需要家长在家庭设置中同意后才能登录。",
         "offline.locked": "离线模式需先使用微软正版账号登录一次（启动器和系统语言均为中文时可直接使用）",
+        "offline.username_empty": "用户名不能为空",
+        "offline.username_too_long": "用户名不能超过 16 个字符",
     },
     EN: {
         "error.verify_failed": "Verification failed: {}",
@@ -180,6 +183,7 @@ CORE_TRANSLATIONS: dict[str, dict[str, str]] = {
         "vault.decrypt_failed": "Token decryption failed (password may have changed)",
         "vault.wrong_password": "Wrong token encryption password",
         "vault.env_wrong_password": "MCLAUNCHER_TOKEN_PASSWORD has the wrong password",
+        "vault.file_corrupt": "Vault file is corrupt: {}",
         "vault.password_required": "Token encryption enabled but no password provided (unlock first or set MCLAUNCHER_TOKEN_PASSWORD)",
         "vault.password_prompt": "Token encryption password: ",
         "vault.account_decrypt_failed": "Failed to decrypt account {}: {}",
@@ -204,6 +208,8 @@ CORE_TRANSLATIONS: dict[str, dict[str, str]] = {
         "auth.xsts.adult": "This account needs adult verification (required in Korea).",
         "auth.xsts.child": "This is a minor account; a parent must approve it in family settings.",
         "offline.locked": "Offline mode requires signing in with a Microsoft account first (available directly when both the UI and system language are Chinese)",
+        "offline.username_empty": "Username cannot be empty",
+        "offline.username_too_long": "Username cannot exceed 16 characters",
     },
 }
 

@@ -42,13 +42,13 @@ que el proyecto principal, más el rediseño de interfaz que se describe a conti
   el tema; no muestra ningún icono: solo el texto del título a la izquierda y dos botones a la derecha (minimizar,
   cerrar); el icono de pico se usa para la barra de tareas, el archivo y los diálogos
 - **Aspecto personalizable** — color de acento (cualquier valor hexadecimal, ocho preajustes o el selector de color
-  del sistema), fuente de la interfaz (todas las familias instaladas, las comunes fijadas arriba, escribe para filtrar),
+  del sistema), fuente de la interfaz (todas las familias instaladas, las comunes fijadas arriba, filtrado al escribir),
   redondeo de esquinas (compacto / predeterminado / redondeado), tema (oscuro / claro / seguir el sistema)
 - **Diseño más claro** — un encabezado de página con una descripción de una línea en cada página, una única escala de
   espaciado en todas las páginas, iconos de lupa en los campos de búsqueda
 - **Interacción más discreta** — las barras de desplazamiento solo aparecen mientras el puntero está dentro de una lista,
   el contorno de foco se muestra solo para la navegación con teclado, un breve fundido al cambiar de página, se recuerda
-  el ancho de las columnas de las tablas, las cabeceras se ordenan con un clic
+  el ancho de las columnas de las tablas, un clic en una cabecera ordena la columna
 - **Estados legibles de un vistazo** — los botones tienen jerarquía (principal / secundario / peligro con contorno), los
   mensajes de estado se colorean según su gravedad, las listas vacías explican qué hacer a continuación
 - **Accesible por defecto** — cada combinación de texto y fondo cumple el contraste WCAG AA (los rellenos
@@ -77,7 +77,7 @@ que el proyecto principal, más el rediseño de interfaz que se describe a conti
   metadatos del jar de Fabric / Quilt / NeoForge / Forge / mcmod.info, activar/desactivar, búsqueda y filtro, arrastrar y soltar)
 
 ### Recursos
-- Mods, paquetes de recursos, shaders y modpacks de **Modrinth** y **CurseForge**, top 30 de populares por descargas en cada pestaña,
+- Mods, paquetes de recursos, shaders y modpacks de **Modrinth** y **CurseForge**, top 30 por descargas en cada pestaña,
   búsqueda por palabra clave, instalación en un clic, instalación de
   modpacks `.mrpack`
 
@@ -102,7 +102,7 @@ ruff check launcher gui tests
 ```
 
 Compilar y firmar: `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (ver `docs/code_signing_en.md`).
-El spec genera un único EXE con GUI (los requisitos previos de compilación se indican en `docs/github_release_en.md`).
+El archivo spec genera un único EXE con GUI (los requisitos previos de compilación se indican en `docs/github_release_en.md`).
 
 Comprobación de la interfaz con un solo comando (pruebas + lint + contraste/desbordamiento/alta DPI + auditoría de
 esquinas + capturas):
@@ -111,8 +111,8 @@ esquinas + capturas):
 python tools/ui_regression.py            # add --quick to skip the screenshots
 ```
 
-Funcionamiento interno de los temas (marcadores de posición, puntos de enganche de personalización, cómo añadir una nueva
-opción): `docs/theming_en.md`.
+Funcionamiento interno de los temas (marcadores de posición, puntos de extensión para la personalización, cómo
+añadir una nueva opción): `docs/theming_en.md`.
 
 ## Licencia
 

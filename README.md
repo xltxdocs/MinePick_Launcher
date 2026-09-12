@@ -6,7 +6,7 @@ A portable Minecraft launcher built with Python + PySide6: Microsoft/offline acc
 Modrinth & CurseForge resources, Fabric/Forge/NeoForge/Quilt loaders, isolated instances — packaged as a
 single portable EXE.
 
-**This repository is the interface trial line (version 0.1.3).** It carries the same launcher feature set as the
+**This repository is the UI trial line (version 0.1.3).** It has the same launcher feature set as the
 main project plus the interface rework described below, and it ships a **GUI build only** — there is no CLI
 executable here.
 
@@ -37,7 +37,7 @@ executable here.
 
 - **First-run wizard, in the window** — the welcome flow is an overlay inside the main window
   (step rail on the left, content on the right, action bar at the bottom) instead of a separate
-  dialog, and it closes and hands over to the main window when you finish
+  dialog, and it closes and hands control back to the main window when you finish
 - **Custom window frame** — the title bar is drawn by the launcher itself, so the chrome matches
   the theme; it carries only the window title and the minimize/close buttons, while the pickaxe icon
   is used for the taskbar, the file icon and dialogs
@@ -76,7 +76,7 @@ executable here.
   metadata for Fabric / Quilt / NeoForge / Forge / mcmod.info, enable/disable, search & filter, drag-and-drop)
 
 ### Resources
-- Mods, resource packs, shaders and modpacks from **Modrinth** and **CurseForge**, popular top 30 by downloads per tab,
+- Mods, resource packs, shaders and modpacks from **Modrinth** and **CurseForge**, the top 30 by downloads on each tab,
   keyword search, one-click install, `.mrpack` modpack install
 
 ## Download & usage
@@ -118,4 +118,4 @@ satisfies the GPL source-distribution requirement.
 ## Related projects
 
 - [MinePick Launcher](https://github.com/xltxdocs/MinePick_Launcher) — the main launcher (GUI + CLI)
-- [MinePick Launcher Revision](https://github.com/TheDarkLord234/MinePick_Launcher_Revision) — a revised edition by a fellow community member
+- [MinePick Launcher Revision](https://github.com/TheDarkLord234/MinePick_Launcher_Revision) — a revised edition maintained by a community member

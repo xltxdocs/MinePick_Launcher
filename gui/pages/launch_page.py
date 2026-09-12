@@ -144,7 +144,9 @@ class LaunchPage(QWidget):
         self.account_combo.addItem(tr("launch.account.none.item"), None)
         for account_id, account in sorted(accounts.items(), key=lambda kv: kv[1].username):
             kind = tr("kind.ms") if account.type == "microsoft" else tr("kind.offline")
-            self.account_combo.addItem(account.username + "（" + kind + "）", account_id)
+            self.account_combo.addItem(
+                tr("launch.account.label", account.username, kind), account_id
+            )
         index = self.account_combo.findData(cfg.selected_account)
         self.account_combo.setCurrentIndex(max(index, 0))
         self.account_combo.blockSignals(False)

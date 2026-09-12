@@ -7,7 +7,7 @@ Modrinth- & CurseForge-Ressourcen, Fabric/Forge/NeoForge/Quilt-Loader, isolierte
 einzelne portable EXE.
 
 **Dieses Repository ist die Oberflächen-Testlinie (Version 0.1.3).** Sie bietet denselben Funktionsumfang wie das
-Hauptprojekt plus die unten beschriebene Oberflächen-Überarbeitung und liefert **nur einen GUI-Build** — eine
+Hauptprojekt, dazu die unten beschriebene Oberflächen-Überarbeitung, und liefert **nur einen GUI-Build** — eine
 Befehlszeilen-EXE gibt es hier nicht.
 
 > Haupt-Launcher: [xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
@@ -40,7 +40,7 @@ Befehlszeilen-EXE gibt es hier nicht.
   schließt sich beim Abschluss, woraufhin das Hauptfenster erscheint
 - **Eigener Fensterrahmen** — die Titelleiste wird vom Launcher selbst gezeichnet, sodass die
   Fensterdekoration zum Design passt; sie zeigt kein Symbol, nur den Fenstertitel links und zwei Schaltflächen
-  rechts (Minimieren, Schließen); das Spitzhacken-Symbol wird für Taskleiste, Datei und Dialoge verwendet
+  rechts (Minimieren, Schließen); das Spitzhacken-Symbol wird für Taskleiste, Dateisymbol und Dialoge verwendet
 - **Anpassbares Aussehen** — Akzentfarbe (beliebiger Hex-Wert, acht Voreinstellungen oder die
   System-Farbauswahl), Schriftart der Oberfläche (alle installierten Familien, die häufigsten oben angeheftet, Tippen
   zum Filtern), Eckenradius (Kompakt / Standard / Rund), Design (Dunkel / Hell / der Systemeinstellung folgen)
@@ -49,7 +49,7 @@ Befehlszeilen-EXE gibt es hier nicht.
 - **Ruhigeres Verhalten** — Scrollbalken erscheinen nur, solange der Zeiger in einer Liste ist; eine
   Fokusumrandung wird nur bei Tastaturnavigation angezeigt; kurzes Einblenden beim Seitenwechsel;
   Spaltenbreiten von Tabellen werden gemerkt; Kopfzeilen lassen sich per Klick sortieren
-- **Klar lesbare Zustände** — Schaltflächen sind abgestuft (primär / sekundär / gefährlich umrandet),
+- **Klar lesbare Zustände** — Schaltflächen sind abgestuft (primär / sekundär / gefährlich mit Umrandung),
   Statusmeldungen sind nach Schweregrad eingefärbt, leere Listen erklären die nächsten Schritte
 - **Standardmäßig barrierefrei** — jedes Text-/Hintergrund-Paar erfüllt den WCAG-AA-Kontrast (Akzentflächen
   mit weißer Schrift werden automatisch abgedunkelt), und die Oberfläche ist in 9 Sprachen verfügbar
@@ -71,7 +71,7 @@ Befehlszeilen-EXE gibt es hier nicht.
 
 ### Start & Instanzen
 - Speicherempfehlung anhand Mod-Anzahl und verfügbarem RAM, eigene JVM-Argumente, Server-Direktverbindung,
-  Spielsprache, Live-Spielprotokoll, Verhalten „Nach dem Spielstart“, Freigabe des Launcher-Speichers
+  Spielsprache, Live-Spielprotokoll, Verhalten „Nach dem Spielstart“, Freigabe des Launcher-Arbeitsspeichers
 - Isolierte Instanzen mit Notizen, Umbenennen, Import/Export und einem lokalen Mod-Manager pro Instanz (liest
   Jar-Metadaten für Fabric / Quilt / NeoForge / Forge / mcmod.info, Aktivieren/Deaktivieren, Suchen & Filtern, Drag-and-Drop)
 
@@ -81,7 +81,7 @@ Befehlszeilen-EXE gibt es hier nicht.
 
 ## Download & Verwendung
 
-Laden Sie `MinePick_UI_Trial.exe` von der Releases-Seite herunter und doppelklicken Sie sie — kein Installer,
+Laden Sie `MinePick_UI_Trial.exe` von der Releases-Seite herunter und doppelklicken Sie darauf — kein Installer,
 kein Konsolenfenster. Beim ersten Start wird neben der EXE ein Ordner `config/` angelegt, sodass Einstellungen,
 Konten und Instanzen in einem einzigen Ordner bleiben.
 

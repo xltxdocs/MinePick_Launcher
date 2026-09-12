@@ -408,7 +408,7 @@ class VersionsPage(QWidget):
 
                 versions = list_loader_versions(loader, version_id)
                 if not versions:
-                    raise ModsError(loader + " 不支持 " + version_id)
+                    raise ModsError(tr("versions.msg.loader_unsupported", loader, version_id))
                 profile_id = install_loader(
                     versions[0], game_dir, cache_dir=paths.launcher_dir() / "cache"
                 )
@@ -503,16 +503,25 @@ class VersionsPage(QWidget):
             return
         try:
             if version.java_version is not None:
-                java_text = str(version.java_version.major_version) + "（" + version.java_version.component + "）"
+                java_text = tr(
+                    "versions.detail.java_version",
+                    version.java_version.major_version,
+                    version.java_version.component,
+                )
             else:
                 java_text = tr("versions.detail.java_default")
             client_art = version.downloads.get("client")
-            client_url = client_art.url if client_art is not None and client_art.url else "(无 url 字段)"
+            none_text = tr("versions.detail.none")
+            client_url = (
+                client_art.url
+                if client_art is not None and client_art.url
+                else tr("versions.detail.no_url")
+            )
             if client_art is None:
-                client_url, sha1_text, size_text = "(无)", "(无)", "(无)"
+                client_url, sha1_text, size_text = none_text, none_text, none_text
             else:
-                sha1_text = client_art.sha1 or "(无)"
-                size_text = str(client_art.size) if client_art.size is not None else "(无)"
+                sha1_text = client_art.sha1 or none_text
+                size_text = str(client_art.size) if client_art.size is not None else none_text
             fmt = (
                 tr("versions.detail.legacy")
                 if version.is_legacy

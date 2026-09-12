@@ -106,7 +106,7 @@ def verify_password(password: str) -> bool:
         salt = base64.b64decode(payload["salt"])
         verifier = base64.b64decode(payload["verifier"])
     except (OSError, json.JSONDecodeError, KeyError, ValueError):
-        _logger.warning("保险库文件损坏: %s", vault_path)
+        _logger.warning(tr_core("vault.file_corrupt", vault_path))
         return False
     try:
         _key, expected = _derive(password, salt)
@@ -142,7 +142,7 @@ def unlock_vault(password: str | None = None, *, interactive: bool = False) -> b
         if candidate is not None and not verify_password(candidate):
             raise VaultError(tr_core("vault.env_wrong_password"))
     if candidate is None and interactive:
-        candidate = getpass.getpass("令牌加密密码: ")
+        candidate = getpass.getpass(tr_core("vault.password_prompt"))
     if candidate is None:
         return False
     if not verify_password(candidate):
