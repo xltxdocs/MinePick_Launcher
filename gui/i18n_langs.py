@@ -390,6 +390,7 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
         'settings.radius.round': "圓潤",
         'settings.accent.pick': "取色…",
         'settings.font.common': "常用字型",
+        'wizard.welcome.desc': "歡迎使用 MinePick Launcher。接下來三步只需一分鐘：選擇介面語言、指定遊戲目錄、分配記憶體。",
     },
     'ja_jp': {
         'account.current': "現在のアカウント: {}（{}）",
@@ -765,6 +766,7 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
         'settings.radius.round': "丸め",
         'settings.accent.pick': "色を選択…",
         'settings.font.common': "よく使うフォント",
+        'wizard.welcome.desc': "MinePick Launcher へようこそ。次の 3 ステップは 1 分で完了します：表示言語、ゲームフォルダ、メモリの設定です。",
     },
     'ko_kr': {
         'account.current': "현재 계정: {} ({})",
@@ -1140,6 +1142,7 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
         'settings.radius.round': "둥글게",
         'settings.accent.pick': "색 선택…",
         'settings.font.common': "자주 쓰는 글꼴",
+        'wizard.welcome.desc': "MinePick Launcher에 오신 것을 환영합니다. 다음 세 단계는 1분이면 끝납니다: 인터페이스 언어, 게임 폴더, 메모리 설정.",
     },
     'ru_ru': {
         'account.current': "Текущий: {} ({})",
@@ -1515,6 +1518,7 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
         'settings.radius.round': "Скруглённое",
         'settings.accent.pick': "Выбрать цвет…",
         'settings.font.common': "Частые шрифты",
+        'wizard.welcome.desc': "Добро пожаловать в MinePick Launcher. Три шага займут минуту: язык интерфейса, папка игры и объём памяти.",
     },
     'fr_fr': {
         'account.current': "Compte actuel : {} ({})",
@@ -1890,6 +1894,7 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
         'settings.radius.round': "Arrondi",
         'settings.accent.pick': "Choisir une couleur…",
         'settings.font.common': "Polices courantes",
+        'wizard.welcome.desc': "Bienvenue dans MinePick Launcher. Trois étapes d'une minute : langue de l'interface, dossier du jeu et mémoire allouée.",
     },
     'es_es': {
         'account.current': "Cuenta actual: {} ({})",
@@ -2265,6 +2270,7 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
         'settings.radius.round': "Redondeado",
         'settings.accent.pick': "Elegir color…",
         'settings.font.common': "Fuentes comunes",
+        'wizard.welcome.desc': "Te damos la bienvenida a MinePick Launcher. Tres pasos de un minuto: idioma de la interfaz, carpeta del juego y memoria.",
     },
     'de_de': {
         'account.current': "Aktuell: {} ({})",
@@ -2640,5 +2646,6 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
         'settings.radius.round': "Rund",
         'settings.accent.pick': "Farbe wählen…",
         'settings.font.common': "Häufige Schriftarten",
+        'wizard.welcome.desc': "Willkommen bei MinePick Launcher. Drei Schritte in einer Minute: Oberflächensprache, Spielordner und Arbeitsspeicher.",
     },
 }

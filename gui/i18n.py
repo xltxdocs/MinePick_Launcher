@@ -404,6 +404,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings.radius.round": "圆润",
         "settings.accent.pick": "取色…",
         "settings.font.common": "常用字体",
+        "wizard.welcome.desc": "欢迎使用 MinePick Launcher。接下来三步只用一分钟：选择界面语言、指定游戏目录、分配内存。",
     },
     EN: {
         "nav.launch": "Launch",
@@ -779,6 +780,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings.radius.round": "Round",
         "settings.accent.pick": "Pick color…",
         "settings.font.common": "Common fonts",
+        "wizard.welcome.desc": "Welcome to MinePick Launcher. The next three steps take a minute: pick the interface language, choose your game folder and set the memory.",
     },
 }
 
