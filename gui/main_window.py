@@ -23,6 +23,7 @@ from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
     QHBoxLayout,
+    QLabel,
     QListWidget,
     QMainWindow,
     QStackedWidget,
@@ -31,6 +32,8 @@ from PySide6.QtWidgets import (
 )
 
 from gui import i18n
+
+tr = i18n.tr
 from gui.pages.instances_page import InstancesPage
 from gui.pages.java_page import JavaPage
 from gui.pages.launch_page import LaunchPage
@@ -38,7 +41,7 @@ from gui.pages.login_page import LoginPage
 from gui.pages.mods_page import ResourcesPage
 from gui.pages.settings_page import SettingsPage
 from gui.pages.versions_page import VersionsPage
-from gui.wizard_overlay import WizardStep
+from gui.wizard_overlay import WizardOverlay, WizardStep
 
 NAV_KEYS = ["launch", "instances", "versions", "java", "account", "mods", "settings"]
 
