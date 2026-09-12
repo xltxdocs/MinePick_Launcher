@@ -5,7 +5,7 @@
 基于 Python + PySide6 的便携版 Minecraft 启动器：微软正版 / 离线登录、版本安装、Modrinth 与 CurseForge 资源、
 Fabric/Forge/NeoForge/Quilt 加载器、实例隔离管理 —— 打包为免安装单文件 EXE。
 
-**本仓库是界面试验线（版本 0.1.0）**：启动器功能与主线一致，区别在于下面这套界面重做；并且**只提供 GUI 版**，
+**本仓库是界面试验线（版本 0.1.2）**：启动器功能与主线一致，区别在于下面这套界面重做；并且**只提供 GUI 版**，
 不含命令行版可执行文件。
 
 > 主线启动器：[xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
