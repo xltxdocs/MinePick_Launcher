@@ -25,3 +25,7 @@ Releases/
 _preview/
 _selfcheck/
 
+
+# 回归工具的日志产物（tmp/ 下的文档仍会提交）
+tmp/regression_logs/
+
