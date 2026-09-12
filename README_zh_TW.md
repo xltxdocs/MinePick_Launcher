@@ -6,7 +6,7 @@
 Modrinth 與 CurseForge 資源、Fabric/Forge/NeoForge/Quilt 載入器、隔離實例 ——
 打包成單一免安裝 EXE。
 
-**本儲存庫是介面試驗線（版本 0.1.3）。** 啟動器功能與主專案相同，再加上以下介面重做；
+**本儲存庫是介面試驗線（版本 0.1.4）。** 啟動器功能與主專案相同，再加上以下介面重做；
 而且**只提供 GUI 版** —— 這裡沒有 CLI 執行檔。
 
 > 主線啟動器：[xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
