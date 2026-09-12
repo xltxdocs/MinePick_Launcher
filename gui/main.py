@@ -125,7 +125,7 @@ def main() -> int:
     # (skip during the headless smoke test MCLAUNCHER_GUI_AUTOQUIT_MS to avoid blocking on the modal dialog)
     from launcher import config as config_mod
 
-    cfg, cfg_path = config_mod.load()
+    cfg, _ = config_mod.load()
     auto_quit = __import__("os").environ.get("MCLAUNCHER_GUI_AUTOQUIT_MS")
     from gui.main_window import MainWindow
 
