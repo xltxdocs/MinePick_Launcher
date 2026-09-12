@@ -52,7 +52,9 @@ def run(label: str, args: list[str], expect_json: bool = False) -> tuple[bool, s
                 args, cwd=str(ROOT), check=False, stdout=handle, stderr=subprocess.STDOUT
             )
         output = log.read_text(encoding="utf-8", errors="replace")
-        print(output.rstrip())
+        # a GBK console cannot encode the replacement characters of a decoded log
+        encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
+        print(output.rstrip().encode(encoding, "replace").decode(encoding, "replace"))
         verdict = None
         if expect_json:
             for line in reversed(output.splitlines()):
