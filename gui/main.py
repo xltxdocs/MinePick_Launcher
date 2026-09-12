@@ -35,14 +35,11 @@ def build_app_icon() -> QIcon:
     from PySide6.QtGui import QPixmap
 
     icon = QIcon()
-    for name in ("window_icon_16.png", "window_icon_24.png"):
-        path = paths.resource_path("gui/resources/" + name)
-        if path.exists():
-            icon.addPixmap(QPixmap(str(path)))
+    # one design everywhere: the pickaxe. The small simplified variant is gone.
     full = paths.resource_path("gui/resources/icon.png")
     if full.exists():
         base = QPixmap(str(full))
-        for size in (32, 48, 64, 128, 256):
+        for size in (16, 24, 32, 48, 64, 128, 256):
             icon.addPixmap(
                 base.scaled(
                     QSize(size, size),
