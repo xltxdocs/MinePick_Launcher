@@ -1,11 +1,12 @@
 [简体中文](code_signing.md) | English
 
 # Windows code signing process (#32)
+
 > This document is also available in [Simplified Chinese](code_signing.md).
 
 ## Self-signing already performed on this machine (2026-08-15)
 
-- Signer (certificate subject): **CN=WDNDXLTX, E=wdndxltx@gmail.com** (self-signed, a symbolic attribution)
+- Signer (certificate subject): **CN=WDNDXLTX, E=wdndxltx@gmail.com** (self-signed, symbolic attribution only)
 - Validity: **10 years** (until 2036/8/15); the signatures carry a DigiCert timestamp (so older builds stay valid forever)
 - Certificate thumbprint: 609714616FD61C6B7BF179C03903F07A13EABDBA
 - Private key backup: build/codesign.pfx (the export password is kept on this machine only — never write it into any file that would be committed)
@@ -29,9 +30,9 @@ Set-AuthenticodeSignature -FilePath dist\MinePick_Launcher_cli.exe -Certificate 
 SmartScreen warns about unsigned EXEs by default. There are two kinds of signing:
 
 1. **Self-signed certificate (trusted locally, limited for distribution)**: it only removes the warning on
-   your own or a controlled machine; other users still see the SmartScreen prompt (they have to choose
+   machines you own or control; other users still see the SmartScreen prompt (they have to choose
    "Run anyway" manually).
-2. **A real code signing certificate (recommended for distribution)**: buy an OV/EV certificate from a
+2. **An official code signing certificate (recommended for distribution)**: buy an OV/EV certificate from a
    certificate authority (an EV certificate builds SmartScreen reputation quickly).
 
 ## 1. Self-signing (local verification flow)
