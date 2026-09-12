@@ -37,14 +37,15 @@ Befehlszeilen-EXE gibt es hier nicht.
 
 - **Assistent beim ersten Start, im Fenster** — der Willkommensablauf ist ein Overlay im Hauptfenster
   (Schrittleiste links, Inhalt rechts, Aktionsleiste unten) statt eines separaten Dialogs und
-  blendet sich beim Abschluss aus
+  schließt sich beim Abschluss, woraufhin das Hauptfenster erscheint
 - **Eigener Fensterrahmen** — die Titelleiste wird vom Launcher selbst gezeichnet, sodass die
-  Fensterdekoration zum Design passt; das Fenstersymbol ist überall und in jeder Größe das Spitzhacken-Design
+  Fensterdekoration zum Design passt; sie zeigt kein Symbol, nur den Fenstertitel links und zwei Schaltflächen
+  rechts (Minimieren, Schließen); das Spitzhacken-Symbol wird für Taskleiste, Datei und Dialoge verwendet
 - **Anpassbares Aussehen** — Akzentfarbe (beliebiger Hex-Wert, acht Voreinstellungen oder die
   System-Farbauswahl), Schriftart der Oberfläche (alle installierten Familien, die häufigsten oben angeheftet, Tippen
   zum Filtern), Eckenradius (Kompakt / Standard / Rund), Design (Dunkel / Hell / der Systemeinstellung folgen)
-- **Klareres Layout** — ein Seitenkopf mit einzeiliger Beschreibung auf jeder Seite, ein Markenblock über
-  der Seitenleiste, eine gemeinsame Abstandsskala auf allen Seiten, Lupensymbole in Suchfeldern
+- **Klareres Layout** — ein Seitenkopf mit einzeiliger Beschreibung auf jeder Seite, eine gemeinsame
+  Abstandsskala auf allen Seiten, Lupensymbole in Suchfeldern
 - **Ruhigeres Verhalten** — Scrollbalken erscheinen nur, solange der Zeiger in einer Liste ist; eine
   Fokusumrandung wird nur bei Tastaturnavigation angezeigt; kurzes Einblenden beim Seitenwechsel;
   Spaltenbreiten von Tabellen werden gemerkt; Kopfzeilen lassen sich per Klick sortieren

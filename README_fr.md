@@ -37,16 +37,16 @@ que le projet principal, plus la refonte de l'interface décrite ci-dessous, et 
 
 - **Assistant de premier démarrage, dans la fenêtre** — le flux d'accueil est une surcouche à l'intérieur de la
   fenêtre principale (colonne des étapes à gauche, contenu à droite, barre d'actions en bas) au lieu d'une boîte de
-  dialogue séparée, et il s'efface en fondu lorsque vous avez terminé
+  dialogue séparée, et il se ferme à la fin en rendant la main à la fenêtre principale
 - **Cadre de fenêtre personnalisé** — la barre de titre est dessinée par le lanceur lui-même, l'habillage suit
-  donc le thème ; l'icône de la fenêtre arbore le design de pioche partout, à toutes les tailles
+  donc le thème ; elle n'affiche aucune icône : seulement le texte du titre à gauche et deux boutons à droite
+  (réduire, fermer) ; l'icône de pioche sert pour la barre des tâches, le fichier et les dialogues
 - **Apparence personnalisable** — couleur d'accent (n'importe quelle valeur hexadécimale, huit préréglages ou le
   sélecteur de couleur du système), police de l'interface (toutes les familles installées, les plus courantes
   épinglées, filtrage à la saisie), arrondi des coins (compact / par défaut / arrondi), thème (sombre / clair /
   suivre le système)
-- **Mise en page plus claire** — un en-tête de page avec une description en une ligne sur chaque page, un bloc de
-  marque au-dessus de la barre latérale, une seule échelle d'espacement sur toutes les pages, des icônes de loupe
-  dans les champs de recherche
+- **Mise en page plus claire** — un en-tête de page avec une description en une ligne sur chaque page, une seule
+  échelle d'espacement sur toutes les pages, des icônes de loupe dans les champs de recherche
 - **Interactions plus sobres** — les barres de défilement n'apparaissent que lorsque le pointeur est dans une
   liste, le contour de focus n'est affiché que pour la navigation au clavier, un court fondu au changement de page,
   la largeur des colonnes des tableaux est mémorisée, un clic sur un en-tête trie la colonne

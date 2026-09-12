@@ -37,14 +37,15 @@ executable here.
 
 - **First-run wizard, in the window** — the welcome flow is an overlay inside the main window
   (step rail on the left, content on the right, action bar at the bottom) instead of a separate
-  dialog, and it fades out of the way when you finish
+  dialog, and it closes and hands over to the main window when you finish
 - **Custom window frame** — the title bar is drawn by the launcher itself, so the chrome matches
-  the theme; the window icon is the pickaxe design everywhere, at every size
+  the theme; it carries only the window title and the minimize/close buttons, while the pickaxe icon
+  is used for the taskbar, the file icon and dialogs
 - **Customisable look** — accent colour (any hex value, eight presets, or the system colour picker),
   UI font (every installed family, the most common ones pinned on top, type to filter), corner radius (compact / default /
   round), theme (dark / light / follow the system)
-- **Clearer layout** — a page header with a one-line description on every page, a brand block above the
-  sidebar, one spacing scale across all pages, magnifier icons in search fields
+- **Clearer layout** — a page header with a one-line description on every page, one spacing scale
+  across all pages, magnifier icons in search fields
 - **Calmer interaction** — scrollbars appear only while the pointer is inside a list, a focus outline is shown
   for keyboard navigation only, a short fade when switching pages, table column widths are remembered,
   headers are click-to-sort

@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with MinePick Launcher. If not, see <https://www.gnu.org/licenses/>.
 
-"""Custom window frame: app icon, title and window buttons drawn in the app's own style.
+"""Custom window frame: the window title and buttons drawn in the app's own style.
 
 The native Windows title bar stays light-grey/white no matter what the app looks like, which
 breaks the flat dark design. This bar replaces it: the window is frameless and the frame is
@@ -31,7 +31,7 @@ BAR_HEIGHT = 38
 
 
 class TitleBar(QWidget):
-    """Drag to move, double-click to maximize/restore, three styled window buttons."""
+    """Drag to move, double-click to maximize/restore, minimize and close buttons."""
 
     def __init__(self, window, title: str) -> None:
         super().__init__(window)

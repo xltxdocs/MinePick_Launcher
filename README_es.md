@@ -37,14 +37,15 @@ que el proyecto principal, más el rediseño de interfaz que se describe a conti
 
 - **Asistente de primer inicio, dentro de la ventana** — el flujo de bienvenida es una capa superpuesta dentro de la
   ventana principal (barra de pasos a la izquierda, contenido a la derecha, barra de acciones abajo) en lugar de un
-  diálogo aparte, y se desvanece cuando terminas
+  diálogo aparte, y al terminar se cierra y da paso a la ventana principal
 - **Marco de ventana personalizado** — la barra de título la dibuja el propio launcher, así que el marco combina con
-  el tema; el icono de la ventana es el diseño de pico en todas partes y en todos los tamaños
+  el tema; no muestra ningún icono: solo el texto del título a la izquierda y dos botones a la derecha (minimizar,
+  cerrar); el icono de pico se usa para la barra de tareas, el archivo y los diálogos
 - **Aspecto personalizable** — color de acento (cualquier valor hexadecimal, ocho preajustes o el selector de color
   del sistema), fuente de la interfaz (todas las familias instaladas, las comunes fijadas arriba, escribe para filtrar),
   redondeo de esquinas (compacto / predeterminado / redondeado), tema (oscuro / claro / seguir el sistema)
-- **Diseño más claro** — un encabezado de página con una descripción de una línea en cada página, un bloque de marca
-  sobre la barra lateral, una única escala de espaciado en todas las páginas, iconos de lupa en los campos de búsqueda
+- **Diseño más claro** — un encabezado de página con una descripción de una línea en cada página, una única escala de
+  espaciado en todas las páginas, iconos de lupa en los campos de búsqueda
 - **Interacción más discreta** — las barras de desplazamiento solo aparecen mientras el puntero está dentro de una lista,
   el contorno de foco se muestra solo para la navegación con teclado, un breve fundido al cambiar de página, se recuerda
   el ancho de las columnas de las tablas, las cabeceras se ordenan con un clic
