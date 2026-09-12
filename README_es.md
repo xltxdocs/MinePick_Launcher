@@ -16,8 +16,8 @@ que el proyecto principal, más el rediseño de interfaz que se describe a conti
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/launch_en.png" width="480" alt="Página de Inicio"/></td>
-    <td><img src="docs/screenshots/versions_en.png" width="480" alt="Página de Versiones"/></td>
+    <td><img src="docs/screenshots/launch_en.png" width="480" alt="Página de inicio"/></td>
+    <td><img src="docs/screenshots/versions_en.png" width="480" alt="Página de versiones"/></td>
   </tr>
   <tr>
     <td align="center"><sub>Inicio</sub></td>
@@ -62,22 +62,22 @@ que el proyecto principal, más el rediseño de interfaz que se describe a conti
 - Cifrado opcional de tokens (cryptography Fernet + contraseña, con soporte de `MCLAUNCHER_TOKEN_PASSWORD`)
 
 ### Versiones y Java
-- Lista oficial de versiones con pestañas por categoría (estable / snapshot / April Fools / Legacy), tarjetas
-  «Última versión estable» y «Última instantánea», búsqueda por nombre, instalación y desinstalación en un clic,
+- Lista oficial de versiones con pestañas por categoría (estable / snapshot / día de los inocentes / heredadas), tarjetas
+  «Última versión estable» y «Última snapshot», búsqueda por nombre, instalación y desinstalación en un clic,
   detalles de la versión
 - Aislamiento de versiones: cada versión conserva sus propios guardados / mods / configuración
-- Asignación de requisitos de Java (1.16.5→8, 1.17–1.20.4→17, 1.20.5–1.21.11→21, 26.1+→25) con descarga automática
+- Correspondencia de requisitos de Java (1.16.5→8, 1.17–1.20.4→17, 1.20.5–1.21.11→21, 26.1+→25) con descarga automática
   desde Adoptium y un gestor de runtimes
 
 ### Inicio e instancias
 - Sugerencia de memoria según el número de mods y la RAM libre, argumentos de JVM personalizados, conexión directa a
-  servidores, idioma del juego, registro en vivo, comportamiento «tras iniciar el juego», liberación de la memoria
+  servidores, idioma del juego, registro en vivo, comportamiento «tras iniciar el juego», liberación de la memoria del launcher
 - Instancias aisladas con notas, renombrado, importación/exportación y un gestor de mods local por instancia (lee los
   metadatos del jar de Fabric / Quilt / NeoForge / Forge / mcmod.info, activar/desactivar, búsqueda y filtro, arrastrar y soltar)
 
 ### Recursos
-- Mods, paquetes de recursos, shaders y modpacks de **Modrinth** y **CurseForge**, top 30 de populares por pestaña,
-  búsqueda por palabra clave (incluidos los nombres de la comunidad china), instalación en un clic, instalación de
+- Mods, paquetes de recursos, shaders y modpacks de **Modrinth** y **CurseForge**, top 30 de populares por descargas en cada pestaña,
+  búsqueda por palabra clave (incluidos los nombres chinos de la comunidad), instalación en un clic, instalación de
   modpacks `.mrpack`
 
 ## Descarga y uso
@@ -100,8 +100,8 @@ pytest -q                    # tests (240+)
 ruff check launcher gui tests
 ```
 
-Compilar y firmar: `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (ver `docs/code_signing.md`).
-El spec genera un único EXE con GUI (los requisitos previos de compilación se indican en `docs/github_release.md`).
+Compilar y firmar: `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (ver `docs/code_signing.md`, en chino).
+El spec genera un único EXE con GUI (los requisitos previos de compilación se indican en `docs/github_release.md`, en chino).
 
 Comprobación de la interfaz con un solo comando (pruebas + lint + contraste/desbordamiento/alta DPI + auditoría de
 esquinas + capturas):
@@ -110,8 +110,8 @@ esquinas + capturas):
 python tools/ui_regression.py            # add --quick to skip the screenshots
 ```
 
-Funcionamiento interno de los temas (marcadores de posición, enganches de personalización, cómo añadir una nueva
-opción): `docs/theming.md`.
+Funcionamiento interno de los temas (marcadores de posición, puntos de enganche de personalización, cómo añadir una nueva
+opción): `docs/theming.md` (en chino).
 
 ## Licencia
 
@@ -121,4 +121,4 @@ cumple el requisito de distribución del código fuente de la GPL.
 ## Proyectos relacionados
 
 - [MinePick Launcher](https://github.com/xltxdocs/MinePick_Launcher) — el launcher principal (GUI + CLI)
-- [MinePick Launcher Revision](https://github.com/TheDarkLord234/MinePick_Launcher_Revision) — una edición revisada de un miembro de la comunidad
+- [MinePick Launcher Revision](https://github.com/TheDarkLord234/MinePick_Launcher_Revision) — una edición revisada por un miembro de la comunidad

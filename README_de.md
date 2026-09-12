@@ -48,10 +48,10 @@ Befehlszeilen-EXE gibt es hier nicht.
 - **Ruhigere Interaktion** — Scrollbalken erscheinen nur, solange der Zeiger in einer Liste ist; eine
   Fokusumrandung wird nur bei Tastaturnavigation angezeigt; kurzes Einblenden beim Seitenwechsel;
   Spaltenbreiten von Tabellen werden gemerkt; Kopfzeilen lassen sich per Klick sortieren
-- **Lesbare Zustände** — Schaltflächen sind abgestuft (primär / sekundär / umrandet gefährlich),
+- **Lesbare Zustände** — Schaltflächen sind abgestuft (primär / sekundär / gefährlich umrandet),
   Statusmeldungen sind nach Schweregrad eingefärbt, leere Listen erklären die nächsten Schritte
-- **Standardmäßig barrierefrei** — jedes Text-/Hintergrund-Paar erfüllt den WCAG-AA-Kontrast (weiße Schrift
-  auf Akzentflächen wird automatisch abgedunkelt), und die Oberfläche ist in 9 Sprachen verfügbar
+- **Standardmäßig barrierefrei** — jedes Text-/Hintergrund-Paar erfüllt den WCAG-AA-Kontrast (Akzentflächen
+  mit weißer Schrift werden automatisch abgedunkelt), und die Oberfläche ist in 9 Sprachen verfügbar
 
 ## Launcher-Funktionen
 
@@ -63,10 +63,10 @@ Befehlszeilen-EXE gibt es hier nicht.
 
 ### Versionen & Java
 - Offizielles Versions-Manifest mit Kategorie-Tabs (Release / Snapshot / Aprilscherz / Legacy), Karten „Neueste
-  Version“ und „Neueste Snapshot“, Namenssuche, Ein-Klick-Installation & -Deinstallation, Versionsdetails
+  Version“ und „Neuester Snapshot“, Namenssuche, Ein-Klick-Installation & -Deinstallation, Versionsdetails
 - Versionsisolierung: Jede Version behält ihre eigenen Spielstände / Mods / Konfiguration
 - Java-Anforderungszuordnung (1.16.5→8, 1.17–1.20.4→17, 1.20.5–1.21.11→21, 26.1+→25) mit automatischem
-  Adoptium-Download und Runtime-Verwaltung
+  Adoptium-Download und Runtime-Manager
 
 ### Start & Instanzen
 - Speicherempfehlung anhand Mod-Anzahl und verfügbarem RAM, eigene JVM-Argumente, Server-Direktverbindung,
@@ -98,8 +98,8 @@ pytest -q                    # tests (240+)
 ruff check launcher gui tests
 ```
 
-Build & Signieren: `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (siehe `docs/code_signing.md`).
-Die Spec-Datei erzeugt eine einzelne GUI-EXE (die Build-Voraussetzungen stehen in `docs/github_release.md`).
+Build & Signieren: `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (siehe `docs/code_signing.md`, auf Chinesisch).
+Die Spec-Datei erzeugt eine einzelne GUI-EXE (die Build-Voraussetzungen stehen in `docs/github_release.md`, auf Chinesisch).
 
 Oberflächenprüfung mit einem Befehl (Tests + Lint + Kontrast/Überlauf/Hoch-DPI + Eckenradius-Audit + Screenshots):
 
@@ -107,7 +107,7 @@ Oberflächenprüfung mit einem Befehl (Tests + Lint + Kontrast/Überlauf/Hoch-DP
 python tools/ui_regression.py            # add --quick to skip the screenshots
 ```
 
-Theme-Interna (Platzhalter, Anpassungs-Hooks, neue Option hinzufügen): `docs/theming.md`.
+Design-Interna (Platzhalter, Anpassungs-Hooks, neue Option hinzufügen): `docs/theming.md` (auf Chinesisch).
 
 ## Lizenz
 
@@ -117,4 +117,4 @@ erfüllt die Anforderung der GPL zur Quellcode-Verteilung.
 ## Verwandte Projekte
 
 - [MinePick Launcher](https://github.com/xltxdocs/MinePick_Launcher) — der Haupt-Launcher (GUI + CLI)
-- [MinePick Launcher Revision](https://github.com/TheDarkLord234/MinePick_Launcher_Revision) — eine überarbeitete Edition von einem Community-Mitglied
+- [MinePick Launcher Revision](https://github.com/TheDarkLord234/MinePick_Launcher_Revision) — eine überarbeitete Edition von einem Mitglied der Community

@@ -36,10 +36,10 @@ que le projet principal, plus la refonte de l'interface décrite ci-dessous, et 
 ## Interface (ce que cette ligne change)
 
 - **Assistant de premier démarrage, dans la fenêtre** — le flux d'accueil est une surcouche à l'intérieur de la
-  fenêtre principale (rail des étapes à gauche, contenu à droite, barre d'actions en bas) au lieu d'une boîte de
+  fenêtre principale (colonne des étapes à gauche, contenu à droite, barre d'actions en bas) au lieu d'une boîte de
   dialogue séparée, et il s'efface en fondu lorsque vous avez terminé
 - **Cadre de fenêtre personnalisé** — la barre de titre est dessinée par le lanceur lui-même, l'habillage suit
-  donc le thème ; l'icône de la fenêtre est le design de pioche partout, à toutes les tailles
+  donc le thème ; l'icône de la fenêtre arbore le design de pioche partout, à toutes les tailles
 - **Apparence personnalisable** — couleur d'accent (n'importe quelle valeur hexadécimale, huit préréglages ou le
   sélecteur de couleur du système), police de l'interface (toutes les familles installées, les plus courantes
   épinglées, filtrage à la saisie), arrondi des coins (compact / par défaut / arrondi), thème (sombre / clair /
@@ -52,20 +52,20 @@ que le projet principal, plus la refonte de l'interface décrite ci-dessous, et 
   la largeur des colonnes des tableaux est mémorisée, un clic sur un en-tête trie la colonne
 - **États lisibles** — les boutons sont hiérarchisés (principal / secondaire / danger en contour), les messages
   d'état sont colorés selon leur gravité, les listes vides expliquent quoi faire ensuite
-- **Accessible par défaut** — chaque paire texte/fond respecte le contraste WCAG AA (les remplissages accentués
+- **Accessible par défaut** — chaque paire texte/fond respecte le contraste WCAG AA (les aplats d'accent
   portant du texte blanc sont assombris automatiquement), et l'interface est disponible en 9 langues
 
 ## Fonctionnalités du lanceur
 
 ### Comptes
-- Connexion Microsoft via le flux par code d'appareil (la page d'autorisation s'ouvre automatiquement et le code
+- Connexion Microsoft via le flux de code d'appareil (la page d'autorisation s'ouvre automatiquement et le code
   est copié dans le presse-papiers), avec un état d'interrogation en direct
 - Mode hors ligne, liste multi-comptes avec bascule en un clic, avatars de skin, actualisation automatique des jetons
 - Chiffrement facultatif des jetons (cryptography Fernet + mot de passe, `MCLAUNCHER_TOKEN_PASSWORD` pris en charge)
 
 ### Versions et Java
 - Manifeste officiel des versions avec onglets par catégorie (version stable / snapshot / poisson d'avril /
-  anciennes), cartes « Dernière version stable » et « Dernier instantané », recherche par nom, installation et
+  anciennes), cartes « Dernière version stable » et « Dernier snapshot », recherche par nom, installation et
   désinstallation en un clic, détails de version
 - Isolation des versions : chaque version conserve ses propres sauvegardes / mods / configurations
 - Correspondance des exigences Java (1.16.5→8, 1.17–1.20.4→17, 1.20.5–1.21.11→21, 26.1+→25) avec téléchargement
@@ -105,19 +105,19 @@ pytest -q                    # tests (240+)
 ruff check launcher gui tests
 ```
 
-Compilation et signature : `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (voir `docs/code_signing.md`).
+Compilation et signature : `pyinstaller build_exe.spec` → `scripts/sign_exe.ps1` (voir `docs/code_signing.md`, en chinois).
 Le fichier spec produit un seul EXE en version GUI (les prérequis de compilation sont listés dans
-`docs/github_release.md`).
+`docs/github_release.md`, en chinois).
 
-Vérification de l'interface en une seule commande (tests + lint + contraste/débordement/high-DPI + audit des coins
-+ captures d'écran) :
+Vérification de l'interface en une seule commande (tests + lint + contraste/débordement/haute résolution (high-DPI)
++ audit des coins + captures d'écran) :
 
 ```powershell
 python tools/ui_regression.py            # add --quick to skip the screenshots
 ```
 
 Fonctionnement interne des thèmes (variables de substitution, points d'extension, ajout d'une nouvelle option) :
-`docs/theming.md`.
+`docs/theming.md` (en chinois).
 
 ## Licence
 
