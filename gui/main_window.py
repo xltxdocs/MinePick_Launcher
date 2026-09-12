@@ -200,6 +200,9 @@ class MainWindow(QMainWindow):
         overlay.setParent(self)
         overlay.setGeometry(self.rect())
         overlay.finished.connect(self._on_wizard_finished)
+        # the status bar and its size grip are managed by QMainWindow's layout and would be
+        # painted above an unmanaged child, so they step aside while the overlay is up
+        self.statusBar().hide()
         overlay.show_overlay()
         self.wizard_overlay = overlay
 
@@ -322,6 +325,7 @@ class MainWindow(QMainWindow):
         i18n.set_language(cfg.ui_language)
         apply_theme(cfg.theme, cfg.accent_color, cfg.ui_font, cfg.ui_radius)
         self.build_pages()
+        self.statusBar().show()
         self.statusBar().showMessage(i18n.tr("status.ready"))
 
     def closeEvent(self, event) -> None:

@@ -301,6 +301,7 @@ class WizardOverlay(QWidget):
         offset = bar.height() if bar is not None else 0
         rect = parent.rect()
         self.setGeometry(rect.x(), rect.y() + offset, rect.width(), rect.height() - offset)
+        self.raise_()  # QMainWindow re-stacks its own children when the layout activates
 
     def resizeEvent(self, event) -> None:
         self._fit_parent()
