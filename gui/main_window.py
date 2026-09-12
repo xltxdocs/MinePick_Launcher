@@ -41,7 +41,7 @@ from gui.pages.login_page import LoginPage
 from gui.pages.mods_page import ResourcesPage
 from gui.pages.settings_page import SettingsPage
 from gui.pages.versions_page import VersionsPage
-from gui.wizard_overlay import WizardOverlay, WizardStep
+from gui.wizard_overlay import BulletList, OptionGrid, WizardOverlay, WizardStep
 
 NAV_KEYS = ["launch", "instances", "versions", "java", "account", "mods", "settings"]
 
@@ -202,7 +202,7 @@ class MainWindow(QMainWindow):
         self.wizard_overlay = overlay
 
     def _build_wizard_overlay(self):
-        from PySide6.QtWidgets import QComboBox, QFileDialog, QLineEdit, QPushButton
+        from PySide6.QtWidgets import QFileDialog, QLineEdit, QPushButton, QSlider
 
         from gui import i18n
         from gui.widgets import NoWheelDoubleSpinBox
@@ -210,29 +210,20 @@ class MainWindow(QMainWindow):
 
         cfg, _ = config.load()
 
-        # step 1: welcome
-        welcome = QLabel("MinePick Launcher")
-        welcome.setObjectName("wizardHeadingBig")
+        # 1 / start: what is about to happen, as a short list instead of one lonely line
+        welcome = BulletList(tr("wizard.points").split("\n"))
 
-        # step 2: launcher language
-        self._wz_ui_language = QComboBox()
-        for code, name in i18n.UI_LANGUAGES:
-            self._wz_ui_language.addItem(name, code)
-        index = self._wz_ui_language.findData(cfg.ui_language)
-        self._wz_ui_language.setCurrentIndex(max(index, 0))
+        # 2 + 3 / languages: every option is visible, nothing hidden inside a dropdown
+        self._wz_ui_language = OptionGrid(list(i18n.UI_LANGUAGES), columns=3)
+        self._wz_ui_language.set_value(cfg.ui_language)
+        self._wz_game_language = OptionGrid(list(config.GAME_LANGUAGES), columns=3)
+        self._wz_game_language.set_value(cfg.game_language)
 
-        # step 3: game language
-        self._wz_game_language = QComboBox()
-        for code, name in config.GAME_LANGUAGES:
-            self._wz_game_language.addItem(name, code)
-        index = self._wz_game_language.findData(cfg.game_language)
-        self._wz_game_language.setCurrentIndex(max(index, 0))
-
-        # step 4: game directory
+        # 4 / game directory: field + browse + a live status line
         self._wz_game_dir = QLineEdit(str(cfg.game_dir) if cfg.game_dir else "")
         self._wz_game_dir.setPlaceholderText(str(paths.default_game_dir()))
         browse = QPushButton(tr("settings.browse"))
-        browse.setObjectName("secondaryButton")
+        browse.setObjectName("wizardBrowse")
 
         def pick_directory() -> None:
             chosen = QFileDialog.getExistingDirectory(
@@ -242,25 +233,65 @@ class MainWindow(QMainWindow):
                 self._wz_game_dir.setText(chosen)
 
         browse.clicked.connect(pick_directory)
-        dir_row = QWidget()
-        dir_layout = QHBoxLayout(dir_row)
-        dir_layout.setContentsMargins(0, 0, 0, 0)
-        dir_layout.addWidget(self._wz_game_dir, 1)
-        dir_layout.addWidget(browse)
+        self._wz_dir_status = QLabel("")
+        self._wz_dir_status.setObjectName("wizardStatus")
 
-        # step 5: memory
+        def refresh_status() -> None:
+            raw = self._wz_game_dir.text().strip()
+            target = Path(raw) if raw else paths.default_game_dir()
+            if target.is_dir():
+                self._wz_dir_status.setText("\u2713  " + str(target))
+            else:
+                self._wz_dir_status.setText("\u2022  " + str(target))
+
+        self._wz_game_dir.textChanged.connect(refresh_status)
+        dir_line = QWidget()
+        dir_line_layout = QHBoxLayout(dir_line)
+        dir_line_layout.setContentsMargins(0, 0, 0, 0)
+        dir_line_layout.setSpacing(8)
+        dir_line_layout.addWidget(self._wz_game_dir, 1)
+        dir_line_layout.addWidget(browse)
+        dir_box = QWidget()
+        dir_box_layout = QVBoxLayout(dir_box)
+        dir_box_layout.setContentsMargins(0, 0, 0, 0)
+        dir_box_layout.setSpacing(8)
+        dir_box_layout.addWidget(dir_line)
+        dir_box_layout.addWidget(self._wz_dir_status)
+        dir_box_layout.addStretch(1)
+        refresh_status()
+
+        # 5 / memory: one-line box with its own steppers plus a slider
         self._wz_memory = NoWheelDoubleSpinBox()
+        self._wz_memory.setObjectName("wizardMemory")
         self._wz_memory.setRange(0.5, 64.0)
         self._wz_memory.setSingleStep(0.5)
         self._wz_memory.setValue(cfg.memory_gb or 4.0)
         self._wz_memory.setSuffix(" " + tr("unit.gb"))
+        slider = QSlider(Qt.Orientation.Horizontal)
+        slider.setRange(5, 640)
+        slider.setValue(int((cfg.memory_gb or 4.0) * 10))
+        slider.valueChanged.connect(lambda value: self._wz_memory.setValue(value / 10))
+        self._wz_memory.valueChanged.connect(lambda value: slider.setValue(int(value * 10)))
+        memory_box = QWidget()
+        memory_layout = QVBoxLayout(memory_box)
+        memory_layout.setContentsMargins(0, 0, 0, 0)
+        memory_layout.setSpacing(12)
+        memory_layout.addWidget(self._wz_memory)
+        memory_layout.addWidget(slider)
+        memory_layout.addStretch(1)
 
         steps = [
-            WizardStep("MinePick Launcher", tr("wizard.welcome.desc"), welcome),
-            WizardStep(tr("settings.ui_language"), tr("wizard.hint"), self._wz_ui_language),
-            WizardStep(tr("settings.game_language"), tr("wizard.hint"), self._wz_game_language),
-            WizardStep(tr("wizard.game_dir"), tr("wizard.default_dir.hint"), dir_row),
-            WizardStep(tr("wizard.memory"), tr("wizard.hint"), self._wz_memory),
+            WizardStep(tr("wizard.start"), tr("wizard.welcome.desc"), welcome, tr("wizard.start")),
+            WizardStep(
+                tr("settings.ui_language"), tr("wizard.hint"), self._wz_ui_language,
+                tr("settings.ui_language"),
+            ),
+            WizardStep(
+                tr("settings.game_language"), tr("wizard.hint"), self._wz_game_language,
+                tr("settings.game_language"),
+            ),
+            WizardStep(tr("wizard.game_dir"), tr("wizard.default_dir.hint"), dir_box, tr("wizard.game_dir")),
+            WizardStep(tr("wizard.memory"), tr("wizard.hint"), memory_box, tr("wizard.memory")),
         ]
         labels = {
             "back": tr("wizard.back"),
@@ -277,8 +308,8 @@ class MainWindow(QMainWindow):
         from launcher import config
 
         cfg, cfg_path = config.load()
-        cfg.ui_language = self._wz_ui_language.currentData() or cfg.ui_language
-        cfg.game_language = self._wz_game_language.currentData() or cfg.game_language
+        cfg.ui_language = self._wz_ui_language.value() or cfg.ui_language
+        cfg.game_language = self._wz_game_language.value() or cfg.game_language
         chosen_dir = self._wz_game_dir.text().strip()
         if chosen_dir:
             cfg.game_dir = chosen_dir
