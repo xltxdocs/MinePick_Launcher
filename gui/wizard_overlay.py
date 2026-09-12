@@ -231,8 +231,7 @@ class WizardOverlay(QWidget):
         # window behind shows the same colour and reads as "not covered"
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
-        outer.addWidget(card, 0)
-        outer.addStretch(0)
+        outer.addWidget(card, 1)  # stretch: the card must fill the overlay, top to bottom
 
         self._sync()
 
