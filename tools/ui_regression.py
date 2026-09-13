@@ -98,6 +98,7 @@ def main() -> int:
         ("unit tests", [python, "-m", "pytest", "-q"]),
         ("lint", [python, "-m", "ruff", "check", "launcher", "gui", "tools", "tests"]),
         ("GPL headers", [python, "scripts/check_headers.py"]),
+        ("README sync (9 translations)", [python, "tools/check_readme_sync.py", "--json"]),
         (
             "UI quality (contrast / overflow / high DPI)",
             [python, "tools/audit_ui_quality.py", "--json"],
@@ -114,7 +115,7 @@ def main() -> int:
             )
         )
     results = [
-        (label, *run(label, args, expect_json="audit_ui_quality" in " ".join(args)))
+        (label, *run(label, args, expect_json="--json" in args))
         for label, args in checks
     ]
     print("\n=== summary ===")
