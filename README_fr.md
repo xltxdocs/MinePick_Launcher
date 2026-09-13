@@ -109,7 +109,7 @@ Compilation et signature : `pyinstaller build_exe.spec` → `scripts/sign_exe.ps
 Le fichier spec produit un seul EXE en version GUI (les prérequis de compilation sont listés dans
 `docs/github_release_en.md`).
 
-Vérification de l'interface en une seule commande (tests + lint + contraste/débordement/haute résolution (high-DPI) + audit des
+Vérification de l'interface en une seule commande (tests + lint + contraste/débordement/haute résolution + audit des
 coins + captures d'écran) :
 
 ```powershell
