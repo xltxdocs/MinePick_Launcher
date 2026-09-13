@@ -21,6 +21,10 @@ Translations are edited by hand, so a language can silently lose a link, an inli
 identifier or a version token while the prose still looks complete. This compares every
 translation against the English README and reports what is missing or extra.
 
+Two differences are intentional and must never be reported as drift:
+- only the Chinese READMEs list the built-in Chinese mod-name table (it is a Chinese-only feature);
+- the Chinese READMEs link the Chinese developer docs while the others link docs/*_en.md.
+
 Usage: python tools/check_readme_sync.py [--json]
 """
 
@@ -46,7 +50,7 @@ TRANSLATIONS = [
 
 # things that legitimately differ per language and must not be reported as drift
 LINK_EXCEPTIONS = {"README.md", "README_zh.md", "README_zh_TW.md", "README_ja.md", "README_ko.md",
-                   "README_ru.md", "README_fr.md", "README_es.md", "README_de.md", "LICENSE"}
+                   "README_ru.md", "README_fr.md", "README_es.md", "README_de.md"}
 
 
 def links(text: str) -> set[str]:
@@ -65,7 +69,9 @@ def identifiers(text: str) -> set[str]:
     spans = set(re.findall(r"`([^`\n]+)`", text))
     keep = set()
     for span in spans:
-        if re.search(r"\.(py|md|zip|exe|toml|spec|ps1|png|txt|json|qss)$", span) or "/" in span or "\\" in span:
+        if (re.search(r"\.(py|md|zip|exe|toml|spec|ps1|png|txt|json|qss)$", span)
+                or "/" in span or "\\" in span
+                or re.fullmatch(r"[A-Z][A-Z0-9_]{3,}", span)):  # MCLAUNCHER_TOKEN_PASSWORD …
             keep.add(span)
     return keep
 
@@ -102,8 +108,9 @@ def main() -> int:
             if kind == "images":
                 # screenshots are localised: only complain when a language has no image at all
                 missing = [] if values else sorted(base[kind])
-            if missing:
-                diff[kind] = missing
+            extra = sorted(values - base[kind]) if kind != "images" else []
+            if missing or extra:
+                diff[kind] = {"missing": missing, "extra": extra}
         if diff:
             problems[name] = diff
 
@@ -119,7 +126,7 @@ def main() -> int:
     for name, diff in problems.items():
         print(f"  {name}:")
         for kind, missing in diff.items():
-            print(f"    {kind}: missing {missing}")
+            print(f"    {kind}: missing {missing.get('missing')} extra {missing.get('extra')}")
     print(f"readme sync: drift in {len(problems)}/{len(TRANSLATIONS)} translations")
     return 1
 

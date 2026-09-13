@@ -108,7 +108,7 @@ ruff check launcher gui tests
 python tools/ui_regression.py            # add --quick to skip the screenshots
 ```
 
-テーマの内部構造（プレースホルダー、カスタマイズ用フック、新しいオプションの追加方法）： `docs/theming_en.md`。
+テーマの内部構造（プレースホルダー、カスタマイズ用フック、新しいオプションの追加方法）：`docs/theming_en.md`。
 
 ## ライセンス
 
