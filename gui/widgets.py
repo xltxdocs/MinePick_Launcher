@@ -180,14 +180,32 @@ def _status_host(widget):
     """
     node = widget
     while node is not None:
-        window = node.window() if hasattr(node, "window") else None
-        if window is not None and (
-            callable(getattr(window, "set_status", None))
-            or getattr(window, "status_label", None) is not None
-        ):
-            return window
-        node = node.parent() if hasattr(node, "parent") else None
+        # A destroyed C++ object raises RuntimeError on any attribute access; a worker
+        # callback that lands after its page was torn down must never crash the app, so
+        # every step of the walk is guarded and a dead object ends the search.
+        if not _is_alive(node):
+            return None
+        try:
+            window = node.window() if hasattr(node, "window") else None
+            if window is not None and (
+                callable(getattr(window, "set_status", None))
+                or getattr(window, "status_label", None) is not None
+            ):
+                return window
+            node = node.parent() if hasattr(node, "parent") else None
+        except RuntimeError:
+            return None
     return None
+
+
+def _is_alive(widget) -> bool:
+    """False once Qt has destroyed the underlying C++ object (shiboken6 knows)."""
+    try:
+        import shiboken6
+
+        return shiboken6.isValid(widget)
+    except Exception:  # noqa: BLE001 - shiboken missing or non-Qt object: assume alive
+        return True
 
 
 def set_app_status(widget, text: str, level: str | None = None) -> None:
@@ -197,21 +215,28 @@ def set_app_status(widget, text: str, level: str | None = None) -> None:
     line in its status bar (``status_label``) and exposes ``set_status(text, level)``.
     Anything else that embeds a page (offscreen render tools, widget-level unit tests)
     has no such host, so this is a safe no-op there.
+
+    A worker callback can land after its page was destroyed; the traversal and the write
+    are therefore guarded so a dead C++ object degrades to a dropped message instead of a
+    crash (shiboken raises RuntimeError, and a half-destroyed object can fault natively).
     """
-    host = _status_host(widget)
-    if host is None:
+    try:
+        host = _status_host(widget)
+        if host is None:
+            return
+        setter = getattr(host, "set_status", None)
+        if callable(setter):
+            setter(text, level)
+            return
+        label = host.status_label
+        if level == "error":
+            label.set_error(text)
+        elif level == "warning":
+            label.set_warning(text)
+        else:
+            label.setText(text)
+    except RuntimeError:
         return
-    setter = getattr(host, "set_status", None)
-    if callable(setter):
-        setter(text, level)
-        return
-    label = host.status_label
-    if level == "error":
-        label.set_error(text)
-    elif level == "warning":
-        label.set_warning(text)
-    else:
-        label.setText(text)
 
 
 def build_page_header(title: str, subtitle: str) -> QWidget:
