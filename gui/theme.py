@@ -190,6 +190,9 @@ def apply_theme(
     arrow = "down_arrow_light.png" if theme == "light" else "down_arrow.png"
     arrow_path = paths.resource_path("gui/resources/" + arrow)
     text = text.replace("__DOWN_ARROW__", arrow_path.as_posix())
+    suffix = "_light" if theme == "light" else ""
+    for placeholder, name in (("__SPIN_UP__", f"spin_up{suffix}.png"), ("__SPIN_DOWN__", f"spin_down{suffix}.png")):
+        text = text.replace(placeholder, paths.resource_path(f"gui/resources/{name}").as_posix())
     check_path = paths.resource_path("gui/resources/check.png")
     text = text.replace("__CHECK__", check_path.as_posix())
     text = text.replace("__FONT__", font_stack(font))

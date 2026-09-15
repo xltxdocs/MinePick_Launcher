@@ -301,6 +301,17 @@ QSpinBox::up-button:hover, QSpinBox::down-button:hover,
 QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover {
     background: #e6ebf1;
 }
+QSpinBox::up-button, QDoubleSpinBox::up-button {
+    subcontrol-origin: border;
+    subcontrol-position: top right;
+    image: url(__SPIN_UP__);
+}
+QSpinBox::down-button, QDoubleSpinBox::down-button {
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    image: url(__SPIN_DOWN__);
+}
+
 
 /* ---------- scrollbars: invisible until the pointer enters the list, then a slim handle ---------- */
 
