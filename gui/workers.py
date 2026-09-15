@@ -118,6 +118,30 @@ class Worker(QRunnable):
 _alive: set[Worker] = set()
 
 
+def _guard_owner(callback: Callable[..., Any] | None) -> Callable[..., Any] | None:
+    """Skip a callback whose bound owner widget no longer exists.
+
+    A worker result is delivered through a queued connection, so it can arrive after the page
+    that asked for it was closed or torn down. Calling the bound method then dereferences a
+    freed C++ object: Windows reports it as an access violation inside Qt6Widgets.dll. A plain
+    function (no ``__self__``) is passed through untouched.
+    """
+    if callback is None:
+        return None
+    owner = getattr(callback, "__self__", None)
+    if owner is None or isinstance(owner, type):
+        return callback
+
+    from gui.widgets import widget_alive
+
+    def guarded(*args: Any) -> None:
+        if not widget_alive(owner):
+            return
+        callback(*args)
+
+    return guarded
+
+
 def run_in_background(
     fn: Callable[..., Any],
     *args: Any,
@@ -127,6 +151,9 @@ def run_in_background(
     **kwargs: Any,
 ) -> Worker:
     worker = Worker(fn, *args, **kwargs)
+    on_result = _guard_owner(on_result)
+    on_error = _guard_owner(on_error)
+    on_finished = _guard_owner(on_finished)
     if on_result is not None:
         worker.signals.result.connect(on_result)
     if on_error is not None:

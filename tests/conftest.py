@@ -44,3 +44,24 @@ def ws_tmp():
         yield d
     finally:
         shutil.rmtree(d, ignore_errors=True)
+
+
+@pytest.fixture(autouse=True)
+def _settle_background_work():
+    """Let the worker pool finish before the next test tears widgets down.
+
+    Windows recorded 0xC0000005 inside Qt6Widgets.dll at a fixed offset: a test ended while a
+    QThreadPool job started by an earlier test was still running, so Qt later touched widget
+    objects that had already been destroyed. Draining the pool and flushing the event queue
+    between tests removes that overlap without changing what any test asserts.
+    """
+    yield
+    try:
+        from PySide6.QtCore import QThreadPool
+        from PySide6.QtWidgets import QApplication
+    except ImportError:  # no Qt in this environment: nothing to drain
+        return
+    QThreadPool.globalInstance().waitForDone(5000)
+    application = QApplication.instance()
+    if application is not None:
+        application.processEvents()

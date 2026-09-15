@@ -198,14 +198,21 @@ def _status_host(widget):
     return None
 
 
-def _is_alive(widget) -> bool:
-    """False once Qt has destroyed the underlying C++ object (shiboken6 knows)."""
+def widget_alive(widget) -> bool:
+    """False once Qt has destroyed the underlying C++ object (shiboken6 knows).
+
+    A worker result can arrive after its page was closed or torn down; every callback that
+    writes widgets must check this first, otherwise it dereferences a freed C++ object.
+    """
     try:
         import shiboken6
 
         return shiboken6.isValid(widget)
     except Exception:  # noqa: BLE001 - shiboken missing or non-Qt object: assume alive
         return True
+
+
+_is_alive = widget_alive  # internal alias kept for the traversal above
 
 
 def set_app_status(widget, text: str, level: str | None = None) -> None:

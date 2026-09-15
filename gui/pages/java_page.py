@@ -41,6 +41,7 @@ from gui.widgets import (
     build_page_header,
     set_app_status,
     style_page_layout,
+    widget_alive,
 )
 from gui.workers import ProgressBridge, run_in_background
 from launcher import paths
@@ -144,9 +145,13 @@ class JavaPage(QWidget):
 
     def refresh(self) -> None:
         self._refresh_managed()
-        # Probing java -version is slow: run in the background to avoid freezing the UI on start/refresh
+        # Probing java -version is slow, so only the *probe* runs on a worker thread. Filling
+        # the table happens in the result callback, which Qt delivers on the GUI thread —
+        # touching widgets from the worker corrupted Qt's state and crashed the process.
         run_in_background(
-            self._refresh_detected,
+            list_java,
+            probe_dir=paths.launcher_dir() / "cache",
+            on_result=self._apply_detected,
             on_error=lambda _m: None,
         )
 
@@ -164,8 +169,18 @@ class JavaPage(QWidget):
         self.managed_table.setSortingEnabled(True)
         self.empty_managed.update_for(len(items))
 
-    def _refresh_detected(self) -> None:
-        runtimes = list_java(probe_dir=paths.launcher_dir() / "cache")
+    def _refresh_detected(self) -> list:
+        """The background half: a pure probe with no widget access at all."""
+        return list_java(probe_dir=paths.launcher_dir() / "cache")
+
+    def _apply_detected(self, runtimes: list) -> None:
+        """The GUI half: fills the table once the probe comes back.
+
+        Runs on the main thread, and only while this page still exists: closing the window
+        while the probe is in flight used to end in an access violation.
+        """
+        if not widget_alive(self) or not widget_alive(self.detected_table):
+            return
         self.detected_table.setSortingEnabled(False)
         self.detected_table.setRowCount(0)
         self.detected_table.setRowCount(len(runtimes))
