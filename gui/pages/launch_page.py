@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with MinePick Launcher. If not, see <https://www.gnu.org/licenses/>.
 
-"""Launch page: choose version/account/memory/language, launch the game and tail the log."""
+"""Launch page: choose version/account/memory/language and launch the game."""
 
 from __future__ import annotations
 
@@ -29,7 +29,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QPlainTextEdit,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -87,10 +86,6 @@ class LaunchPage(QWidget):
         self.launch_button = QPushButton(tr("launch.button"))
         self.status = StatusLabel(tr("status.ready"))
         self.status.setObjectName("hint")
-        self.log_view = QPlainTextEdit()
-        self.log_view.setReadOnly(True)
-        self.log_view.setMaximumBlockCount(2000)
-        self.log_view.setPlaceholderText(tr("empty.log"))
 
         form = QFormLayout()
         style_form(form)
@@ -112,17 +107,10 @@ class LaunchPage(QWidget):
         layout.addLayout(form)
         layout.addWidget(self.launch_button)
         layout.addWidget(self.status)
-        layout.addWidget(QLabel(tr("launch.log.label")))
-        layout.addWidget(self.log_view, 1)
+        layout.addStretch(1)
 
         self.launch_button.clicked.connect(self.launch)
         self.account_combo.currentIndexChanged.connect(self._on_account_selected)
-
-        self._log_timer = QTimer(self)
-        self._log_timer.setInterval(2000)
-        self._log_timer.timeout.connect(self._tail_log)
-        self._log_path: Path | None = None
-        self._log_pos = 0
 
         self.refresh_config()
         self.refresh_account()
@@ -332,8 +320,6 @@ class LaunchPage(QWidget):
                 tr("common.on") if prepared.isolated else tr("common.off"),
             )
         )
-        self._log_path = command.cwd / "logs" / "latest.log"
-        self._log_pos = 0
 
         # After-launch behavior (keep / hide / exit) is handled via a signal
         # bridge back to the main thread once the game process starts.
@@ -362,7 +348,6 @@ class LaunchPage(QWidget):
                 show_fatal(self, tr("launch.msg.run_error", m)),
             ),
         )
-        self._log_timer.start()
 
     def _on_game_started(self, _value=None) -> None:
         from PySide6.QtWidgets import QApplication
@@ -384,8 +369,6 @@ class LaunchPage(QWidget):
         QTimer.singleShot(600, QApplication.instance().quit)
 
     def _on_game_exit(self, result) -> None:
-        self._log_timer.stop()
-        self._tail_log()
         code, crashes = result
         message = tr("launch.msg.exit", code)
         if crashes:
@@ -396,16 +379,3 @@ class LaunchPage(QWidget):
         text = tr("launch.msg.fail", message)
         self.status.setText(text)
         show_fatal(self, text)  # fatal error dialog
-
-    def _tail_log(self) -> None:
-        if self._log_path is None or not self._log_path.exists():
-            return
-        try:
-            text = self._log_path.read_text(encoding="utf-8", errors="replace")
-            if len(text) > self._log_pos:
-                new_text = text[self._log_pos :]
-                self._log_pos = len(text)
-                if new_text.strip():
-                    self.log_view.appendPlainText(new_text.rstrip())
-        except OSError:
-            return

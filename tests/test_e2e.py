@@ -18,7 +18,8 @@
 """E2E tests: pytest + offscreen GUI, simulating UI interactions to verify core flows.
 
 Covers: offline login integration, multi-account switching, mod search (respx-mocked Modrinth),
-the version uninstall flow (mocked confirmation dialog), launch-page JVM arg persistence, crash report viewer.
+the version uninstall flow (mocked confirmation dialog), launch-page JVM arg persistence,
+the launch flow (prepare -> run -> exit code), crash report viewer.
 """
 
 import json
@@ -264,35 +265,38 @@ def test_e2e_crash_viewer_lists_reports(app, ws_tmp):
     assert "boom" in dialog.viewer.toPlainText()
     dialog.close()
 
-def test_e2e_launch_flow_log_tail(app, monkeypatch, ws_tmp):
-    """Simulates the full launch flow (prepare -> run -> log tail -> exit code)."""
+def test_e2e_launch_flow_runs_and_reports_exit(app, monkeypatch, ws_tmp):
+    """Simulates the full launch flow (prepare -> run -> exit code) with no log panel in the page."""
     monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data6"))
     _cfg, _p = config_mod.load()
     _cfg.offline_unlocked = True
+    _cfg.after_launch_behavior = "keep"  # hide/exit paths are covered by test_gui
     config_mod.save(_cfg, _p)
-    from types import SimpleNamespace
 
     import gui.pages.launch_page as launch_page_mod
 
     cwd = ws_tmp / "mc"
-    (cwd / "logs").mkdir(parents=True)
-    (cwd / "logs" / "latest.log").write_text("Hello from game\n", encoding="utf-8")
+    cwd.mkdir(parents=True)
+    argv = ["java", "-version"]
+    run_calls = []  # (argv, cwd, on_started)
 
     def fake_prepare(*args, **kwargs):
         return SimpleNamespace(
-            command=SimpleNamespace(argv=["java"], cwd=cwd),
+            command=SimpleNamespace(argv=argv, cwd=cwd),
             account=SimpleNamespace(username="Steve"),
             version=SimpleNamespace(id="1.20.1"),
             java=SimpleNamespace(major=17),
             isolated=False,
         )
 
+    def fake_run_process(process_argv, process_cwd, on_started=None):
+        run_calls.append((process_argv, process_cwd, on_started))
+        if on_started is not None:  # the real runner signals "process is up" first
+            on_started()
+        return 7
+
     monkeypatch.setattr(launch_page_mod, "prepare_launch", fake_prepare)
-    monkeypatch.setattr(
-        launch_page_mod,
-        "run_process",
-        lambda argv, cwd, on_started=None: (on_started() if on_started else None) or 0,
-    )
+    monkeypatch.setattr(launch_page_mod, "run_process", fake_run_process)
 
     from gui.main_window import MainWindow
 
@@ -302,8 +306,17 @@ def test_e2e_launch_flow_log_tail(app, monkeypatch, ws_tmp):
         page = window.pages["launch"]
         page.version_combo.setEditText("1.20.1")
         page.launch()
-        assert _wait_until(app, lambda: "Hello from game" in page.log_view.toPlainText())
-        assert _wait_until(app, lambda: "退出码" in page.status.text())
+        # the prepared command really reaches the process runner
+        assert _wait_until(app, lambda: bool(run_calls))
+        assert run_calls[0][0] == argv
+        assert run_calls[0][1] == cwd
+        assert run_calls[0][2] is None  # default behavior "keep": no after-launch start hook
+        # the exit code lands on the status label and the button becomes usable again
+        assert _wait_until(app, lambda: "退出码: 7" in page.status.text())
+        assert _wait_until(app, lambda: page.launch_button.isEnabled())
+        # the game-log panel is gone: neither the widget nor its tailing timer exists
+        assert not hasattr(page, "log_view")
+        assert not hasattr(page, "_log_timer")
     finally:
         if window is not None:
             window.close()

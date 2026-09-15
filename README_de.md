@@ -71,7 +71,7 @@ Befehlszeilen-EXE gibt es hier nicht.
 
 ### Start & Instanzen
 - Speicherempfehlung anhand Mod-Anzahl und verfügbarem RAM, eigene JVM-Argumente, Server-Direktverbindung,
-  Spielsprache, Live-Spielprotokoll, Verhalten „Nach dem Spielstart“, Freigabe des Launcher-Arbeitsspeichers
+  Spielsprache, Verhalten „Nach dem Spielstart“, Freigabe des Launcher-Arbeitsspeichers
 - Isolierte Instanzen mit Notizen, Umbenennen, Import/Export und einem lokalen Mod-Manager pro Instanz (liest
   Jar-Metadaten für Fabric / Quilt / NeoForge / Forge / mcmod.info, Aktivieren/Deaktivieren, Suchen & Filtern, Drag-and-Drop)
 

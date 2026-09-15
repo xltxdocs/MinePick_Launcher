@@ -66,7 +66,7 @@ Modrinth 與 CurseForge 資源、Fabric/Forge/NeoForge/Quilt 載入器、隔離�
 
 ### 啟動與實例
 - 依模組數量與可用記憶體提供記憶體建議、自訂 JVM 參數、伺服器直連、遊戲語言、
-  即時日誌、「啟動遊戲後」行為、釋放啟動器記憶體
+  「啟動遊戲後」行為、釋放啟動器記憶體
 - 隔離實例，支援備註、重新命名、匯入/匯出，以及每個實例專屬的本機模組管理（讀取
   Fabric / Quilt / NeoForge / Forge / mcmod.info 的 jar 中介資料、啟用/停用、搜尋與篩選、拖放）
 

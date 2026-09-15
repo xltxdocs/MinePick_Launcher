@@ -72,7 +72,7 @@ que el proyecto principal, más el rediseño de interfaz que se describe a conti
 
 ### Inicio e instancias
 - Sugerencia de memoria según el número de mods y la RAM libre, argumentos de JVM personalizados, conexión directa a
-  servidores, idioma del juego, registro en vivo, comportamiento «tras iniciar el juego», liberación de la memoria del launcher
+  servidores, idioma del juego, comportamiento «tras iniciar el juego», liberación de la memoria del launcher
 - Instancias aisladas con notas, renombrado, importación/exportación y un gestor de mods local por instancia (lee los
   metadatos del jar de Fabric / Quilt / NeoForge / Forge / mcmod.info, activar/desactivar, búsqueda y filtro, arrastrar y soltar)
 

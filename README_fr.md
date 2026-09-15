@@ -73,7 +73,7 @@ que le projet principal, plus la refonte de l'interface décrite ci-dessous, et 
 
 ### Lancement et instances
 - Suggestion de mémoire selon le nombre de mods et la RAM disponible, arguments JVM personnalisés, connexion
-  directe au serveur, langue du jeu, journal du jeu en direct, comportement « après le lancement du jeu »,
+  directe au serveur, langue du jeu, comportement « après le lancement du jeu »,
   libération de la mémoire du lanceur
 - Instances isolées avec notes, renommage, import/export, et un gestionnaire de mods local par instance (lecture
   des métadonnées jar pour Fabric / Quilt / NeoForge / Forge / mcmod.info, activation/désactivation, recherche et

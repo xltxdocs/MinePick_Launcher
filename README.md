@@ -71,7 +71,7 @@ executable here.
 
 ### Launching & instances
 - Memory suggestion from mod count and free RAM, custom JVM arguments, server direct-connect, game language,
-  live log tail, "after the game starts" behaviour, working-set trimming
+  "after the game starts" behaviour, working-set trimming
 - Isolated instances with notes, rename, import/export, and a per-instance local mod manager (reads jar
   metadata for Fabric / Quilt / NeoForge / Forge / mcmod.info, enable/disable, search & filter, drag-and-drop)
 
