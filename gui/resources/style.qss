@@ -305,11 +305,14 @@ QSpinBox::up-button, QDoubleSpinBox::up-button {
     subcontrol-origin: border;
     subcontrol-position: top right;
     image: url(__SPIN_UP__);
+    /* follow the field's own radius, so a rounded input never shows a square button */
+    border-top-right-radius: __RADIUS_SM__;
 }
 QSpinBox::down-button, QDoubleSpinBox::down-button {
     subcontrol-origin: border;
     subcontrol-position: bottom right;
     image: url(__SPIN_DOWN__);
+    border-bottom-right-radius: __RADIUS_SM__;
 }
 
 
