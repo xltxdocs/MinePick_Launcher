@@ -48,10 +48,10 @@ from gui.errors import show_fatal
 from gui.view_state import remember_column_widths
 from gui.widgets import (
     EmptyState,
-    StatusLabel,
     add_search_icon,
     apply_no_focus_outline,
     build_page_header,
+    set_app_status,
     style_page_layout,
 )
 from gui.workers import run_in_background
@@ -203,9 +203,6 @@ class InstancesPage(QWidget):
         self.launch_button = QPushButton(tr("instances.launch"))
         self.crash_button = QPushButton(tr("crash.viewer"))
         self.crash_button.setObjectName("secondaryButton")
-        self.status = StatusLabel(tr("instances.hint"))
-        self.status.setObjectName("hint")
-        self.status.setWordWrap(True)
 
         # —— Mods management panel (acts on the currently selected instance) ——
         self._mods: list = []
@@ -244,9 +241,6 @@ class InstancesPage(QWidget):
         self.mods_folder_button.setObjectName("secondaryButton")
         self.mods_delete_button = QPushButton(tr("instances.mods.delete"))
         self.mods_delete_button.setObjectName("dangerButton")
-        self.mods_status = StatusLabel(tr("instances.mods.hint"))
-        self.mods_status.setObjectName("hint")
-        self.mods_status.setWordWrap(True)
 
         sort_row = QHBoxLayout()
         sort_row.addWidget(QLabel(tr("instances.sort.label")))
@@ -276,12 +270,10 @@ class InstancesPage(QWidget):
         self.empty_instances = EmptyState(tr("empty.instances"))
         layout.addWidget(self.empty_instances)
         layout.addLayout(buttons)
-        layout.addWidget(self.status)
         layout.addWidget(self.mods_title)
         layout.addLayout(mods_tools)
         layout.addWidget(self.mods_table, 2)
         remember_column_widths(self.mods_table, "instance_mods")
-        layout.addWidget(self.mods_status)
 
         self.create_button.clicked.connect(self._create)
         self.delete_button.clicked.connect(self._delete)
@@ -340,7 +332,7 @@ class InstancesPage(QWidget):
                 self.mods_table.setRowCount(0)
             finally:
                 self._filling_mods = False
-            self.mods_status.setText(tr("instances.mods.hint"))
+            set_app_status(self, tr("instances.mods.hint"))
             return
         cfg, _ = config.load()
         game_dir = cfg.game_dir or paths.default_game_dir()
@@ -351,14 +343,16 @@ class InstancesPage(QWidget):
             )
         except Exception as exc:  # noqa: BLE001 - handle dir resolution failure via the hint
             self._mods_dir = None
-            self.mods_status.set_error(tr("instances.mods.msg.load_fail", exc))
+            set_app_status(self, tr("instances.mods.msg.load_fail", exc), "error")
             return
-        self.mods_status.setText(tr("instances.mods.loading"))
+        set_app_status(self, tr("instances.mods.loading"))
         mods_dir = self._mods_dir
         run_in_background(
             lambda: scan_mods(mods_dir),
             on_result=self._fill_mods_table,
-            on_error=lambda m: self.mods_status.set_error(tr("instances.mods.msg.load_fail", m)),
+            on_error=lambda m: set_app_status(
+                self, tr("instances.mods.msg.load_fail", m), "error"
+            ),
         )
 
     def _fill_mods_table(self, mods: list) -> None:
@@ -402,9 +396,9 @@ class InstancesPage(QWidget):
         finally:
             self._filling_mods = False
         if not shown and self._mods:
-            self.mods_status.setText(tr("instances.mods.search.none"))
+            set_app_status(self, tr("instances.mods.search.none"))
         else:
-            self.mods_status.setText(tr("instances.mods.count", len(self._mods)))
+            set_app_status(self, tr("instances.mods.count", len(self._mods)))
 
     def _on_mod_toggled(self, item: QTableWidgetItem) -> None:
         if self._filling_mods or item.column() != 0:
@@ -418,7 +412,7 @@ class InstancesPage(QWidget):
         try:
             set_mod_enabled(mod, want)
         except OSError as exc:
-            self.mods_status.set_error(tr("instances.mods.msg.toggle_fail", exc))
+            set_app_status(self, tr("instances.mods.msg.toggle_fail", exc), "error")
             self._filling_mods = True
             try:
                 item.setCheckState(
@@ -429,14 +423,14 @@ class InstancesPage(QWidget):
 
     def _open_mods_folder(self) -> None:
         if self._mods_dir is None:
-            self.mods_status.setText(tr("instances.mods.hint"))
+            set_app_status(self, tr("instances.mods.hint"))
             return
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(self._mods_dir)))
 
     def _delete_selected_mods(self) -> None:
         rows = sorted({i.row() for i in self.mods_table.selectedItems()}, reverse=True)
         if not rows:
-            self.mods_status.set_warning(tr("instances.mods.msg.need_select"))
+            set_app_status(self, tr("instances.mods.msg.need_select"), "warning")
             return
         files = []
         for row in rows:
@@ -462,12 +456,12 @@ class InstancesPage(QWidget):
                 deleted += 1
             except OSError:
                 continue
-        self.mods_status.setText(tr("instances.mods.msg.deleted", deleted))
+        set_app_status(self, tr("instances.mods.msg.deleted", deleted))
         self._reload_mods()
 
     def _install_dropped(self, jars: list[Path]) -> None:
         if self._mods_dir is None:
-            self.mods_status.setText(tr("instances.mods.hint"))
+            set_app_status(self, tr("instances.mods.hint"))
             return
         errors = []
         for src in jars:
@@ -476,10 +470,10 @@ class InstancesPage(QWidget):
             except OSError as exc:
                 errors.append(str(exc))
         if errors:
-            self.mods_status.set_error(tr("instances.mods.msg.import_fail", "; ".join(errors)))
+            set_app_status(self, tr("instances.mods.msg.import_fail", "; ".join(errors)), "error")
         else:
-            self.mods_status.setText(
-                tr("instances.mods.msg.imported", ", ".join(j.name for j in jars))
+            set_app_status(
+                self, tr("instances.mods.msg.imported", ", ".join(j.name for j in jars))
             )
         self._reload_mods()
 
@@ -497,7 +491,7 @@ class InstancesPage(QWidget):
             return
         name, version = dialog.values()
         if not name or not version:
-            self.status.set_warning(tr("instances.msg.need_fields"))
+            set_app_status(self, tr("instances.msg.need_fields"), "warning")
             return
         cfg, _ = config.load()
         game_dir = cfg.game_dir or paths.default_game_dir()
@@ -510,8 +504,11 @@ class InstancesPage(QWidget):
         self.create_button.setEnabled(False)
         run_in_background(
             do_create,
-            on_result=lambda _inst: (self.refresh(), self.status.setText(tr("instances.msg.created", name))),
-            on_error=lambda m: self.status.set_error(tr("instances.msg.create_fail", m)),
+            on_result=lambda _inst: (
+                self.refresh(),
+                set_app_status(self, tr("instances.msg.created", name)),
+            ),
+            on_error=lambda m: set_app_status(self, tr("instances.msg.create_fail", m), "error"),
             on_finished=lambda: self.create_button.setEnabled(True),
         )
 
@@ -519,14 +516,14 @@ class InstancesPage(QWidget):
         """Base versions are managed on the Versions page; return True when the action must stop."""
         inst = list_instances().get(name)
         if inst is not None and inst.base:
-            self.status.set_warning(tr("instances.base_hint"))
+            set_app_status(self, tr("instances.base_hint"), "warning")
             return True
         return False
 
     def _delete(self) -> None:
         name = self._current_name()
         if name is None:
-            self.status.set_warning(tr("instances.msg.need_select"))
+            set_app_status(self, tr("instances.msg.need_select"), "warning")
             return
         if self._guard_base(name):
             return
@@ -546,10 +543,10 @@ class InstancesPage(QWidget):
         try:
             delete_instance(name, game_dir)
         except InstancesError as exc:
-            self.status.set_error(tr("instances.msg.delete_fail", str(exc)))
+            set_app_status(self, tr("instances.msg.delete_fail", str(exc)), "error")
             return
         self.refresh()
-        self.status.setText(tr("instances.msg.deleted", name))
+        set_app_status(self, tr("instances.msg.deleted", name))
 
     def _context_menu(self, pos) -> None:
         menu = QMenu(self)
@@ -576,7 +573,7 @@ class InstancesPage(QWidget):
     def _rename(self) -> None:
         name = self._current_name()
         if name is None:
-            self.status.set_warning(tr("instances.msg.need_select"))
+            set_app_status(self, tr("instances.msg.need_select"), "warning")
             return
         new_name, ok = QInputDialog.getText(
             self,
@@ -592,7 +589,7 @@ class InstancesPage(QWidget):
         try:
             rename_instance(name, new_name, game_dir)
         except InstancesError as exc:
-            self.status.set_error(tr("instances.msg.rename_fail", str(exc)))
+            set_app_status(self, tr("instances.msg.rename_fail", str(exc)), "error")
             return
         self.refresh()
         # Keep the renamed instance selected
@@ -600,12 +597,12 @@ class InstancesPage(QWidget):
             if self.list.item(row).text().startswith(new_name + "   ["):
                 self.list.setCurrentRow(row)
                 break
-        self.status.setText(tr("instances.msg.renamed", name, new_name))
+        set_app_status(self, tr("instances.msg.renamed", name, new_name))
 
     def _edit_note(self) -> None:
         name = self._current_name()
         if name is None:
-            self.status.set_warning(tr("instances.msg.need_select"))
+            set_app_status(self, tr("instances.msg.need_select"), "warning")
             return
         inst = list_instances().get(name)
         text, ok = QInputDialog.getMultiLineText(
@@ -619,15 +616,15 @@ class InstancesPage(QWidget):
         try:
             update_instance_note(name, text)
         except InstancesError as exc:
-            self.status.set_error(tr("instances.msg.note_fail", str(exc)))
+            set_app_status(self, tr("instances.msg.note_fail", str(exc)), "error")
             return
         self.refresh()
-        self.status.setText(tr("instances.msg.note_saved", name))
+        set_app_status(self, tr("instances.msg.note_saved", name))
 
     def _export(self) -> None:
         name = self._current_name()
         if name is None:
-            self.status.set_warning(tr("instances.msg.need_select"))
+            set_app_status(self, tr("instances.msg.need_select"), "warning")
             return
         from PySide6.QtWidgets import QFileDialog
 
@@ -644,8 +641,8 @@ class InstancesPage(QWidget):
 
         run_in_background(
             do_export,
-            on_result=lambda p: self.status.setText(tr("instances.msg.exported", str(p))),
-            on_error=lambda m: self.status.set_error(tr("instances.msg.export_fail", m)),
+            on_result=lambda p: set_app_status(self, tr("instances.msg.exported", str(p))),
+            on_error=lambda m: set_app_status(self, tr("instances.msg.export_fail", m), "error"),
         )
 
     def _import(self) -> None:
@@ -665,18 +662,18 @@ class InstancesPage(QWidget):
         run_in_background(
             do_import,
             on_result=self._on_imported,
-            on_error=lambda m: self.status.set_error(tr("instances.msg.import_fail", m)),
+            on_error=lambda m: set_app_status(self, tr("instances.msg.import_fail", m), "error"),
         )
 
     def _on_imported(self, inst) -> None:
         self.refresh()
-        self.status.setText(tr("instances.msg.imported", inst.name))
+        set_app_status(self, tr("instances.msg.imported", inst.name))
 
     def _open_folder(self) -> None:
         """Open the instance folder (users can drop third-party mods/resource packs/shader packs directly)."""
         name = self._current_name()
         if name is None:
-            self.status.set_warning(tr("instances.msg.need_select"))
+            set_app_status(self, tr("instances.msg.need_select"), "warning")
             return
         cfg, _ = config.load()
         game_dir = cfg.game_dir or paths.default_game_dir()
@@ -687,7 +684,7 @@ class InstancesPage(QWidget):
             target = instance_dir(game_dir, name)
         target.mkdir(parents=True, exist_ok=True)
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(target)))
-        self.status.setText(tr("instances.msg.folder_opened", str(target)))
+        set_app_status(self, tr("instances.msg.folder_opened", str(target)))
 
     def _open_crash_viewer(self) -> None:
         """Open the crash report viewer for the selected instance (or the global game dir)."""
@@ -705,12 +702,12 @@ class InstancesPage(QWidget):
     def _launch(self) -> None:
         name = self._current_name()
         if name is None:
-            self.status.set_warning(tr("instances.msg.need_select"))
+            set_app_status(self, tr("instances.msg.need_select"), "warning")
             return
         instances = list_instances()
         inst = instances.get(name)
         if inst is None:
-            self.status.set_warning(tr("instances.msg.not_found", name))
+            set_app_status(self, tr("instances.msg.not_found", name), "warning")
             return
         cfg, _ = config.load()
         game_dir = cfg.game_dir or paths.default_game_dir()
@@ -720,10 +717,10 @@ class InstancesPage(QWidget):
             from launcher.config import offline_mode_allowed
 
             if not offline_mode_allowed():
-                self.status.set_warning(tr("launch.msg.offline_locked"))
+                set_app_status(self, tr("launch.msg.offline_locked"), "warning")
                 return
         self.launch_button.setEnabled(False)
-        self.status.setText(tr("instances.msg.preparing", name))
+        set_app_status(self, tr("instances.msg.preparing", name))
 
         def do_prepare() -> object:
             try:
@@ -754,14 +751,12 @@ class InstancesPage(QWidget):
         kind, payload = result
         if kind == "error":
             text = tr("instances.msg.launch_fail", str(payload))
-            self.status.setText(text)
+            set_app_status(self, text, "error")
             show_fatal(self, text)  # fatal error dialog
             return
         prepared = payload
         command = prepared.command
-        self.status.setText(
-            tr("instances.msg.running", prepared.version.id, str(command.cwd))
-        )
+        set_app_status(self, tr("instances.msg.running", prepared.version.id, str(command.cwd)))
 
         # After-launch behavior (keep / hide / exit) via a signal bridge.
         from gui.workers import ProgressBridge
@@ -785,7 +780,7 @@ class InstancesPage(QWidget):
             do_run,
             on_result=self._on_exit,
             on_error=lambda m: (
-                self.status.set_error(tr("instances.msg.run_error", m)),
+                set_app_status(self, tr("instances.msg.run_error", m), "error"),
                 show_fatal(self, tr("instances.msg.run_error", m)),
             ),
         )
@@ -795,7 +790,7 @@ class InstancesPage(QWidget):
         message = tr("launch.msg.exit", code)
         if crashes:
             message += tr("launch.msg.crash", len(crashes))
-        self.status.setText(message)
+        set_app_status(self, message)
 
     def _on_game_started(self, _value=None) -> None:
         from PySide6.QtCore import QTimer
@@ -806,7 +801,7 @@ class InstancesPage(QWidget):
             from launcher.launch.memory import trim_working_set
 
             trim_working_set()
-        self.status.setText(tr("launch.msg.auto_closing"))
+        set_app_status(self, tr("launch.msg.auto_closing"))
         if cfg.after_launch_behavior == "keep":
             return
         if cfg.after_launch_behavior == "hide":

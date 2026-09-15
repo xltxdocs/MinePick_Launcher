@@ -205,7 +205,7 @@ def test_e2e_version_uninstall_flow(app, monkeypatch, ws_tmp):
         assert page.model.data(page.model.index(0, 3)) == "已安装"
         page.table.selectRow(0)
         page.uninstall_selected()
-        assert _wait_until(app, lambda: "已卸载" in page.status.text())
+        assert _wait_until(app, lambda: "已卸载" in window.status_label.text())
         assert not vdir.exists()
         # the status column refreshes
         assert page.model.data(page.model.index(0, 3)) == "—"
@@ -245,7 +245,7 @@ def test_e2e_launch_jvm_args_persist(app, monkeypatch, ws_tmp):
         app.processEvents()
         cfg, _ = config_mod.load()
         assert cfg.jvm_args == "-XX:+UseG1GC"  # persisted on launch
-        assert _wait_until(app, lambda: "已取消" in page.status.text())
+        assert _wait_until(app, lambda: "已取消" in window.status_label.text())
     finally:
         if window is not None:
             window.close()
@@ -311,12 +311,14 @@ def test_e2e_launch_flow_runs_and_reports_exit(app, monkeypatch, ws_tmp):
         assert run_calls[0][0] == argv
         assert run_calls[0][1] == cwd
         assert run_calls[0][2] is None  # default behavior "keep": no after-launch start hook
-        # the exit code lands on the status label and the button becomes usable again
-        assert _wait_until(app, lambda: "退出码: 7" in page.status.text())
+        # the exit code lands on the window's single status line and the button becomes usable again
+        assert _wait_until(app, lambda: "退出码: 7" in window.status_label.text())
         assert _wait_until(app, lambda: page.launch_button.isEnabled())
         # the game-log panel is gone: neither the widget nor its tailing timer exists
         assert not hasattr(page, "log_view")
         assert not hasattr(page, "_log_timer")
+        # the page keeps no status line of its own either: launch feedback goes to the window
+        assert not hasattr(page, "status")
     finally:
         if window is not None:
             window.close()

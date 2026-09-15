@@ -34,7 +34,12 @@ from PySide6.QtWidgets import (
 )
 
 from gui import i18n
-from gui.widgets import StatusLabel, apply_no_focus_outline, build_page_header, style_page_layout
+from gui.widgets import (
+    apply_no_focus_outline,
+    build_page_header,
+    set_app_status,
+    style_page_layout,
+)
 from gui.workers import ProgressBridge, run_in_background
 from launcher import config
 from launcher.auth import AccountStore, MicrosoftSession, create_offline_account
@@ -66,8 +71,6 @@ class LoginPage(QWidget):
         self.offline_button.setObjectName("secondaryButton")
         self.logout_button = QPushButton(tr("login.logout.button"))
         self.logout_button.setObjectName("dangerButton")
-        self.status = StatusLabel("")
-        self.status.setObjectName("hint")
 
         account_row = QHBoxLayout()
         account_row.addWidget(self.avatar_label)
@@ -94,7 +97,6 @@ class LoginPage(QWidget):
         offline_row.addWidget(self.offline_button)
         layout.addLayout(offline_row)
         layout.addWidget(self.logout_button)
-        layout.addWidget(self.status)
         layout.addStretch(1)
 
         self.ms_button.clicked.connect(self.start_ms_login)
@@ -200,14 +202,14 @@ class LoginPage(QWidget):
     def switch_account(self) -> None:
         account_id = self._selected_account_id()
         if account_id is None:
-            self.status.set_warning(tr("account.msg.need_select"))
+            set_app_status(self, tr("account.msg.need_select"), "warning")
             return
         cfg, cfg_path = config.load()
         cfg.selected_account = account_id
         config.save(cfg, cfg_path)
         self.refresh()
         account = AccountStore().load().get(account_id)
-        self.status.setText(tr("account.msg.switched", account.username if account else account_id))
+        set_app_status(self, tr("account.msg.switched", account.username if account else account_id))
         self.account_changed.emit()
 
     def _save_account(self, account) -> None:
@@ -228,7 +230,7 @@ class LoginPage(QWidget):
     def start_ms_login(self) -> None:
         self.ms_button.setEnabled(False)
         self.device_code.clear()
-        self.status.setText(tr("login.msg.waiting"))
+        set_app_status(self, tr("login.msg.waiting"))
         bridge = ProgressBridge()
         bridge.progress.connect(self._on_progress)
         flow_bridge = ProgressBridge()
@@ -272,9 +274,7 @@ class LoginPage(QWidget):
     def _on_countdown_tick(self) -> None:
         if self._countdown_seconds > 0:
             minutes, seconds = divmod(self._countdown_seconds, 60)
-            self.status.setText(
-                tr("login.msg.countdown", f"{minutes:02d}:{seconds:02d}")
-            )
+            set_app_status(self, tr("login.msg.countdown", f"{minutes:02d}:{seconds:02d}"))
             self._countdown_seconds -= 1
 
     def _stop_countdown(self) -> None:
@@ -290,26 +290,26 @@ class LoginPage(QWidget):
 
     def _on_ms_ok(self, account) -> None:
         self._stop_countdown()
-        self.status.setText(tr("login.msg.ok"))
+        set_app_status(self, tr("login.msg.ok"))
         self._save_account(account)
 
     def _on_error(self, message: str) -> None:
         self._stop_countdown()
-        self.status.set_error(tr("login.msg.fail", message))
+        set_app_status(self, tr("login.msg.fail", message), "error")
 
     def offline_login(self) -> None:
         from launcher.config import offline_mode_allowed
 
         if not offline_mode_allowed():
-            self.status.set_warning(tr("launch.msg.offline_locked"))
+            set_app_status(self, tr("launch.msg.offline_locked"), "warning")
             return
         try:
             account = create_offline_account(self.offline_edit.text())
         except ValueError as exc:
-            self.status.set_error(tr("login.msg.fail", exc))
+            set_app_status(self, tr("login.msg.fail", exc), "error")
             return
         self._save_account(account)
-        self.status.setText(tr("login.msg.offline_ok"))
+        set_app_status(self, tr("login.msg.offline_ok"))
 
     def logout(self) -> None:
         cfg, cfg_path = config.load()
@@ -318,7 +318,7 @@ class LoginPage(QWidget):
         # Prefer logging out the account selected in the list, otherwise the current account
         target = self._selected_account_id() or cfg.selected_account
         if not target:
-            self.status.setText(tr("login.msg.no_account"))
+            set_app_status(self, tr("login.msg.no_account"))
             return
         accounts.pop(target, None)
         if cfg.selected_account == target:
@@ -327,4 +327,4 @@ class LoginPage(QWidget):
         config.save(cfg, cfg_path)
         self.refresh()
         self.account_changed.emit()
-        self.status.setText(tr("login.msg.logged_out"))
+        set_app_status(self, tr("login.msg.logged_out"))

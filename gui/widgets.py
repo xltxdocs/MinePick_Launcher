@@ -142,6 +142,8 @@ class StatusLabel(QLabel):
     every existing ``setText`` call site unchanged and only marks the failures.
     """
 
+    _level = "info"  # severity of the text on display, updated by every setter
+
     def setText(self, text: str) -> None:  # Qt's slot name, kept camelCase on purpose
         self._apply_level("info")
         super().setText(text)
@@ -154,7 +156,12 @@ class StatusLabel(QLabel):
         self._apply_level("warning")
         super().setText(text)
 
+    def current_level(self) -> str:
+        """Severity of the message on display: "info", "warning" or "error"."""
+        return self._level
+
     def _apply_level(self, level: str) -> None:
+        self._level = level
         name = {"error": "statusError", "warning": "statusWarning"}.get(level, "hint")
         if self.objectName() == name:
             return
@@ -162,6 +169,49 @@ class StatusLabel(QLabel):
         style = self.style()
         style.unpolish(self)
         style.polish(self)
+
+
+def _status_host(widget):
+    """Nearest host of the app-wide status line: the widget's window, or an ancestor's.
+
+    A modal dialog (for example the mod version picker) is a top-level window of its
+    own, so ``widget.window()`` alone would find no host and the message would be lost:
+    walking the parent chain reaches the main window standing behind the dialog.
+    """
+    node = widget
+    while node is not None:
+        window = node.window() if hasattr(node, "window") else None
+        if window is not None and (
+            callable(getattr(window, "set_status", None))
+            or getattr(window, "status_label", None) is not None
+        ):
+            return window
+        node = node.parent() if hasattr(node, "parent") else None
+    return None
+
+
+def set_app_status(widget, text: str, level: str | None = None) -> None:
+    """Report a page message on the window's single status line.
+
+    The pages own no status label any more: the main window hosts one severity-aware
+    line in its status bar (``status_label``) and exposes ``set_status(text, level)``.
+    Anything else that embeds a page (offscreen render tools, widget-level unit tests)
+    has no such host, so this is a safe no-op there.
+    """
+    host = _status_host(widget)
+    if host is None:
+        return
+    setter = getattr(host, "set_status", None)
+    if callable(setter):
+        setter(text, level)
+        return
+    label = host.status_label
+    if level == "error":
+        label.set_error(text)
+    elif level == "warning":
+        label.set_warning(text)
+    else:
+        label.setText(text)
 
 
 def build_page_header(title: str, subtitle: str) -> QWidget:

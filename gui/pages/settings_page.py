@@ -43,8 +43,8 @@ from gui.theme import DEFAULT_ACCENTS, normalize_hex, resolve_theme
 from gui.widgets import (
     NoWheelDoubleSpinBox,
     NoWheelSpinBox,
-    StatusLabel,
     build_page_header,
+    set_app_status,
     style_form,
     style_page_layout,
 )
@@ -143,8 +143,6 @@ class SettingsPage(QWidget):
             self.radius_combo.addItem(label, code)
         self.open_data_dir_button = QPushButton(tr("settings.open_data_dir"))
         self.open_data_dir_button.setObjectName("secondaryButton")
-        self.status = StatusLabel("")
-        self.status.setObjectName("hint")
 
         # Accent color: free hex input with a live swatch and a reset-to-default button
         self.accent_edit = QLineEdit()
@@ -242,7 +240,6 @@ class SettingsPage(QWidget):
         layout.addWidget(self.trim_memory_check)
         layout.addLayout(encrypt_row)
         layout.addLayout(buttons_row)
-        layout.addWidget(self.status)
         layout.addStretch(1)
 
         # Wrap the form in a scroll area so the main window can stay compact
@@ -429,10 +426,11 @@ class SettingsPage(QWidget):
 
         reset_http_client()
         self._update_encrypt_button()
-        self.status.setText(
+        set_app_status(
+            self,
             tr("settings.accent.invalid")
             if (accent_input and accent is None)
-            else tr("settings.autosave")
+            else tr("settings.autosave"),
         )
         self.settings_changed.emit()
 
@@ -479,7 +477,7 @@ class SettingsPage(QWidget):
             QLineEdit.EchoMode.Password,
         )
         if not ok2 or first != second:
-            self.status.setText(tr("settings.encrypt.password.mismatch"))
+            set_app_status(self, tr("settings.encrypt.password.mismatch"))
             return None
         return first
 
@@ -509,9 +507,9 @@ class SettingsPage(QWidget):
             store = AccountStore()
             store.save(store.load())  # re-save as ciphertext with the new password
         except Exception as exc:  # noqa: BLE001 - funnel uniformly to UI status
-            self.status.set_error(tr("settings.encrypt.msg.failed", str(exc)))
+            set_app_status(self, tr("settings.encrypt.msg.failed", str(exc)), "error")
             return False
-        self.status.setText(tr("settings.encrypt.msg.enabled"))
+        set_app_status(self, tr("settings.encrypt.msg.enabled"))
         return True
 
     def _disable_encryption(self, cfg, cfg_path) -> bool:
@@ -521,7 +519,7 @@ class SettingsPage(QWidget):
         if password is None:
             return False
         if not secure.verify_password(password):
-            self.status.set_error(tr("settings.encrypt.wrong"))
+            set_app_status(self, tr("settings.encrypt.wrong"), "error")
             return False
         secure.set_password(password)
         store = AccountStore()
@@ -529,14 +527,14 @@ class SettingsPage(QWidget):
             accounts = store.load()
         except Exception as exc:  # noqa: BLE001
             secure.forget_password()
-            self.status.set_error(tr("settings.encrypt.msg.failed", str(exc)))
+            set_app_status(self, tr("settings.encrypt.msg.failed", str(exc)), "error")
             return False
         cfg.token_encryption = False
         config.save(cfg, cfg_path)
         store.save(accounts)  # plaintext
         (paths.launcher_dir() / secure.VAULT_FILENAME).unlink(missing_ok=True)
         secure.forget_password()
-        self.status.setText(tr("settings.encrypt.msg.disabled"))
+        set_app_status(self, tr("settings.encrypt.msg.disabled"))
         return True
 
     def _change_password(self) -> None:
@@ -553,7 +551,7 @@ class SettingsPage(QWidget):
         if current is None:
             return
         if not secure.verify_password(current):
-            self.status.set_error(tr("settings.encrypt.wrong"))
+            set_app_status(self, tr("settings.encrypt.wrong"), "error")
             return
         new_password = self._prompt_new_password()
         if new_password is None:
@@ -565,9 +563,9 @@ class SettingsPage(QWidget):
             secure.create_vault(new_password)
             store.save(accounts)
         except Exception as exc:  # noqa: BLE001
-            self.status.set_error(tr("settings.encrypt.msg.failed", str(exc)))
+            set_app_status(self, tr("settings.encrypt.msg.failed", str(exc)), "error")
             return
-        self.status.setText(tr("settings.encrypt.msg.changed"))
+        set_app_status(self, tr("settings.encrypt.msg.changed"))
 
     def _open_data_dir(self) -> None:
         from PySide6.QtCore import QUrl
@@ -576,7 +574,7 @@ class SettingsPage(QWidget):
         target = paths.launcher_dir()
         target.mkdir(parents=True, exist_ok=True)
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(target)))
-        self.status.setText(tr("settings.msg.data_dir_opened", str(target)))
+        set_app_status(self, tr("settings.msg.data_dir_opened", str(target)))
 
     def _browse_game(self) -> None:
         chosen = QFileDialog.getExistingDirectory(self, tr("settings.game_dir"), str(paths.default_game_dir()))

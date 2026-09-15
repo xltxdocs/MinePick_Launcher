@@ -49,10 +49,10 @@ from gui.errors import show_fatal
 from gui.models.version_list_model import VersionListModel
 from gui.view_state import apply_current_sort, remember_column_widths
 from gui.widgets import (
-    StatusLabel,
     add_search_icon,
     apply_no_focus_outline,
     build_page_header,
+    set_app_status,
     style_page_layout,
 )
 from gui.workers import (
@@ -192,8 +192,6 @@ class VersionsPage(QWidget):
         self.auto_jre_check.setObjectName("hint")
         self.progress_bar = QProgressBar()
         self.progress_bar.setVisible(False)
-        self.status = StatusLabel("")
-        self.status.setObjectName("hint")
 
         top = QHBoxLayout()
         top.addWidget(self.search_edit)
@@ -239,7 +237,6 @@ class VersionsPage(QWidget):
         layout.addWidget(self.table, 1)
         layout.addWidget(self.info_label)
         layout.addWidget(self.progress_bar)
-        layout.addWidget(self.status)
         buttons = QHBoxLayout()
         buttons.addWidget(self.install_button)
         buttons.addWidget(self.uninstall_button)
@@ -292,7 +289,7 @@ class VersionsPage(QWidget):
 
     def refresh(self) -> None:
         self.refresh_button.setEnabled(False)
-        self.status.setText(tr("versions.msg.fetching"))
+        set_app_status(self, tr("versions.msg.fetching"))
         cache = paths.launcher_dir() / "cache" / "version_manifest.json"
 
         def do_fetch() -> object:
@@ -301,7 +298,7 @@ class VersionsPage(QWidget):
         run_in_background(
             do_fetch,
             on_result=self._on_manifest,
-            on_error=lambda m: self.status.set_error(tr("versions.msg.fetch_fail", m)),
+            on_error=lambda m: set_app_status(self, tr("versions.msg.fetch_fail", m), "error"),
             on_finished=lambda: self.refresh_button.setEnabled(True),
         )
 
@@ -309,7 +306,7 @@ class VersionsPage(QWidget):
         self.manifest = manifest
         self._refresh_installed()
         self._update_latest_cards()
-        self.status.setText(tr("versions.msg.fetched", len(manifest.versions)))
+        set_app_status(self, tr("versions.msg.fetched", len(manifest.versions)))
         self._refilter()
 
     def _update_latest_cards(self) -> None:
@@ -371,7 +368,7 @@ class VersionsPage(QWidget):
     def install_selected(self) -> None:
         version_id = self._selected_id()
         if version_id is None:
-            self.status.set_warning(tr("versions.msg.need_select"))
+            set_app_status(self, tr("versions.msg.need_select"), "warning")
             return
         self.install_version_id(version_id)
 
@@ -387,7 +384,7 @@ class VersionsPage(QWidget):
         self.progress_bar.setVisible(True)
         self.progress_bar.setRange(0, 1000)
         self.progress_bar.setValue(0)
-        self.status.setText(tr("versions.msg.installing", version_id))
+        set_app_status(self, tr("versions.msg.installing", version_id))
         self._rate = RateTracker()
         bridge = ProgressBridge()
         bridge.progress.connect(self._on_progress)
@@ -425,10 +422,12 @@ class VersionsPage(QWidget):
     def uninstall_selected(self) -> None:
         version_id = self._selected_id()
         if version_id is None:
-            self.status.set_warning(tr("versions.msg.need_select"))
+            set_app_status(self, tr("versions.msg.need_select"), "warning")
             return
         if version_id not in self._installed:
-            self.status.set_error(tr("versions.msg.uninstall_fail", tr("versions.status.not_installed")))
+            set_app_status(
+                self, tr("versions.msg.uninstall_fail", tr("versions.status.not_installed")), "error"
+            )
             return
         game_dir = self._game_dir()
         dependents = find_version_dependents(game_dir, version_id)
@@ -445,7 +444,7 @@ class VersionsPage(QWidget):
         if answer != QMessageBox.StandardButton.Yes:
             return
         self.uninstall_button.setEnabled(False)
-        self.status.setText(tr("versions.msg.uninstalling", version_id))
+        set_app_status(self, tr("versions.msg.uninstalling", version_id))
 
         def do_uninstall() -> object:
             return uninstall_version(version_id, game_dir)
@@ -453,14 +452,16 @@ class VersionsPage(QWidget):
         run_in_background(
             do_uninstall,
             on_result=lambda _deps: self._on_uninstalled(version_id),
-            on_error=lambda m: self.status.set_error(tr("versions.msg.uninstall_fail", m)),
+            on_error=lambda m: set_app_status(
+                self, tr("versions.msg.uninstall_fail", m), "error"
+            ),
             on_finished=lambda: self.uninstall_button.setEnabled(True),
         )
 
     def show_details(self) -> None:
         version_id = self._selected_id()
         if version_id is None:
-            self.status.set_warning(tr("versions.msg.need_select"))
+            set_app_status(self, tr("versions.msg.need_select"), "warning")
             return
         dialog = QDialog(self)
         dialog.setWindowTitle(tr("versions.detail.title"))
@@ -555,7 +556,7 @@ class VersionsPage(QWidget):
     def _on_uninstalled(self, version_id: str) -> None:
         self._refresh_installed()
         self._refilter()
-        self.status.setText(tr("versions.msg.uninstalled", version_id))
+        set_app_status(self, tr("versions.msg.uninstalled", version_id))
         self.versions_changed.emit()
 
     def _on_progress(self, p) -> None:
@@ -564,7 +565,8 @@ class VersionsPage(QWidget):
             self._rate.set_total(p.total_bytes)
             rate, eta = self._rate.update(p.done_bytes)
             if rate > 0:
-                self.status.setText(
+                set_app_status(
+                    self,
                     tr(
                         "versions.msg.downloading_rate",
                         p.done_files,
@@ -572,11 +574,11 @@ class VersionsPage(QWidget):
                         p.current,
                         format_rate(rate),
                         format_eta(eta),
-                    )
+                    ),
                 )
             else:
-                self.status.setText(
-                    tr("versions.msg.downloading", p.done_files, p.total_files, p.current)
+                set_app_status(
+                    self, tr("versions.msg.downloading", p.done_files, p.total_files, p.current)
                 )
 
     def _on_installed(self, payload) -> None:
@@ -591,11 +593,11 @@ class VersionsPage(QWidget):
             message = tr("versions.msg.done", result.downloaded, result.skipped)
         if profile_id:
             message += " | " + tr("versions.msg.loader_done", profile_id)
-        self.status.setText(message)
+        set_app_status(self, message)
         self.versions_changed.emit()
 
     def _on_install_error(self, message: str) -> None:
         self.progress_bar.setVisible(False)
         text = tr("versions.msg.install_fail", message)
-        self.status.setText(text)
+        set_app_status(self, text, "error")
         show_fatal(self, text)  # fatal error dialog

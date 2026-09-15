@@ -45,10 +45,10 @@ from gui import i18n
 from gui.errors import show_fatal
 from gui.widgets import (
     EmptyState,
-    StatusLabel,
     add_search_icon,
     apply_no_focus_outline,
     build_page_header,
+    set_app_status,
     style_page_layout,
 )
 from gui.workers import (
@@ -97,8 +97,6 @@ class _VersionPickerDialog(QDialog):
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.status = StatusLabel(tr("mods.picker.loading"))
-        self.status.setObjectName("hint")
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
@@ -113,7 +111,6 @@ class _VersionPickerDialog(QDialog):
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.table, 1)
-        layout.addWidget(self.status)
         layout.addWidget(self.buttons)
 
         self.table.itemSelectionChanged.connect(
@@ -129,7 +126,7 @@ class _VersionPickerDialog(QDialog):
         run_in_background(
             do_fetch,
             on_result=self._fill,
-            on_error=lambda m: self.status.set_error(tr("mods.picker.fail", m)),
+            on_error=lambda m: set_app_status(self, tr("mods.picker.fail", m), "error"),
         )
 
     def _fill(self, versions: list[ModVersion]) -> None:
@@ -145,9 +142,9 @@ class _VersionPickerDialog(QDialog):
             )
             self.table.setItem(row, 2, QTableWidgetItem(", ".join(version.game_versions)))
         if versions:
-            self.status.setText("")
+            set_app_status(self, "")
         else:
-            self.status.setText(tr("mods.picker.none"))
+            set_app_status(self, tr("mods.picker.none"))
 
     def selected_version(self) -> ModVersion | None:
         row = self.table.currentRow()
@@ -207,9 +204,6 @@ class _ContentTab(QWidget):
         self.desc_label.setWordWrap(True)
         self.dep_required = QLabel("")
         self.dep_optional = QLabel("")
-        self.status = StatusLabel(tr("mods.status.default"))
-        self.status.setObjectName("hint")
-        self.status.setWordWrap(True)
 
         query_row = QHBoxLayout()
         if kind == "mod":
@@ -237,7 +231,6 @@ class _ContentTab(QWidget):
             buttons_row.addWidget(self.open_folder_button)
         buttons_row.addStretch(1)
         right.addLayout(buttons_row)
-        right.addWidget(self.status)
         right.addStretch(1)
 
         body = QHBoxLayout()
@@ -301,7 +294,7 @@ class _ContentTab(QWidget):
             self.desc_label.setText(entry.description)
             self.dep_required.setText("")
             self.dep_optional.setText(tr("mods.search.downloads", f"{entry.downloads:,}"))
-            self.status.setText(tr("mods.status.default"))
+            set_app_status(self, tr("mods.status.default"))
         elif isinstance(entry, ModInfo):
             self._hit = None
             self._show_mod(entry)
@@ -347,7 +340,7 @@ class _ContentTab(QWidget):
         if not query:
             return
         self.search_button.setEnabled(False)
-        self.status.setText(tr("mods.search.msg.searching", query))
+        set_app_status(self, tr("mods.search.msg.searching", query))
 
         project_type = {"resourcepack": "resourcepack", "shaderpack": "shader", "modpack": "modpack"}.get(
             self.kind, "mod"
@@ -389,7 +382,7 @@ class _ContentTab(QWidget):
         run_in_background(
             do_search,
             on_result=lambda hits: self._on_search_ok(hits, query),
-            on_error=lambda m: self.status.set_error(tr("mods.search.msg.fail", m)),
+            on_error=lambda m: set_app_status(self, tr("mods.search.msg.fail", m), "error"),
             on_finished=lambda: self.search_button.setEnabled(True),
         )
 
@@ -402,11 +395,11 @@ class _ContentTab(QWidget):
             self.desc_label.setText("")
             self.dep_required.setText("")
             self.dep_optional.setText("")
-            self.status.setText(tr("mods.search.msg.none", query))
+            set_app_status(self, tr("mods.search.msg.none", query))
             self._update_install_button()
             return
         self._set_entries(list(hits))
-        self.status.setText("")
+        set_app_status(self, "")
 
     # ---------- Popular Top 30 (by downloads) ----------
 
@@ -420,7 +413,7 @@ class _ContentTab(QWidget):
                 self._on_popular_ok(cached_hits)
                 return
         self.popular_button.setEnabled(False)
-        self.status.setText(tr("mods.search.msg.searching", tr("mods.popular")))
+        set_app_status(self, tr("mods.search.msg.searching", tr("mods.popular")))
         project_type = {"resourcepack": "resourcepack", "shaderpack": "shader", "modpack": "modpack"}.get(
             self.kind, "mod"
         )
@@ -435,26 +428,26 @@ class _ContentTab(QWidget):
         run_in_background(
             do_fetch,
             on_result=self._on_popular_ok,
-            on_error=lambda m: self.status.set_error(tr("mods.popular.fail", m)),
+            on_error=lambda m: set_app_status(self, tr("mods.popular.fail", m), "error"),
             on_finished=lambda: self.popular_button.setEnabled(True),
         )
 
     def _on_popular_ok(self, hits: list[ModSearchHit]) -> None:
         self._popular_cache = (self.page.current_source(), time.monotonic(), list(hits))
         self._set_entries(list(hits))
-        self.status.setText(tr("mods.popular.status"))
+        set_app_status(self, tr("mods.popular.status"))
 
     # ---------- slug query (kept) ----------
 
     def query(self) -> None:
         slug = self.slug_edit.text().strip()
         if not slug:
-            self.status.setText(tr("mods.status.default"))
+            set_app_status(self, tr("mods.status.default"))
             return
         loader = self.loader_combo.currentData() if self.kind == "mod" else None
         game_version = self.game_version_edit.text().strip()
         self.query_button.setEnabled(False)
-        self.status.setText(tr("mods.msg.querying", slug))
+        set_app_status(self, tr("mods.msg.querying", slug))
 
         def do_query() -> object:
             project = fetch_project(slug)
@@ -472,7 +465,7 @@ class _ContentTab(QWidget):
         run_in_background(
             do_query,
             on_result=self._on_query_ok,
-            on_error=lambda m: self.status.set_error(tr("mods.msg.query_fail", m)),
+            on_error=lambda m: set_app_status(self, tr("mods.msg.query_fail", m), "error"),
             on_finished=lambda: self.query_button.setEnabled(True),
         )
 
@@ -503,7 +496,7 @@ class _ContentTab(QWidget):
             )
             self.dep_optional.setText("")
             self._update_install_button()
-        self.status.setText(tr("mods.msg.query_done", info.title, picked.version_id))
+        set_app_status(self, tr("mods.msg.query_done", info.title, picked.version_id))
 
     # ---------- Install ----------
 
@@ -527,7 +520,7 @@ class _ContentTab(QWidget):
     def _install_cf(self, hit: ModSearchHit) -> None:
         """Install from CurseForge: pick the latest release file matching the game version and download it to the content directory."""
         if self.kind == "modpack":
-            self.status.setText(tr("mods.cf.modpack_unsupported"))
+            set_app_status(self, tr("mods.cf.modpack_unsupported"))
             return
         from launcher.mods import curseforge as cf
         from launcher.mods import resolve_content_dir, resolve_mods_dir
@@ -537,7 +530,7 @@ class _ContentTab(QWidget):
         game_version = self.game_version_edit.text().strip()
         loader = self.loader_combo.currentData() if self.kind == "mod" else ""
         self.install_button.setEnabled(False)
-        self.status.setText(tr("mods.cf.downloading", hit.title))
+        set_app_status(self, tr("mods.cf.downloading", hit.title))
 
         def do_install() -> object:
             files = cf.list_files(int(hit.slug), game_version=game_version, loader=loader)
@@ -561,13 +554,13 @@ class _ContentTab(QWidget):
         run_in_background(
             do_install,
             on_result=self._on_cf_installed,
-            on_error=lambda m: self.status.set_error(tr("mods.cf.fail", m)),
+            on_error=lambda m: set_app_status(self, tr("mods.cf.fail", m), "error"),
             on_finished=lambda: self.install_button.setEnabled(True),
         )
 
     def _on_cf_installed(self, result) -> None:
         target, _picked = result
-        self.status.setText(tr("mods.cf.done", target.name))
+        set_app_status(self, tr("mods.cf.done", target.name))
 
     def _pick_version(self) -> None:
         hit = self._hit
@@ -601,7 +594,7 @@ class _ContentTab(QWidget):
         cfg, _ = config.load()
         game_dir = cfg.game_dir or paths.default_game_dir()
         self.install_button.setEnabled(False)
-        self.status.setText(tr("mods.msg.downloading", title or slug))
+        set_app_status(self, tr("mods.msg.downloading", title or slug))
 
         def do_install() -> object:
             if self.kind == "resourcepack":
@@ -632,7 +625,7 @@ class _ContentTab(QWidget):
         run_in_background(
             do_install,
             on_result=self._on_installed,
-            on_error=lambda m: self.status.set_error(tr("mods.msg.install_fail", m)),
+            on_error=lambda m: set_app_status(self, tr("mods.msg.install_fail", m), "error"),
             on_finished=self._on_install_finished,
         )
 
@@ -670,7 +663,8 @@ class _ContentTab(QWidget):
                 rate_tracker.set_total(p.total_bytes)
                 rate, eta = rate_tracker.update(p.done_bytes)
                 if rate > 0:
-                    self.status.setText(
+                    set_app_status(
+                        self,
                         tr(
                             "mods.mp.progress_rate",
                             p.done_files,
@@ -678,22 +672,23 @@ class _ContentTab(QWidget):
                             p.current,
                             format_rate(rate),
                             format_eta(eta),
-                        )
+                        ),
                     )
                 else:
-                    self.status.setText(
-                        tr("mods.mp.progress", p.done_files, p.total_files, p.current)
+                    set_app_status(
+                        self,
+                        tr("mods.mp.progress", p.done_files, p.total_files, p.current),
                     )
 
             bridge.progress.connect(on_progress)
             self.install_button.setEnabled(False)
-            self.status.setText(tr("mods.msg.downloading", mod.slug))
+            set_app_status(self, tr("mods.msg.downloading", mod.slug))
             run_in_background(
                 do_install,
                 bridge,
                 on_result=self._on_modpack_installed,
                 on_error=lambda m: (
-                    self.status.set_error(tr("mods.msg.install_fail", m)),
+                    set_app_status(self, tr("mods.msg.install_fail", m), "error"),
                     show_fatal(self, tr("mods.msg.install_fail", m)),
                 ),
                 on_finished=self._on_install_finished,
@@ -738,12 +733,12 @@ class _ContentTab(QWidget):
             )
 
         self.install_button.setEnabled(False)
-        self.status.setText(tr("mods.msg.downloading", mod.slug))
+        set_app_status(self, tr("mods.msg.downloading", mod.slug))
         run_in_background(
             do_install,
             on_result=self._on_installed,
             on_error=lambda m: (
-                self.status.set_error(tr("mods.msg.install_fail", m)),
+                set_app_status(self, tr("mods.msg.install_fail", m), "error"),
                 show_fatal(self, tr("mods.msg.install_fail", m)),
             ),
             on_finished=self._on_install_finished,
@@ -754,23 +749,23 @@ class _ContentTab(QWidget):
 
     def _on_installed(self, info: ModInfo) -> None:
         if self.kind == "resourcepack":
-            self.status.setText(tr("mods.rp.done", info.title, info.slug))
+            set_app_status(self, tr("mods.rp.done", info.title, info.slug))
             return
         if self.kind == "shaderpack":
-            self.status.setText(tr("mods.sp.done", info.title, info.slug))
+            set_app_status(self, tr("mods.sp.done", info.title, info.slug))
             return
         message = tr("mods.msg.installed", info.title, info.slug)
         if info.depends:
             message += " | " + tr("mods.dep.required") + " " + ", ".join(info.depends)
         if info.optional_depends:
             message += " | " + tr("mods.dep.optional") + " " + ", ".join(info.optional_depends)
-        self.status.setText(message)
+        set_app_status(self, message)
 
     def _on_modpack_installed(self, pack) -> None:
         message = tr("mods.mp.done", pack.instance_name, pack.minecraft, pack.files_count)
         if pack.loader:
             message += " | " + str(pack.loader) + " " + str(pack.loader_version)
-        self.status.setText(message)
+        set_app_status(self, message)
 
     # ---------- Installed content ----------
 
@@ -800,7 +795,7 @@ class _ContentTab(QWidget):
             target = paths.GamePaths(game_dir).game_dir / subdir
         target.mkdir(parents=True, exist_ok=True)
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(target)))
-        self.status.setText(tr("mods.msg.folder_opened", str(target)))
+        set_app_status(self, tr("mods.msg.folder_opened", str(target)))
 
 
 class ResourcesPage(QWidget):

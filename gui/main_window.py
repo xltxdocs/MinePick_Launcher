@@ -54,7 +54,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("MinePick Launcher")
         self.resize(1000, 600)
 
-        from gui.widgets import apply_no_focus_outline
+        from gui.widgets import StatusLabel, apply_no_focus_outline
 
         self.sidebar = QListWidget()
         self.sidebar.setObjectName("sidebar")
@@ -90,6 +90,11 @@ class MainWindow(QMainWindow):
         outer.addWidget(self.title_bar)
         outer.addWidget(content, 1)
         self.setCentralWidget(central)
+        # The whole app reports on this one line: pages forward their progress and
+        # errors here through gui.widgets.set_app_status (colours follow the severity).
+        self.status_label = StatusLabel("")
+        self.status_label.setObjectName("hint")
+        self.statusBar().addWidget(self.status_label)
         # a frameless window loses the native resize border: keep a grip in the corner
         self.statusBar().addPermanentWidget(QSizeGrip(self))
 
@@ -97,7 +102,23 @@ class MainWindow(QMainWindow):
         self.sidebar.currentRowChanged.connect(self._on_nav_changed)
         self.build_pages()
         self.sidebar.setCurrentRow(0)
-        self.statusBar().showMessage(i18n.tr("status.ready"))
+        self.set_status(tr("status.ready"))
+
+    def set_status(self, text: str, level: str | None = None) -> None:
+        """Single status line of the app: ``level`` is "info" (default), "warning" or "error".
+
+        An empty message falls back to the neutral ready line, so the bar never ends up
+        blank when a page clears what used to be its own page-local status label.
+        """
+        if not text:
+            self.status_label.setText(tr("status.ready"))
+            return
+        if level == "error":
+            self.status_label.set_error(text)
+        elif level == "warning":
+            self.status_label.set_warning(text)
+        else:
+            self.status_label.setText(text)
 
     def build_pages(self) -> None:
         """(Re)build all pages in the current language."""
@@ -161,7 +182,7 @@ class MainWindow(QMainWindow):
         if i18n.current_language() != cfg.ui_language:
             i18n.set_language(cfg.ui_language)
             self.build_pages()
-            self.statusBar().showMessage(i18n.tr("status.ready"))
+            self.set_status(tr("status.ready"))
         self.pages["launch"].refresh_config()
         # The instance registry lives in the game directory: refresh the list immediately
         self.pages["instances"].refresh()
@@ -363,7 +384,7 @@ class MainWindow(QMainWindow):
         apply_theme(cfg.theme, cfg.accent_color, cfg.ui_font, cfg.ui_radius)
         self.build_pages()
         self.statusBar().show()
-        self.statusBar().showMessage(i18n.tr("status.ready"))
+        self.set_status(tr("status.ready"))
 
     def closeEvent(self, event) -> None:
         from launcher import config

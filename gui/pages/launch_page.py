@@ -39,8 +39,8 @@ from gui.errors import show_fatal
 from gui.widgets import (
     NoWheelDoubleSpinBox,
     NoWheelSpinBox,
-    StatusLabel,
     build_page_header,
+    set_app_status,
     style_form,
     style_page_layout,
 )
@@ -84,8 +84,6 @@ class LaunchPage(QWidget):
         self.server_port_spin.setRange(0, 65535)
         self.server_port_spin.setSpecialValueText(tr("common.off"))
         self.launch_button = QPushButton(tr("launch.button"))
-        self.status = StatusLabel(tr("status.ready"))
-        self.status.setObjectName("hint")
 
         form = QFormLayout()
         style_form(form)
@@ -106,7 +104,6 @@ class LaunchPage(QWidget):
         layout.addWidget(build_page_header(tr("nav.launch"), tr("page.launch.desc")))
         layout.addLayout(form)
         layout.addWidget(self.launch_button)
-        layout.addWidget(self.status)
         layout.addStretch(1)
 
         self.launch_button.clicked.connect(self.launch)
@@ -191,7 +188,7 @@ class LaunchPage(QWidget):
     def launch(self) -> None:
         version_id = (self.version_combo.currentData() or self.version_combo.currentText()).strip()
         if not version_id:
-            self.status.setText(tr("launch.msg.need_id"))
+            set_app_status(self, tr("launch.msg.need_id"))
             return
         cfg, cfg_path = config.load()
         env_value = os.environ.get(paths.ENV_GAME_DIR)
@@ -206,7 +203,7 @@ class LaunchPage(QWidget):
             cfg.jvm_args = jvm_args or ""
             config.save(cfg, cfg_path)
         self.launch_button.setEnabled(False)
-        self.status.setText(tr("launch.msg.preparing", version_id))
+        set_app_status(self, tr("launch.msg.preparing", version_id))
         offline_name = self.offline_edit.text().strip() or None
         # Offline-mode gate: explicit offline launch or the no-account fallback both require unlock
         if (offline_name or not cfg.selected_account):
@@ -214,7 +211,7 @@ class LaunchPage(QWidget):
 
             if not offline_mode_allowed():
                 self.launch_button.setEnabled(True)
-                self.status.set_warning(tr("launch.msg.offline_locked"))
+                set_app_status(self, tr("launch.msg.offline_locked"), "warning")
                 return
         language = self.language_combo.currentData()
         server = self.server_edit.text().strip() or None
@@ -228,9 +225,11 @@ class LaunchPage(QWidget):
             memory_gb = suggest_memory_gb(count_mods(mods_dir))
             _total, avail = system_memory_gb()
             if avail < memory_gb + 2:
-                self.status.set_warning(tr("launch.msg.low_ram", f"{avail:.1f}", f"{memory_gb:.1f}"))
+                set_app_status(
+                    self, tr("launch.msg.low_ram", f"{avail:.1f}", f"{memory_gb:.1f}"), "warning"
+                )
             else:
-                self.status.setText(tr("launch.msg.auto_memory", f"{memory_gb:.1f}"))
+                set_app_status(self, tr("launch.msg.auto_memory", f"{memory_gb:.1f}"))
 
         def do_prepare() -> object:
             try:
@@ -277,11 +276,11 @@ class LaunchPage(QWidget):
         from gui.workers import ProgressBridge
         from launcher.java import install_java
 
-        self.status.setText(tr("launch.msg.java_downloading", major))
+        set_app_status(self, tr("launch.msg.java_downloading", major))
         bridge = ProgressBridge()
         bridge.progress.connect(
-            lambda p: self.status.setText(
-                "Java: " + str(p.done_files) + "/" + str(p.total_files) + " " + p.current
+            lambda p: set_app_status(
+                self, "Java: " + str(p.done_files) + "/" + str(p.total_files) + " " + p.current
             )
         )
 
@@ -297,7 +296,9 @@ class LaunchPage(QWidget):
             do_install,
             bridge,
             on_result=lambda _r: self.launch(),
-            on_error=lambda m: self.status.set_error(tr("launch.msg.java_fail", m)),
+            on_error=lambda m: set_app_status(
+                self, tr("launch.msg.java_fail", m), "error"
+            ),
         )
 
     def _on_prepared(self, result) -> None:
@@ -307,11 +308,12 @@ class LaunchPage(QWidget):
             if self._confirm_java_download(major):
                 self._download_java_then_retry(major)
             else:
-                self.status.setText(tr("launch.msg.cancelled", major))
+                set_app_status(self, tr("launch.msg.cancelled", major))
             return
         prepared = payload
         command = prepared.command
-        self.status.setText(
+        set_app_status(
+            self,
             tr(
                 "launch.msg.running",
                 prepared.version.id,
@@ -344,7 +346,7 @@ class LaunchPage(QWidget):
             do_run,
             on_result=self._on_game_exit,
             on_error=lambda m: (
-                self.status.set_error(tr("launch.msg.run_error", m)),
+                set_app_status(self, tr("launch.msg.run_error", m), "error"),
                 show_fatal(self, tr("launch.msg.run_error", m)),
             ),
         )
@@ -357,7 +359,7 @@ class LaunchPage(QWidget):
             from launcher.launch.memory import trim_working_set
 
             trim_working_set()
-        self.status.setText(tr("launch.msg.auto_closing"))
+        set_app_status(self, tr("launch.msg.auto_closing"))
         if cfg.after_launch_behavior == "keep":
             return
         if cfg.after_launch_behavior == "hide":
@@ -373,9 +375,9 @@ class LaunchPage(QWidget):
         message = tr("launch.msg.exit", code)
         if crashes:
             message += tr("launch.msg.crash", len(crashes))
-        self.status.setText(message)
+        set_app_status(self, message)
 
     def _on_launch_error(self, message: str) -> None:
         text = tr("launch.msg.fail", message)
-        self.status.setText(text)
+        set_app_status(self, text, "error")
         show_fatal(self, text)  # fatal error dialog

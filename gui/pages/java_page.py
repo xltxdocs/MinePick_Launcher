@@ -37,9 +37,9 @@ from gui.view_state import remember_column_widths
 from gui.widgets import (
     EmptyState,
     NumericTableItem,
-    StatusLabel,
     apply_no_focus_outline,
     build_page_header,
+    set_app_status,
     style_page_layout,
 )
 from gui.workers import ProgressBridge, run_in_background
@@ -106,9 +106,6 @@ class JavaPage(QWidget):
         for major in (8, 11, 17, 21, 25):
             self.major_combo.addItem(str(major), major)
         self.install_button = QPushButton(tr("java.install.button"))
-        self.status = StatusLabel("")
-        self.status.setObjectName("hint")
-        self.status.setWordWrap(True)
 
         managed_row = QHBoxLayout()
         managed_row.addWidget(self.delete_button)
@@ -139,7 +136,6 @@ class JavaPage(QWidget):
         layout.addLayout(detected_row)
         layout.addWidget(QLabel(tr("java.install.label")))
         layout.addLayout(install_row)
-        layout.addWidget(self.status)
 
         self.delete_button.clicked.connect(self._delete_selected)
         self.refresh_button.clicked.connect(self.refresh)
@@ -190,7 +186,7 @@ class JavaPage(QWidget):
     def _delete_selected(self) -> None:
         major = self._selected_major()
         if major is None:
-            self.status.set_warning(tr("account.msg.need_select"))
+            set_app_status(self, tr("account.msg.need_select"), "warning")
             return
         answer = QMessageBox.question(
             self,
@@ -208,20 +204,24 @@ class JavaPage(QWidget):
         self.delete_button.setEnabled(False)
         run_in_background(
             do_delete,
-            on_result=lambda _d: (self.refresh(), self.status.setText(tr("java.msg.deleted", "Java " + str(major)))),
-            on_error=lambda m: self.status.set_error(tr("java.msg.delete_fail", m)),
+            on_result=lambda _d: (
+                self.refresh(),
+                set_app_status(self, tr("java.msg.deleted", "Java " + str(major))),
+            ),
+            on_error=lambda m: set_app_status(self, tr("java.msg.delete_fail", m), "error"),
             on_finished=lambda: self.delete_button.setEnabled(True),
         )
 
     def _install(self) -> None:
         major = self.major_combo.currentData()
         self.install_button.setEnabled(False)
-        self.status.setText(tr("java.msg.installing", major))
+        set_app_status(self, tr("java.msg.installing", major))
         bridge = ProgressBridge()
         bridge.progress.connect(
-            lambda p: self.status.setText(
+            lambda p: set_app_status(
+                self,
                 "Java " + str(major) + ": " + str(p.done_files) + "/" + str(p.total_files)
-                + " " + p.current
+                + " " + p.current,
             )
         )
 
@@ -236,7 +236,10 @@ class JavaPage(QWidget):
         run_in_background(
             do_install,
             bridge,
-            on_result=lambda _r: (self.refresh(), self.status.setText(tr("java.msg.installed", major))),
-            on_error=lambda m: self.status.set_error(tr("java.msg.fail", m)),
+            on_result=lambda _r: (
+                self.refresh(),
+                set_app_status(self, tr("java.msg.installed", major)),
+            ),
+            on_error=lambda m: set_app_status(self, tr("java.msg.fail", m), "error"),
             on_finished=lambda: self.install_button.setEnabled(True),
         )

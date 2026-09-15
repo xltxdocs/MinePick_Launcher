@@ -22,7 +22,7 @@ import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PySide6.QtWidgets import QApplication, QLabel, QStackedWidget
+from PySide6.QtWidgets import QApplication, QLabel, QStackedWidget, QWidget
 
 from launcher import config as config_mod
 
@@ -100,7 +100,7 @@ def test_settings_autosave_without_save_button(app, monkeypatch, ws_tmp):
     page.theme_combo.setCurrentIndex(index)
     cfg, _ = config_mod.load()
     assert cfg.theme == "light"
-    assert page.status.text() != ""
+    assert window.status_label.text() != ""
     window.close()
 
 
@@ -126,6 +126,37 @@ def test_every_page_has_a_header(app, monkeypatch, ws_tmp):
         assert title is not None and title.text(), f"{key}: no page title"
         assert subtitle is not None and subtitle.text(), f"{key}: no page description"
     window.close()
+
+
+def test_all_status_feedback_uses_the_window_line(app, monkeypatch, ws_tmp):
+    """One status line for the whole app: no page owns a StatusLabel, and page writes reach the window."""
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data_status"))
+    from gui.main_window import MainWindow
+    from gui.widgets import StatusLabel, set_app_status
+
+    window = None
+    try:
+        window = MainWindow()
+        assert window.status_label.parent() is window.statusBar()  # hosted on the window, not the page
+        assert window.status_label.text()  # seeded with the ready line
+        assert window.status_label.current_level() == "info"
+        # no page keeps a status label of its own any more
+        for key, page in window.pages.items():
+            assert not hasattr(page, "status"), f"{key}: still has its own status label"
+            assert not hasattr(page, "mods_status"), f"{key}: still has its own mods status label"
+            assert page.findChildren(StatusLabel) == [], f"{key}: still contains a StatusLabel"
+        # a page message lands on the one line, severities included
+        set_app_status(window.pages["launch"], "hello")
+        assert window.status_label.text() == "hello"
+        set_app_status(window.pages["instances"], "boom", "error")
+        assert window.status_label.text() == "boom"
+        assert window.status_label.current_level() == "error"
+        # a widget with no host (standalone widget / offscreen render) is a safe no-op
+        set_app_status(QWidget(), "ignored")
+    finally:
+        if window is not None:
+            window.close()
+            app.processEvents()
 
 
 def test_ui_language_switch(app, monkeypatch, ws_tmp):
@@ -391,7 +422,7 @@ def test_offline_login_locked_in_gui(app, monkeypatch, ws_tmp):
         page = window.pages["account"]
         page.offline_edit.setText("Steve")
         page.offline_login()
-        assert "离线模式已锁定" in page.status.text()
+        assert "离线模式已锁定" in window.status_label.text()
         assert AccountStore().load() == {}  # no account created
     finally:
         if window is not None:
@@ -638,7 +669,7 @@ def test_instance_open_folder_button(app, monkeypatch, ws_tmp):
         page.list.setCurrentRow(0)
         page._open_folder()
         assert opened == [str(ws_tmp / "mc" / "instances" / "t").replace("\\", "/")] or True
-        assert "已打开" in page.status.text()
+        assert "已打开" in window.status_label.text()
     finally:
         if window is not None:
             window.close()
