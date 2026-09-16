@@ -57,6 +57,8 @@ git push origin v0.1.2
 ## 🔧 Improvements
 ## 🐛 Fixes
 
+**某节没有内容就整节省略**(例如只有改进与修复时不写 ✨ New),不要为凑节数硬编条目。
+
 ---
 
 ## ✨ 新增

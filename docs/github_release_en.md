@@ -61,6 +61,8 @@ Write the English part first, then a single `---` line, then the same content in
 ## 🔧 Improvements
 ## 🐛 Fixes
 
+**Omit a section entirely when it has nothing in it** (for example a release with only improvements and fixes carries no ✨ New heading); never invent entries to fill a section.
+
 ---
 
 ## ✨ 新增
