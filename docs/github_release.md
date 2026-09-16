@@ -72,6 +72,20 @@ git push origin v0.1.2
 - 分发二进制（Release 的 EXE）应同时提供源代码，Source_code.zip 即为此用途；
 - 若他人索取源码，指向仓库或 Source_code.zip 均可。
 
+## 七、发版前自检（硬门槛）
+
+```powershell
+python tools\ui_regression.py --quick      # 必须 7/7：单元测试 / lint / GPL 协议头 /
+                                            # README 九语同步 / UI 质量 / 角部审计（深·浅）
+```
+
+- **没跑过自检的改动不算完成**；失败先修到绿。
+- 若单元测试撞上已知环境 flake（GUI worker 线程偶发原生崩溃，纯净提交也能复现）：
+  **重跑一次**；仍非绿则分半验证两侧都要绿
+  （`-k "not java and not locate and not detected"` 与 `-k "java or locate or detected"`）。
+- 打包/文档/截图有改动时，还要**开箱核验** `Releases\` 里的 EXE 与 `Source_code.zip`
+  （包内版本号、9 份 README、截图数、无 `tests/.work` 残留、逐文件 sha256、本次改动确实进包）。
+
 ## 六、构建前置（打包用）
 
 `python -m PyInstaller build_exe.spec --noconfirm` 需要两项本地资源（都不进仓库，由 `.gitignore` 覆盖）：

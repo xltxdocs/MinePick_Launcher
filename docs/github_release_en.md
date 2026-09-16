@@ -76,6 +76,22 @@ Describe only what a user of the **previous released version** could observe; bu
 - Distributing the binaries (the EXE in the Release) should be accompanied by the source code; Source_code.zip exists for that purpose;
 - If someone asks you for the source code, pointing them to the repository or to Source_code.zip is fine either way.
 
+## 7. Self-check before a release (hard gate)
+
+```powershell
+python tools\ui_regression.py --quick      # must be 7/7: unit tests / lint / GPL headers /
+                                            # README sync (9 languages) / UI quality / corner audits
+```
+
+- **A change that has not passed the self-check is not finished.** Fix failures until it is green.
+- If the unit tests hit the known environment flake (an occasional native crash in a GUI worker
+  thread that reproduces on a pristine checkout): **run them once more**; if still not green, run the
+  two halves separately and require both to pass
+  (`-k "not java and not locate and not detected"` and `-k "java or locate or detected"`).
+- When packaging, docs or screenshots changed, also **open the artifacts** in `Releases\` and verify
+  them (version inside the package, all nine READMEs, screenshot count, no `tests/.work` leftovers,
+  per-file sha256, and that this change is really inside).
+
 ## 6. Build prerequisites (for packaging)
 
 `python -m PyInstaller build_exe.spec --noconfirm` requires two local resources (neither goes into the repository; both are covered by `.gitignore`):
