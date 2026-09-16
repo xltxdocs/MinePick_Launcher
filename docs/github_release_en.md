@@ -86,8 +86,9 @@ python tools\ui_regression.py --list-checks  # print the current checks
 - **A change that has not passed the self-check is not finished.** Fix failures until it is green.
 - If the unit tests hit the known environment flake (an occasional native crash in a GUI worker
   thread that reproduces on a pristine checkout): **run them once more**; if still not green, run the
-  two halves separately and require both to pass
-  (`-k "not java and not locate and not detected"` and `-k "java or locate or detected"`).
+  two halves separately (`-k "not java and not locate and not detected"` and
+  `-k "java or locate or detected"`). **Termination rule: both halves green → treat as a flake and
+  proceed; one half crashes again on its own re-run → treat it as a real failure and do not commit.**
 - When packaging, docs or screenshots changed, also **open the artifacts** in `Releases\` and verify
   them (version inside the package, all nine READMEs, screenshot count, no `tests/.work` leftovers,
   per-file sha256, and that this change is really inside).

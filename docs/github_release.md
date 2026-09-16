@@ -81,8 +81,9 @@ python tools\ui_regression.py --list-checks  # 列出当前检查项
 
 - **没跑过自检的改动不算完成**；失败先修到绿。
 - 若单元测试撞上已知环境 flake（GUI worker 线程偶发原生崩溃，纯净提交也能复现）：
-  **重跑一次**；仍非绿则分半验证两侧都要绿
-  （`-k "not java and not locate and not detected"` 与 `-k "java or locate or detected"`）。
+  整条**重跑一次**；仍非绿则**分半跑**（`-k "not java and not locate and not detected"` 与
+  `-k "java or locate or detected"`）。**终止条件：两侧都绿 → 视为 flake，放行；
+  任一侧崩且单独重跑仍崩 → 按真失败处理，不得提交。**
 - 打包/文档/截图有改动时，还要**开箱核验** `Releases\` 里的 EXE 与 `Source_code.zip`
   （包内版本号、9 份 README、截图数、无 `tests/.work` 残留、逐文件 sha256、本次改动确实进包）。
 
