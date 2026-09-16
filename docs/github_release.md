@@ -86,6 +86,20 @@ python tools\ui_regression.py --list-checks  # 列出当前检查项
 - 打包/文档/截图有改动时，还要**开箱核验** `Releases\` 里的 EXE 与 `Source_code.zip`
   （包内版本号、9 份 README、截图数、无 `tests/.work` 残留、逐文件 sha256、本次改动确实进包）。
 
+### 版本号提升逻辑（精简）
+
+| 变更 | 升位 |
+|---|---|
+| 修 bug / 打磨 / 文案与 i18n 修正 / 文档 | PATCH `+1` |
+| 新增用户可见功能，或改变既有行为、移除功能 | MINOR `+1`，PATCH 归 0 |
+| 破坏兼容（配置结构不兼容） | `0.x` 阶段可放 MINOR；`1.0.0` 之后必须 MAJOR |
+| UI 定稿转为正式形态 | `1.0.0` |
+
+- **只在要发 Release 时升**，不要提前推版本号（避免仓库里躺着从未发布的版本）；
+- 一批改动合并成一次升位；**纯技术 / 文档改动不升版本、不打标签**；
+- 已发布版本的产物不改写，修好发下一个 PATCH；
+- 升位时同步：`launcher/__init__.py`、`pyproject.toml`、9 份 README，提交信息用纯版本号，新建标签，重建 EXE 与源码包。
+
 ## 六、构建前置（打包用）
 
 `python -m PyInstaller build_exe.spec --noconfirm` 需要两项本地资源（都不进仓库，由 `.gitignore` 覆盖）：

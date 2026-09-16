@@ -92,6 +92,21 @@ python tools\ui_regression.py --list-checks  # print the current checks
   them (version inside the package, all nine READMEs, screenshot count, no `tests/.work` leftovers,
   per-file sha256, and that this change is really inside).
 
+### Version bump logic (short form)
+
+| Change | Bump |
+|---|---|
+| Bug fix / polish / wording and i18n fixes / docs | PATCH `+1` |
+| New user-visible feature, changed behaviour, or a removed feature | MINOR `+1`, PATCH back to 0 |
+| Breaking change (incompatible config layout) | allowed in MINOR while `0.x`; MAJOR once at `1.0.0` |
+| UI declared final | `1.0.0` |
+
+- **Bump only when a Release is actually cut** — never push the number ahead of time;
+- Group a batch of changes into one bump; **tooling and documentation changes do not bump and are not tagged**;
+- Published artifacts are never rewritten: fix and cut the next PATCH;
+- When bumping, update `launcher/__init__.py`, `pyproject.toml` and all nine READMEs, commit with the bare
+  version as the message, tag it, and rebuild the EXE and the source package.
+
 ## 6. Build prerequisites (for packaging)
 
 `python -m PyInstaller build_exe.spec --noconfirm` requires two local resources (neither goes into the repository; both are covered by `.gitignore`):
