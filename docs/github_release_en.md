@@ -97,12 +97,14 @@ python tools\ui_regression.py --list-checks  # print the current checks
 | Change | Bump |
 |---|---|
 | Bug fix / polish / wording and i18n fixes / docs | PATCH `+1` |
-| New user-visible feature, changed behaviour, or a removed feature | MINOR `+1`, PATCH back to 0 |
+| Ordinary additions: a small feature, one new option, a local removal | PATCH `+1` |
+| **Major feature**: a whole new capability, or a clearly different way of working | MINOR `+1`, PATCH back to 0 |
 | Breaking change (incompatible config layout) | allowed in MINOR while `0.x`; MAJOR once at `1.0.0` |
 | UI declared final | `1.0.0` |
 
 - **Bump only when a Release is actually cut** — never push the number ahead of time;
 - Group a batch of changes into one bump; **tooling and documentation changes do not bump and are not tagged**;
+- **When in doubt, choose PATCH**: a late bump can always be added, an early one cannot be taken back;
 - Published artifacts are never rewritten: fix and cut the next PATCH;
 - When bumping, update `launcher/__init__.py`, `pyproject.toml` and all nine READMEs, commit with the bare
   version as the message, tag it, and rebuild the EXE and the source package.
