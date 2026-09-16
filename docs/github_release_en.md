@@ -89,6 +89,7 @@ python tools\ui_regression.py --list-checks  # print the current checks
   two halves separately (`-k "not java and not locate and not detected"` and
   `-k "java or locate or detected"`). **Termination rule: both halves green → treat as a flake and
   proceed; one half crashes again on its own re-run → treat it as a real failure and do not commit.**
+  A commit that only passed after a flake re-run carries the marker `(flake rerun passed)` at the end.
 - When packaging, docs or screenshots changed, also **open the artifacts** in `Releases\` and verify
   them (version inside the package, all nine READMEs, screenshot count, no `tests/.work` leftovers,
   per-file sha256, and that this change is really inside).

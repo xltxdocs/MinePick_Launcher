@@ -84,6 +84,7 @@ python tools\ui_regression.py --list-checks  # 列出当前检查项
   整条**重跑一次**；仍非绿则**分半跑**（`-k "not java and not locate and not detected"` 与
   `-k "java or locate or detected"`）。**终止条件：两侧都绿 → 视为 flake，放行；
   任一侧崩且单独重跑仍崩 → 按真失败处理，不得提交。**
+  因 flake 重跑才通过的提交，信息末尾加标记 `(flake rerun passed)`。
 - 打包/文档/截图有改动时，还要**开箱核验** `Releases\` 里的 EXE 与 `Source_code.zip`
   （包内版本号、9 份 README、截图数、无 `tests/.work` 残留、逐文件 sha256、本次改动确实进包）。
 
