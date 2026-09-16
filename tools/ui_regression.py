@@ -114,6 +114,13 @@ def main() -> int:
                  "--theme", "dark", "--label", "after"],
             )
         )
+    if "--list-checks" in sys.argv:
+        # the check list lives here and nowhere else: docs refer to this command instead of
+        # enumerating the checks, so adding or removing one never leaves the docs stale
+        for label, _args in checks:
+            print(label)
+        return 0
+
     results = [
         (label, *run(label, args, expect_json="--json" in args))
         for label, args in checks

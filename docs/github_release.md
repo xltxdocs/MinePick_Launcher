@@ -75,8 +75,8 @@ git push origin v0.1.2
 ## 七、发版前自检（硬门槛）
 
 ```powershell
-python tools\ui_regression.py --quick      # 必须 7/7：单元测试 / lint / GPL 协议头 /
-                                            # README 九语同步 / UI 质量 / 角部审计（深·浅）
+python tools\ui_regression.py --quick      # 必须全部 OK；检查项清单以脚本为准，不在此枚举
+python tools\ui_regression.py --list-checks  # 列出当前检查项
 ```
 
 - **没跑过自检的改动不算完成**；失败先修到绿。

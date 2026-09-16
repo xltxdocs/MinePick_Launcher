@@ -79,8 +79,8 @@ Describe only what a user of the **previous released version** could observe; bu
 ## 7. Self-check before a release (hard gate)
 
 ```powershell
-python tools\ui_regression.py --quick      # must be 7/7: unit tests / lint / GPL headers /
-                                            # README sync (9 languages) / UI quality / corner audits
+python tools\ui_regression.py --quick        # every check must pass; the list lives in the script
+python tools\ui_regression.py --list-checks  # print the current checks
 ```
 
 - **A change that has not passed the self-check is not finished.** Fix failures until it is green.
