@@ -339,6 +339,9 @@ class VersionsPage(QWidget):
                 ok = want == category
             if ok and (not needle or needle in v.id.lower()):
                 shown.append((v, category))
+        # 所有分类(含「全部类型」)一律按发布时间倒序:最新在最前;release_time 是 ISO 字符串,
+        # 直接按字符串降序即可,缺时间的排在最后
+        shown.sort(key=lambda pair: pair[0].release_time or "", reverse=True)
         rows = []
         for v, category in shown:
             release = v.release_time

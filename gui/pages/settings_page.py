@@ -74,6 +74,7 @@ class SettingsPage(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self.game_dir_edit = QLineEdit()
+        self.game_dir_edit.setPlaceholderText(tr("wizard.default_dir.hint"))  # 留空使用默认目录
         self.browse_game = QPushButton(tr("settings.browse"))
         self.browse_game.setObjectName("secondaryButton")
         self.java_path_edit = QLineEdit()
