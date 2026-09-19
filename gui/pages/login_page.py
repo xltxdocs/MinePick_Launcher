@@ -19,8 +19,8 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, QTimer, QUrl, Signal
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtCore import QRect, Qt, QTimer, QUrl, Signal
+from PySide6.QtGui import QDesktopServices, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -46,6 +46,44 @@ from launcher.auth import AccountStore, MicrosoftSession, create_offline_account
 
 tr = i18n.tr
 
+AVATAR_SIZE = 42  # px; the account avatar is square, so one size covers both uses
+MIN_VISIBLE_ACCOUNTS = 2  # rows kept readable even in a short window (a half-cut row is worse)
+MAX_VISIBLE_ACCOUNTS = 4  # rows shown once the page has room for them
+
+
+def skin_face_pixmap(skin: QPixmap, size: int = AVATAR_SIZE) -> QPixmap | None:
+    """Crop just the head out of a Minecraft skin texture (hat overlay included).
+
+    A modern skin is 64x64 (HD skins are 128x128, 256x256...): the head's front face sits at
+    (8, 8) and its hat overlay at (40, 8), both 8x8 units. Legacy 64x32 skins have no overlay.
+    Nearest-neighbour scaling keeps the pixel-art look. Returns None for textures too small to
+    be a skin (the caller then keeps the letter avatar).
+    """
+    if skin.isNull() or skin.width() < 64 or skin.height() < 32:
+        return None
+    unit = max(1, skin.width() // 64)  # HD skins store the same layout at a larger scale
+    face = skin.copy(QRect(8 * unit, 8 * unit, 8 * unit, 8 * unit))
+    if face.isNull():
+        return None
+    canvas = QPixmap(size, size)
+    canvas.fill(Qt.transparent)
+    painter = QPainter(canvas)
+    painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, False)
+    target = QRect(0, 0, size, size)
+    painter.drawPixmap(target, face)
+    if skin.height() >= 64 * unit:  # legacy 64x32 textures carry no hat layer
+        painter.drawPixmap(target, skin.copy(QRect(40 * unit, 8 * unit, 8 * unit, 8 * unit)))
+    painter.end()
+    return canvas
+
+
+def avatar_pixmap(data: bytes | None, size: int = AVATAR_SIZE) -> QPixmap | None:
+    """Decode downloaded skin bytes into a face-only avatar; None keeps the letter avatar."""
+    skin = QPixmap()
+    if not data or not skin.loadFromData(data):
+        return None
+    return skin_face_pixmap(skin, size)
+
 
 class LoginPage(QWidget):
     account_changed = Signal()
@@ -53,11 +91,10 @@ class LoginPage(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self.avatar_label = QLabel()
-        self.avatar_label.setFixedSize(42, 42)
+        self.avatar_label.setFixedSize(AVATAR_SIZE, AVATAR_SIZE)
         self.account_label = QLabel()
         self.accounts_list = QListWidget()
         apply_no_focus_outline(self.accounts_list)
-        self.accounts_list.setMaximumHeight(120)
         self.switch_button = QPushButton(tr("account.switch"))
         self.switch_button.setObjectName("secondaryButton")
         self.device_code = QTextEdit()
@@ -144,7 +181,9 @@ class LoginPage(QWidget):
         painter.setFont(font)
         painter.drawText(pixmap.rect(), _Qt.AlignCenter, (username[:1] or "?").upper())
         painter.end()
-        self.avatar_label.setPixmap(pixmap.scaled(48, 48, _Qt.KeepAspectRatio, _Qt.SmoothTransformation))
+        self.avatar_label.setPixmap(
+            pixmap.scaled(AVATAR_SIZE, AVATAR_SIZE, _Qt.KeepAspectRatio, _Qt.SmoothTransformation)
+        )
 
     def _update_avatar(self, account) -> None:
         self._set_letter_avatar(account.username)
@@ -163,15 +202,10 @@ class LoginPage(QWidget):
                 client.close()
 
         def on_ok(data) -> None:
-            from PySide6.QtCore import Qt as _Qt
-            from PySide6.QtGui import QPixmap
-
             try:
-                pixmap = QPixmap()
-                if data and pixmap.loadFromData(data):
-                    self.avatar_label.setPixmap(
-                        pixmap.scaled(48, 48, _Qt.KeepAspectRatio, _Qt.SmoothTransformation)
-                    )
+                avatar = avatar_pixmap(data)
+                if avatar is not None:  # unusable texture: keep the letter avatar
+                    self.avatar_label.setPixmap(avatar)
             except RuntimeError:
                 pass  # page already destroyed (language switch rebuild)
 
@@ -190,8 +224,35 @@ class LoginPage(QWidget):
             item = QListWidgetItem(account.username + "（" + kind + "）")
             item.setData(Qt.UserRole, account_id)
             if account_id == cfg.selected_account:
-                item.setText(item.text() + "  [" + tr("versions.status.installed") + "]")
+                item.setText(item.text() + "  [" + tr("account.status.current") + "]")
             self.accounts_list.addItem(item)
+        self._fit_accounts_list()
+
+    def _fit_accounts_list(self) -> None:
+        """Size the account list by whole rows, so no account is ever cut in half.
+
+        Row height is measured from the live list (it follows the QSS padding, the UI font and
+        the active language) and the frame from the widget, so nothing here is hardcoded.
+        """
+        measure = None
+        if self.accounts_list.count() == 0:
+            measure = QListWidgetItem(" ")  # throw-away row: an empty list has nothing to measure
+            self.accounts_list.addItem(measure)
+        row_height = self.accounts_list.sizeHintForRow(0)
+        if measure is not None:
+            self.accounts_list.takeItem(0)
+        if row_height <= 0:  # not polished yet: showEvent() measures again
+            return
+        frame = 2 * self.accounts_list.frameWidth()
+        rows = max(1, self.accounts_list.count())
+        low = min(rows, MIN_VISIBLE_ACCOUNTS)
+        high = max(low, min(rows, MAX_VISIBLE_ACCOUNTS))
+        self.accounts_list.setMinimumHeight(low * row_height + frame)
+        self.accounts_list.setMaximumHeight(high * row_height + frame)
+
+    def showEvent(self, event) -> None:  # Qt override
+        super().showEvent(event)
+        self._fit_accounts_list()  # first chance to measure the styled row height
 
     def _selected_account_id(self) -> str | None:
         item = self.accounts_list.currentItem()

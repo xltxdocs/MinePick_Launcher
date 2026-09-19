@@ -429,6 +429,100 @@ def test_offline_login_locked_in_gui(app, monkeypatch, ws_tmp):
             window.close()
             app.processEvents()
 
+def test_account_avatar_uses_only_the_head(app):
+    """A premium skin is a 64x64+ texture: the avatar must be the 8x8 head, never the whole skin."""
+    from PySide6.QtCore import QBuffer, QRect, Qt
+    from PySide6.QtGui import QColor, QImage, QPainter, QPixmap
+
+    from gui.pages.login_page import AVATAR_SIZE, avatar_pixmap, skin_face_pixmap
+
+    face = QColor("#ff0000")
+    hat = QColor("#00ff00")
+    body = QColor("#0000ff")  # painted on the torso: the crop must never copy it
+
+    def skin(width=64, height=64, hat_colour=None):
+        image = QImage(width, height, QImage.Format.Format_ARGB32)
+        image.fill(Qt.transparent)  # real skins leave unused areas transparent
+        unit = max(1, width // 64)
+        painter = QPainter(image)
+        painter.fillRect(QRect(8 * unit, 8 * unit, 8 * unit, 8 * unit), face)
+        painter.fillRect(QRect(20 * unit, 20 * unit, 8 * unit, 8 * unit), body)
+        if hat_colour is not None:
+            painter.fillRect(QRect(40 * unit, 8 * unit, 8 * unit, 8 * unit), hat_colour)
+        painter.end()
+        return QPixmap.fromImage(image)
+
+    def colours(pixmap):
+        image = pixmap.toImage()
+        return {image.pixel(x, y) for x in range(image.width()) for y in range(image.height())}
+
+    cropped = skin_face_pixmap(skin())
+    assert cropped is not None
+    assert cropped.size().toTuple() == (AVATAR_SIZE, AVATAR_SIZE)
+    assert colours(cropped) == {face.rgb()}  # head only: no torso pixels leak in
+    assert colours(skin_face_pixmap(skin(hat_colour=hat))) == {hat.rgb()}  # hat overlay on top
+    assert colours(skin_face_pixmap(skin(128, 128))) == {face.rgb()}  # HD skin, same layout
+    # a translucent hat blends over the face instead of hiding it
+    blended = colours(skin_face_pixmap(skin(hat_colour=QColor(0, 255, 0, 128))))
+    assert len(blended) == 1
+    mixed = QColor(next(iter(blended)))
+    assert mixed.red() > 0 and mixed.green() > 0
+    # legacy 64x32 textures have no hat layer: their (40, 8) area must not be copied
+    assert colours(skin_face_pixmap(skin(64, 32, hat_colour=body))) == {face.rgb()}
+    assert skin_face_pixmap(skin(32, 32)) is None  # too small to be a skin
+    assert avatar_pixmap(None) is None
+    assert avatar_pixmap(b"not an image") is None
+    # the path the page really uses: decode the downloaded bytes, then crop
+    buffer = QBuffer()
+    buffer.open(QBuffer.OpenModeFlag.WriteOnly)
+    skin(hat_colour=hat).save(buffer, "PNG")
+    decoded = avatar_pixmap(bytes(buffer.data()))
+    assert decoded is not None and colours(decoded) == {hat.rgb()}
+
+
+def test_account_list_fits_whole_rows(app, monkeypatch, ws_tmp):
+    """The account panel shows whole rows and marks the current account as current, not 'installed'."""
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data15"))
+    from gui.theme import apply_theme
+
+    apply_theme("dark")
+    import gui.pages.login_page as login
+    from launcher import config as config_mod
+    from launcher.auth import AccountStore, create_offline_account
+
+    store = AccountStore()
+    accounts = [create_offline_account(name) for name in ("Alice", "Bob", "Carol")]
+    store.save({account.uuid: account for account in accounts})
+    cfg, cfg_path = config_mod.load()
+    cfg.selected_account = accounts[1].uuid
+    config_mod.save(cfg, cfg_path)
+    from gui.main_window import MainWindow
+
+    window = None
+    try:
+        window = MainWindow()
+        window.resize(1000, 600)
+        window.show()
+        page = window.pages["account"]
+        page.refresh()
+        app.processEvents()
+        listed = page.accounts_list
+        row = listed.sizeHintForRow(0)
+        assert row > 0
+        # whole rows only: one full account is always readable, and the cap keeps it compact
+        assert listed.viewport().height() >= row
+        assert listed.viewport().height() >= min(listed.count(), login.MIN_VISIBLE_ACCOUNTS) * row
+        assert listed.height() <= login.MAX_VISIBLE_ACCOUNTS * row + 2 * listed.frameWidth()
+        texts = [listed.item(index).text() for index in range(listed.count())]
+        assert any("Bob" in text and "[当前]" in text for text in texts)
+        assert not any("已安装" in text for text in texts)  # that key belongs to the versions page
+    finally:
+        if window is not None:
+            window.close()
+            app.processEvents()
+        apply_theme("dark")  # restore the default theme for other cases
+
+
 def test_loader_prompt_dialog(app, monkeypatch, ws_tmp):
     monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data14"))
     from gui.pages.versions_page import _LoaderPromptDialog
