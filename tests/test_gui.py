@@ -35,12 +35,13 @@ def app():
 
 @pytest.fixture(autouse=True)
 def _offline_manifest_fetch(monkeypatch):
-    """The versions page auto-fetches the manifest + the resources page loads trending: changed to fail silently in tests to avoid real network requests."""
+    """The versions page auto-fetches the manifest + the resources page loads trending: changed to fail silently in tests to avoid real network requests. The Java page really probes the machine (slow subprocess work) and its worker can outlive a closed window: stub it like the render tool does."""
     def _fail(**kw):
         raise RuntimeError("offline test")
 
     monkeypatch.setattr("gui.pages.versions_page.fetch_manifest", _fail)
     monkeypatch.setattr("launcher.mods.modrinth._client", _fail)
+    monkeypatch.setattr("gui.pages.java_page.list_java", lambda *a, **kw: [])
 
 
 def test_window_pages_navigation(app, monkeypatch, ws_tmp):
