@@ -226,28 +226,32 @@ def system_game_language() -> str:
     return ""
 
 
-def system_language_chinese() -> bool:
-    """Whether the system's primary language is Chinese (offline-mode gate branch)."""
+def system_locale_is_zh_cn() -> bool:
+    """Whether the system locale is Simplified Chinese in mainland China (zh_CN).
+
+    The non-premium offline gate wants both the language and the region: a Traditional-Chinese
+    system (zh_TW / zh_HK) and Simplified Chinese outside the mainland (zh_SG) do not qualify.
+    """
     try:
         import locale
 
-        lang = (locale.getdefaultlocale()[0] or "").lower().replace("-", "_")
-    except Exception:  # noqa: BLE001 - treat detection failure as non-Chinese
+        lang = (locale.getdefaultlocale()[0] or "").lower().replace("-", "_").split(".")[0]
+    except Exception:  # noqa: BLE001 - treat detection failure as a non-matching locale
         return False
-    return lang == "zh" or lang.startswith("zh_")
+    return lang == "zh_cn"
 
 
 def offline_mode_allowed() -> bool:
     """Whether offline mode is unlocked.
 
-    Conditions (logical OR): a Microsoft premium login was verified once; or the
-    launcher language and system language are **both Chinese** (non-premium
-    offline mode is only available in Chinese environments).
+    Conditions (logical OR): a Microsoft premium login was verified once; or the launcher
+    language is Simplified Chinese **and** the system locale is Simplified Chinese in mainland
+    China (non-premium offline mode is only available in that environment).
     """
     cfg, _ = load()
     if cfg.offline_unlocked:
         return True
-    return cfg.ui_language in ("zh_cn", "zh_tw") and system_language_chinese()
+    return cfg.ui_language == "zh_cn" and system_locale_is_zh_cn()
 
 
 def unlock_offline_mode() -> bool:

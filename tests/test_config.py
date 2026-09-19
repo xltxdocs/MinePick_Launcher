@@ -117,18 +117,22 @@ def test_validate_assignment_coerces_and_rejects():
 
 def test_offline_mode_allowed_branches(ws_tmp, monkeypatch):
     monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data"))
-    monkeypatch.setattr(config_mod, "system_language_chinese", lambda: False)
-    # not unlocked + Chinese UI + non-Chinese system -> locked
+    monkeypatch.setattr(config_mod, "system_locale_is_zh_cn", lambda: False)
+    # not unlocked + Simplified-Chinese UI + non-mainland system -> locked
     cfg, p = config_mod.load()
     cfg.ui_language = "zh_cn"
     config_mod.save(cfg, p)
     assert config_mod.offline_mode_allowed() is False
-    # not unlocked + English UI + Chinese system -> locked (both must be Chinese)
-    monkeypatch.setattr(config_mod, "system_language_chinese", lambda: True)
+    # not unlocked + English UI + mainland Chinese system -> locked (all three must match)
+    monkeypatch.setattr(config_mod, "system_locale_is_zh_cn", lambda: True)
     cfg.ui_language = "en_us"
     config_mod.save(cfg, p)
     assert config_mod.offline_mode_allowed() is False
-    # not unlocked + Chinese UI + Chinese system -> True (logical OR)
+    # Traditional Chinese is not enough either: the exemption is Simplified Chinese only
+    cfg.ui_language = "zh_tw"
+    config_mod.save(cfg, p)
+    assert config_mod.offline_mode_allowed() is False
+    # not unlocked + Simplified-Chinese UI + mainland Simplified-Chinese system -> True
     cfg.ui_language = "zh_cn"
     config_mod.save(cfg, p)
     assert config_mod.offline_mode_allowed() is True
@@ -136,8 +140,39 @@ def test_offline_mode_allowed_branches(ws_tmp, monkeypatch):
     cfg.offline_unlocked = True
     cfg.ui_language = "en_us"
     config_mod.save(cfg, p)
-    monkeypatch.setattr(config_mod, "system_language_chinese", lambda: False)
+    monkeypatch.setattr(config_mod, "system_locale_is_zh_cn", lambda: False)
     assert config_mod.offline_mode_allowed() is True
+
+
+def test_offline_exemption_needs_mainland_simplified_chinese(monkeypatch):
+    """The exemption needs Simplified Chinese *in mainland China*: zh_TW / zh_SG never qualify."""
+    import locale as locale_mod
+
+    asked = []
+
+    def _locale_for(code):
+        asked.append(code)
+        return lambda: (code, "utf-8")
+
+    for code, expected in (
+        ("zh_CN", True),
+        ("zh-CN", True),
+        ("zh_CN.UTF-8", True),
+        ("zh_TW", False),  # Traditional Chinese
+        ("zh_HK", False),
+        ("zh_SG", False),  # Simplified Chinese, but not the mainland
+        ("zh", False),  # no region at all
+        ("en_US", False),
+        ("", False),
+    ):
+        monkeypatch.setattr(locale_mod, "getdefaultlocale", _locale_for(code))
+        assert config_mod.system_locale_is_zh_cn() is expected, code
+
+    def _boom():
+        raise OSError("locale detection failed")
+
+    monkeypatch.setattr(locale_mod, "getdefaultlocale", _boom)
+    assert config_mod.system_locale_is_zh_cn() is False  # detection failure = not exempt
 
 
 def test_unlock_offline_mode_roundtrip(ws_tmp, monkeypatch):
