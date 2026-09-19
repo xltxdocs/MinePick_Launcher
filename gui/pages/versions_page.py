@@ -22,7 +22,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from PySide6.QtCore import QTimer, Signal
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QButtonGroup,
@@ -118,6 +118,9 @@ class _LoaderPromptDialog(QDialog):
         return self.combo.currentData()
 
 
+_COL_TIME = 2  # 表头顺序:版本 / 类型 / 发布时间 / 状态
+
+
 class VersionsPage(QWidget):
     launch_requested = Signal(str)
     versions_changed = Signal()
@@ -175,6 +178,10 @@ class VersionsPage(QWidget):
         header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
         self.table.setSortingEnabled(True)
         remember_column_widths(self.table, "versions")
+        # 默认按「发布时间」降序:必须放在 remember_column_widths 之后 —— 它内部用
+        # header.restoreState() 恢复列宽,而 Qt 的表头状态**连同排序指示器一起**恢复,
+        # 会把这里设的默认排序顶掉(实测指示器变回第 0 列、顺序也就不是时间序)
+        self.table.sortByColumn(_COL_TIME, Qt.SortOrder.DescendingOrder)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.info_label = QLabel(tr("versions.info.default"))
