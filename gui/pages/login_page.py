@@ -289,6 +289,10 @@ class LoginPage(QWidget):
         self.account_changed.emit()
 
     def start_ms_login(self) -> None:
+        # Disabling a button that holds focus hands focus to the next widget in the chain - here the
+        # offline username box, which the user never clicked. Park it on the read-only code view
+        # instead: that is where the device code shows up, and it has no focus outline in QSS.
+        self.device_code.setFocus()
         self.ms_button.setEnabled(False)
         self.device_code.clear()
         set_app_status(self, tr("login.msg.waiting"))

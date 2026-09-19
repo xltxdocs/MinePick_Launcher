@@ -523,6 +523,42 @@ def test_account_list_fits_whole_rows(app, monkeypatch, ws_tmp):
         apply_theme("dark")  # restore the default theme for other cases
 
 
+def test_ms_login_keeps_focus_out_of_the_offline_field(app, monkeypatch, ws_tmp):
+    """Disabling the clicked login button must not drop the caret into an unrelated text field."""
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data16"))
+    import gui.pages.login_page as login_page_mod
+    from gui.theme import apply_theme
+
+    apply_theme("dark")
+    # Only the focus handoff is under test: stub the dispatcher so no worker outlives the window
+    # (a runnable still in the pool when a later test drains it crashes inside Qt).
+    started = []
+    monkeypatch.setattr(login_page_mod, "run_in_background", lambda fn, *a, **kw: started.append(fn))
+    from gui.main_window import MainWindow
+
+    window = None
+    try:
+        window = MainWindow()
+        window.show()
+        window.sidebar.setCurrentRow(4)  # the account page must be visible for focus to apply
+        page = window.pages["account"]
+        app.processEvents()
+        page.ms_button.setFocus()
+        app.processEvents()
+        assert page.ms_button.hasFocus()
+        page.start_ms_login()
+        app.processEvents()
+        assert started  # the real handler ran (it just did not reach the thread pool)
+        assert not page.ms_button.isEnabled()
+        assert not page.offline_edit.hasFocus()
+        assert page.device_code.hasFocus()  # focus waits where the device code appears
+    finally:
+        if window is not None:
+            window.close()
+            app.processEvents()
+        apply_theme("dark")  # restore the default theme for other cases
+
+
 def test_loader_prompt_dialog(app, monkeypatch, ws_tmp):
     monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data14"))
     from gui.pages.versions_page import _LoaderPromptDialog
