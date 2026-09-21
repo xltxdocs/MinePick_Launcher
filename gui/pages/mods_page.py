@@ -48,6 +48,7 @@ from gui.widgets import (
     add_search_icon,
     apply_no_focus_outline,
     build_page_header,
+    disable_keeping_focus,
     set_app_status,
     style_page_layout,
 )
@@ -339,7 +340,7 @@ class _ContentTab(QWidget):
         query = self.search_edit.text().strip()
         if not query:
             return
-        self.search_button.setEnabled(False)
+        disable_keeping_focus(self.search_button)
         set_app_status(self, tr("mods.search.msg.searching", query))
 
         project_type = {"resourcepack": "resourcepack", "shaderpack": "shader", "modpack": "modpack"}.get(
@@ -412,7 +413,7 @@ class _ContentTab(QWidget):
             if cached_source == source and time.monotonic() - cached_at < 600:
                 self._on_popular_ok(cached_hits)
                 return
-        self.popular_button.setEnabled(False)
+        disable_keeping_focus(self.popular_button)
         set_app_status(self, tr("mods.search.msg.searching", tr("mods.popular")))
         project_type = {"resourcepack": "resourcepack", "shaderpack": "shader", "modpack": "modpack"}.get(
             self.kind, "mod"
@@ -446,7 +447,7 @@ class _ContentTab(QWidget):
             return
         loader = self.loader_combo.currentData() if self.kind == "mod" else None
         game_version = self.game_version_edit.text().strip()
-        self.query_button.setEnabled(False)
+        disable_keeping_focus(self.query_button)
         set_app_status(self, tr("mods.msg.querying", slug))
 
         def do_query() -> object:
@@ -529,7 +530,7 @@ class _ContentTab(QWidget):
         game_dir = cfg.game_dir or paths.default_game_dir()
         game_version = self.game_version_edit.text().strip()
         loader = self.loader_combo.currentData() if self.kind == "mod" else ""
-        self.install_button.setEnabled(False)
+        disable_keeping_focus(self.install_button)
         set_app_status(self, tr("mods.cf.downloading", hit.title))
 
         def do_install() -> object:
@@ -593,7 +594,7 @@ class _ContentTab(QWidget):
     ) -> None:
         cfg, _ = config.load()
         game_dir = cfg.game_dir or paths.default_game_dir()
-        self.install_button.setEnabled(False)
+        disable_keeping_focus(self.install_button)
         set_app_status(self, tr("mods.msg.downloading", title or slug))
 
         def do_install() -> object:
@@ -681,7 +682,7 @@ class _ContentTab(QWidget):
                     )
 
             bridge.progress.connect(on_progress)
-            self.install_button.setEnabled(False)
+            disable_keeping_focus(self.install_button)
             set_app_status(self, tr("mods.msg.downloading", mod.slug))
             run_in_background(
                 do_install,
@@ -732,7 +733,7 @@ class _ContentTab(QWidget):
                 isolated=cfg.version_isolation,
             )
 
-        self.install_button.setEnabled(False)
+        disable_keeping_focus(self.install_button)
         set_app_status(self, tr("mods.msg.downloading", mod.slug))
         run_in_background(
             do_install,

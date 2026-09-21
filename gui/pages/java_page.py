@@ -39,6 +39,7 @@ from gui.widgets import (
     NumericTableItem,
     apply_no_focus_outline,
     build_page_header,
+    disable_keeping_focus,
     set_app_status,
     style_page_layout,
     widget_alive,
@@ -216,7 +217,7 @@ class JavaPage(QWidget):
         def do_delete() -> object:
             return delete_managed_runtime(major)
 
-        self.delete_button.setEnabled(False)
+        disable_keeping_focus(self.delete_button)
         run_in_background(
             do_delete,
             on_result=lambda _d: (
@@ -229,7 +230,7 @@ class JavaPage(QWidget):
 
     def _install(self) -> None:
         major = self.major_combo.currentData()
-        self.install_button.setEnabled(False)
+        disable_keeping_focus(self.install_button)
         set_app_status(self, tr("java.msg.installing", major))
         bridge = ProgressBridge()
         bridge.progress.connect(

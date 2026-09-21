@@ -65,6 +65,20 @@ def apply_no_focus_outline(view) -> None:
     attach_hover_scrollbar(view)
 
 
+def disable_keeping_focus(button) -> None:
+    """Disable a button that just started work without handing focus to another control.
+
+    Qt moves focus to the next widget in the focus chain when the focused widget becomes
+    disabled. That dropped the caret into unrelated text fields (clicking "Microsoft sign-in"
+    put it in the offline username box) and even parked focus on a destructive button (after
+    "install" on the versions page it landed on "uninstall", where a stray Enter would remove
+    the version). Giving up focus first leaves no widget focused instead.
+    """
+    if button.hasFocus():
+        button.clearFocus()
+    button.setEnabled(False)
+
+
 class NoWheelSpinBox(QSpinBox):
     """Spin box that ignores the mouse wheel so scrolling the page never changes its value."""
 

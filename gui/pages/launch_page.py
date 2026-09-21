@@ -40,6 +40,7 @@ from gui.widgets import (
     NoWheelDoubleSpinBox,
     NoWheelSpinBox,
     build_page_header,
+    disable_keeping_focus,
     set_app_status,
     style_form,
     style_page_layout,
@@ -202,7 +203,7 @@ class LaunchPage(QWidget):
         if (cfg.jvm_args or "") != (jvm_args or ""):
             cfg.jvm_args = jvm_args or ""
             config.save(cfg, cfg_path)
-        self.launch_button.setEnabled(False)
+        disable_keeping_focus(self.launch_button)
         set_app_status(self, tr("launch.msg.preparing", version_id))
         offline_name = self.offline_edit.text().strip() or None
         # Offline-mode gate: explicit offline launch or the no-account fallback both require unlock

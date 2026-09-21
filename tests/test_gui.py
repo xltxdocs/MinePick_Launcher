@@ -560,6 +560,79 @@ def test_ms_login_keeps_focus_out_of_the_offline_field(app, monkeypatch, ws_tmp)
         apply_theme("dark")  # restore the default theme for other cases
 
 
+def test_busy_button_does_not_hand_focus_to_another_control(app, monkeypatch, ws_tmp):
+    """A button disabled by its own click must not park focus on another control."""
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data17"))
+    from PySide6.QtWidgets import QLineEdit, QPushButton, QVBoxLayout, QWidget
+
+    from gui.theme import apply_theme
+    from gui.widgets import disable_keeping_focus
+
+    apply_theme("dark")
+    window = QWidget()
+    layout = QVBoxLayout(window)
+    button = QPushButton("go")
+    field = QLineEdit()
+    layout.addWidget(button)
+    layout.addWidget(field)
+    window.show()
+    app.processEvents()
+    try:
+        # the helper gives up focus before the button goes disabled, so nothing is focused
+        button.setFocus()
+        app.processEvents()
+        assert button.hasFocus()
+        disable_keeping_focus(button)
+        app.processEvents()
+        assert not button.isEnabled()
+        assert not field.hasFocus()
+        # and the plain call really does move focus: without this the guard above proves nothing
+        button.setEnabled(True)
+        button.setFocus()
+        app.processEvents()
+        button.setEnabled(False)
+        app.processEvents()
+        assert field.hasFocus()
+    finally:
+        window.close()
+        app.processEvents()
+        apply_theme("dark")  # restore the default theme for other cases
+
+
+def test_versions_refresh_does_not_park_focus_on_uninstall(app, monkeypatch, ws_tmp):
+    """The real refresh handler must not hand focus to the neighbouring uninstall button."""
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data18"))
+    from PySide6.QtCore import QThreadPool
+
+    from gui.theme import apply_theme
+
+    apply_theme("dark")
+    from gui.main_window import MainWindow
+
+    window = None
+    try:
+        window = MainWindow()
+        window.show()
+        window.sidebar.setCurrentRow(2)  # the versions page
+        page = window.pages["versions"]
+        QThreadPool.globalInstance().waitForDone(5000)  # the failed fetch re-enables the button
+        app.processEvents()
+        assert page.refresh_button.isEnabled()
+        page.refresh_button.setFocus()
+        app.processEvents()
+        assert page.refresh_button.hasFocus()
+        page.refresh()  # the manifest fetch is stubbed to fail by the autouse fixture
+        app.processEvents()
+        assert not page.refresh_button.isEnabled()
+        assert not page.uninstall_button.hasFocus()  # where plain setEnabled(False) left it
+        assert app.focusWidget() is None  # focus was given up, not handed on
+    finally:
+        if window is not None:
+            window.close()
+            app.processEvents()
+        apply_theme("dark")  # restore the default theme for other cases
+
+
 def test_loader_prompt_dialog(app, monkeypatch, ws_tmp):
     monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data14"))
     from gui.pages.versions_page import _LoaderPromptDialog

@@ -51,6 +51,7 @@ from gui.widgets import (
     add_search_icon,
     apply_no_focus_outline,
     build_page_header,
+    disable_keeping_focus,
     set_app_status,
     style_page_layout,
 )
@@ -501,7 +502,7 @@ class InstancesPage(QWidget):
                 name, version, game_dir, cache_dir=paths.launcher_dir() / "cache"
             )
 
-        self.create_button.setEnabled(False)
+        disable_keeping_focus(self.create_button)
         run_in_background(
             do_create,
             on_result=lambda _inst: (
@@ -719,7 +720,7 @@ class InstancesPage(QWidget):
             if not offline_mode_allowed():
                 set_app_status(self, tr("launch.msg.offline_locked"), "warning")
                 return
-        self.launch_button.setEnabled(False)
+        disable_keeping_focus(self.launch_button)
         set_app_status(self, tr("instances.msg.preparing", name))
 
         def do_prepare() -> object:

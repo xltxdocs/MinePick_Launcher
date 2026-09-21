@@ -52,6 +52,7 @@ from gui.widgets import (
     add_search_icon,
     apply_no_focus_outline,
     build_page_header,
+    disable_keeping_focus,
     set_app_status,
     style_page_layout,
 )
@@ -295,7 +296,7 @@ class VersionsPage(QWidget):
         return self.model.row_id(row)
 
     def refresh(self) -> None:
-        self.refresh_button.setEnabled(False)
+        disable_keeping_focus(self.refresh_button)
         set_app_status(self, tr("versions.msg.fetching"))
         cache = paths.launcher_dir() / "cache" / "version_manifest.json"
 
@@ -390,7 +391,7 @@ class VersionsPage(QWidget):
         loader = prompt.selected_loader()
         cfg, _ = config.load()
         game_dir = self._game_dir()
-        self.install_button.setEnabled(False)
+        disable_keeping_focus(self.install_button)
         self.progress_bar.setVisible(True)
         self.progress_bar.setRange(0, 1000)
         self.progress_bar.setValue(0)
@@ -453,7 +454,7 @@ class VersionsPage(QWidget):
         )
         if answer != QMessageBox.StandardButton.Yes:
             return
-        self.uninstall_button.setEnabled(False)
+        disable_keeping_focus(self.uninstall_button)
         set_app_status(self, tr("versions.msg.uninstalling", version_id))
 
         def do_uninstall() -> object:
