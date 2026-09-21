@@ -443,7 +443,7 @@ QWidget#appRoot, QWidget#appContent { background: #0f141b; }
 
 QWidget#wizardOverlay { background: #0f141b; }
 QWidget#wizardCard {
-    background: #1c2531;
+    background: #0f141b;
     border: none;
     border-radius: 0;
 }
@@ -455,12 +455,12 @@ QLabel#wizardDot[current="true"] { background: __ACCENT__; }
 
 /* ---------- wizard: rail, action bar, bigger buttons ---------- */
 
-QWidget#wizardRail { background: #1c2531; border-right: 1px solid #27303d; }
+QWidget#wizardRail { background: #0f141b; border-right: 1px solid #27303d; }
 QLabel#wizardRailItem { color: #7b8ca3; font-size: 13px; padding: 9px 6px; }
 QLabel#wizardRailItem[state="current"] { color: #eef3fa; font-weight: 700; }
 QLabel#wizardRailItem[state="done"] { color: #8fa2b8; }
-QWidget#wizardContent { background: #1c2531; }
-QWidget#wizardActionBar { background: #1c2531; border-top: 1px solid #27303d; }
+QWidget#wizardContent { background: #0f141b; }
+QWidget#wizardActionBar { background: #0f141b; border-top: 1px solid #27303d; }
 QWidget#wizardActionBar QPushButton {
     min-height: 40px;
     padding: 0 24px;
