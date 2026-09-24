@@ -429,9 +429,11 @@ class AboutPage(QWidget):
             script = updates.write_install_script(pending, Path(sys.executable), restart=True)
         except OSError:
             set_app_status(self, tr("about.update.install_manual"), "error")
+            self.open_page_button.setVisible(True)
             return
         if not updates.launch_install_script(script):
             set_app_status(self, tr("about.update.install_manual"), "error")
+            self.open_page_button.setVisible(True)
             return
         updates.clear_pending()
         set_app_status(self, tr("about.update.install_on_exit"))
@@ -457,8 +459,18 @@ class AboutPage(QWidget):
         updates.launch_install_script(script)
 
     def auto_check_on_start(self) -> None:
-        """Startup check; the "off" mode really means no automatic check."""
+        """Startup check; the "off" mode really means no automatic check.
+
+        An update that was downloaded in an earlier session is offered again instead of being
+        downloaded twice (the user may have answered "later" to the prompt).
+        """
         updates.cleanup_backups(Path(sys.executable))
+        staged = updates.load_pending()
+        if staged is not None and self.current_mode() != "off":
+            self._pending, self._pending_version = staged
+            if self.current_mode() != "download_install":  # that mode installs it on exit
+                self._prompt_install(self._pending_version)
+            return
         if self.current_mode() == "off":
             return
         self.check_updates()
