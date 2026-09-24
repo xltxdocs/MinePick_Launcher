@@ -39,6 +39,7 @@ from typing import Any, Protocol
 import httpx
 from msal import PublicClientApplication
 
+from launcher import __version__
 from launcher.auth.models import Account, GameProfile, MicrosoftTokens
 from launcher.i18n import describe_network_error, tr_core
 
@@ -71,7 +72,7 @@ MC_PROFILE_URL = "https://api.minecraftservices.com/minecraft/profile"
 XBL_RELYING_PARTY = "http://auth.xboxlive.com"
 XSTS_RELYING_PARTY = "rp://api.minecraftservices.com/"
 
-USER_AGENT = "mclauncher/0.1.0"
+USER_AGENT = f"MinePick-Launcher/{__version__}"
 TOKEN_MARGIN = 60.0  # treat as expired 60 seconds early
 
 XSTS_ERROR_KEYS: dict[int, str] = {

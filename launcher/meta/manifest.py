@@ -29,13 +29,14 @@ from typing import Literal
 import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
+from launcher import __version__
 from launcher.i18n import describe_network_error, tr_core
 
 MANIFEST_URLS = (
     "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json",
     "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json",
 )
-USER_AGENT = "mclauncher/0.1.0"
+USER_AGENT = f"MinePick-Launcher/{__version__}"
 DEFAULT_MAX_AGE = 3600.0
 
 

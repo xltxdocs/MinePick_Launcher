@@ -74,6 +74,7 @@ class AboutPage(QWidget):
         super().__init__()
         self._release: updates.ReleaseInfo | None = None
         self._pending: Path | None = None
+        self._pending_version = ""
         self._checking = False
         self._downloading = False
 
@@ -333,11 +334,14 @@ class AboutPage(QWidget):
                 return "failed", exc.code
             return "ok", path
 
+        self._pending_version = release.version
         run_in_background(
             do_download,
             bridge,
-            on_result=lambda payload: self._on_download_result(payload, release.version),
-            on_error=lambda _message: self._on_download_failed("network"),
+            # bound methods on purpose: the dispatcher's owner guard only sees callbacks that
+            # expose __self__ (a lambda would still run against a page rebuilt by a language switch)
+            on_result=self._on_download_result,
+            on_error=self._on_download_failed,
             on_finished=self._on_download_finished,
         )
 
@@ -354,21 +358,27 @@ class AboutPage(QWidget):
         else:
             set_app_status(self, tr("about.update.downloading", "?"))
 
-    def _on_download_result(self, payload, version: str) -> None:
+    def _on_download_result(self, payload) -> None:
         status, value = payload
+        version = self._pending_version
         if status == "failed":
             self._on_download_failed(str(value))
             return
         self._pending = Path(value)
         updates.save_pending(self._pending, version)
         if self.current_mode() == "download_install":
+            if not updates.can_self_update():
+                # never promise an install-on-exit that cannot happen (source checkout / read-only)
+                set_app_status(self, tr("about.update.install_dev"), "warning")
+                self.open_page_button.setVisible(True)
+                return
             set_app_status(self, tr("about.update.install_on_exit"))
             return
         set_app_status(self, tr("about.update.downloaded", version))
         self._prompt_install(version)
 
     def _on_download_failed(self, code: str) -> None:
-        set_app_status(self, tr(self._failure_key(code)), "error")
+        set_app_status(self, tr(self._failure_key(str(code))), "error")
         if self._release is not None:
             self.open_page_button.setVisible(True)
 
@@ -415,7 +425,11 @@ class AboutPage(QWidget):
             set_app_status(self, tr("about.update.install_manual"), "warning")
             self.open_page_button.setVisible(True)
             return
-        script = updates.write_install_script(pending, Path(sys.executable), restart=True)
+        try:
+            script = updates.write_install_script(pending, Path(sys.executable), restart=True)
+        except OSError:
+            set_app_status(self, tr("about.update.install_manual"), "error")
+            return
         if not updates.launch_install_script(script):
             set_app_status(self, tr("about.update.install_manual"), "error")
             return
@@ -436,7 +450,10 @@ class AboutPage(QWidget):
         pending = self._staged_update()
         if pending is None:
             return
-        script = updates.write_install_script(pending, Path(sys.executable), restart=False)
+        try:
+            script = updates.write_install_script(pending, Path(sys.executable), restart=False)
+        except OSError:
+            return  # closing must never raise; the staged update stays for the next start
         updates.launch_install_script(script)
 
     def auto_check_on_start(self) -> None:
@@ -447,5 +464,5 @@ class AboutPage(QWidget):
         self.check_updates()
 
     def refresh(self) -> None:
-        """Called by the window when the page becomes visible."""
+        """Reload the update settings (the window calls this whenever the page is shown)."""
         self.load()

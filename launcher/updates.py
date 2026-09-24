@@ -42,6 +42,13 @@ RELEASES_PAGE = f"https://github.com/{REPO}/releases"
 EXE_ASSETS = ("MinePick_Launcher.exe", "MinePick_UI_Trial.exe")
 GITHUB_ACCEPT = "application/vnd.github+json"
 
+# Signature policy: the launcher's own certificate (see scripts/sign_exe.ps1). A self-signed
+# certificate never chains to a trusted root on a user machine, so Windows reports UnknownError or
+# NotTrusted there; those are accepted, while a missing signature, a hash mismatch or a foreign
+# signer still blocks the update. (Spellings follow PowerShell's SignatureStatus values.)
+EXPECTED_SIGNER = "CN=WDNDXLTX"
+ACCEPTED_SIGNATURE_STATUSES = {"valid", "unknownerror", "nottrusted"}
+
 
 class UpdateError(RuntimeError):
     """Update failure carrying an i18n key suffix: network / http / parse / no_asset / size / signature."""
@@ -174,7 +181,12 @@ def is_pe_file(path: Path) -> bool:
 
 
 def signature_is_valid(path: Path) -> bool:
-    """Whether the file carries a valid Authenticode signature (False when the check is unavailable)."""
+    """Whether the file is signed by this project's certificate without being tampered with.
+
+    The launcher ships a **self-signed** certificate, so on a normal machine the chain is untrusted
+    and Windows reports ``UnknownError`` — that is expected and must not block an update. What must
+    block one is a missing signature, a hash mismatch, or a signature by somebody else.
+    """
     if os.name != "nt":
         return False
     command = [
@@ -182,13 +194,26 @@ def signature_is_valid(path: Path) -> bool:
         "-NoProfile",
         "-NonInteractive",
         "-Command",
-        f"(Get-AuthenticodeSignature -FilePath '{path}').Status",
+        (
+            f"$s = Get-AuthenticodeSignature -FilePath '{path}'; "
+            '"$($s.Status)|$($s.SignerCertificate.Subject)"'
+        ),
     ]
     try:
-        result = subprocess.run(command, capture_output=True, text=True, timeout=60, check=False)
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
     except (OSError, subprocess.SubprocessError):
         return False
-    return result.stdout.strip().lower() == "valid"
+    status, _sep, subject = result.stdout.strip().partition("|")
+    if status.strip().lower() not in ACCEPTED_SIGNATURE_STATUSES:
+        return False
+    return EXPECTED_SIGNER.lower() in subject.strip().lower()
 
 
 def download_release_exe(release: ReleaseInfo, target_dir: Path, client=None, on_progress=None) -> Path:
@@ -257,9 +282,12 @@ def can_self_update() -> bool:
     probe = exe.with_name(f".update-probe-{os.getpid()}")
     try:
         probe.write_bytes(b"")
-        probe.unlink()
     except OSError:
         return False
+    try:
+        probe.unlink()
+    except OSError:
+        pass  # a leftover probe file is harmless: never report "not writable" just for that
     return True
 
 
@@ -268,6 +296,11 @@ def updates_dir() -> Path:
     from launcher import paths
 
     return paths.launcher_dir() / "updates"
+
+
+def _console_encoding() -> str:
+    """cmd.exe parses batch files in the OEM code page, so a non-ASCII path needs that encoding."""
+    return "oem" if os.name == "nt" else "utf-8"
 
 
 def write_install_script(new_exe: Path, target_exe: Path, restart: bool) -> Path:
@@ -294,7 +327,7 @@ def write_install_script(new_exe: Path, target_exe: Path, restart: bool) -> Path
         f'if "{int(bool(restart))}"=="1" start "" "{target_exe}"',
         'del "%~f0"',
     ]
-    script.write_text("\r\n".join(lines) + "\r\n", encoding="utf-8")
+    script.write_bytes(("\r\n".join(lines) + "\r\n").encode(_console_encoding(), errors="replace"))
     return script
 
 
@@ -331,6 +364,8 @@ def load_pending() -> tuple[Path, str] | None:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
+        return None
+    if not isinstance(payload, dict):  # valid JSON that is not an object: treat as absent
         return None
     exe = Path(str(payload.get("exe") or ""))
     if not exe.is_file():

@@ -170,6 +170,8 @@ class MainWindow(QMainWindow):
         """Refresh the version dropdown when switching to the launch page (auto-syncs after loader/modpack install)."""
         if row == 0:
             self.pages["launch"].refresh_versions()
+        if row == NAV_KEYS.index("about"):
+            self.pages["about"].refresh()  # the update settings may have changed elsewhere
         self._fade_in_current_page()
 
     def _fade_in_current_page(self) -> None:

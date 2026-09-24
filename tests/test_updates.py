@@ -17,6 +17,8 @@
 
 """Update logic tests: release lookup, version comparison, asset choice, download checks and refusal."""
 
+from pathlib import Path
+
 import httpx
 import pytest
 import respx
@@ -202,6 +204,27 @@ def test_is_pe_file(ws_tmp) -> None:
     exe.write_bytes(b"PK\x03\x04")
     assert updates.is_pe_file(exe) is False
     assert updates.is_pe_file(ws_tmp / "missing.exe") is False
+
+
+def test_signature_policy_accepts_our_self_signed_build(monkeypatch) -> None:
+    """The certificate is self-signed: an untrusted chain is fine, a foreign signer or tampering is not."""
+    reply = {"stdout": ""}
+
+    class _Completed:
+        def __init__(self, stdout: str) -> None:
+            self.stdout = stdout
+
+    def fake_run(_command, **_kwargs):
+        return _Completed(reply["stdout"])
+
+    monkeypatch.setattr(updates.subprocess, "run", fake_run)
+    ours = "CN=WDNDXLTX, E=wdndxltx@gmail.com"
+    for accepted in (f"Valid|{ours}", f"UnknownError|{ours}", f"NotTrusted|{ours}"):
+        reply["stdout"] = accepted
+        assert updates.signature_is_valid(Path("candidate.exe")) is True, accepted
+    for rejected in (f"HashMismatch|{ours}", "NotSigned|", "Valid|CN=Evil Corp"):
+        reply["stdout"] = rejected
+        assert updates.signature_is_valid(Path("candidate.exe")) is False, rejected
 
 
 # ---------- install helper ----------
