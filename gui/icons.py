@@ -25,11 +25,11 @@ theme, and they cannot fail to load in a packaged build (no SVG plugin, no missi
 
 from __future__ import annotations
 
-from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtGui import QColor, QIcon, QPainter, QPainterPath, QPen, QPixmap
+from PySide6.QtCore import QPointF, Qt
+from PySide6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap
 
 _CACHE: dict[tuple[str, int, str], QIcon] = {}
-KINDS = ("account", "instances", "settings")
+KINDS = ("switch", "instances", "settings")
 
 
 def accent_color() -> str:
@@ -80,18 +80,18 @@ def clear_cache() -> None:
 # ---------- glyphs (drawn in a size x size box) ----------
 
 
-def _account(painter: QPainter, size: float) -> None:
-    """A head plus shoulders."""
-    head = QRectF(size * 0.32, size * 0.18, size * 0.36, size * 0.36)
-    painter.drawEllipse(head)
-    body = QPainterPath()
-    body.moveTo(size * 0.20, size * 0.84)
-    body.cubicTo(
-        QPointF(size * 0.22, size * 0.56),
-        QPointF(size * 0.78, size * 0.56),
-        QPointF(size * 0.80, size * 0.84),
-    )
-    painter.drawPath(body)
+def _switch(painter: QPainter, size: float) -> None:
+    """Two opposed arrows stacked: the usual "switch" glyph (⇄)."""
+    upper, lower = size * 0.36, size * 0.64
+    head = size * 0.15
+    # top arrow points right
+    painter.drawLine(QPointF(size * 0.20, upper), QPointF(size * 0.80, upper))
+    painter.drawLine(QPointF(size * 0.80 - head, upper - head), QPointF(size * 0.80, upper))
+    painter.drawLine(QPointF(size * 0.80 - head, upper + head), QPointF(size * 0.80, upper))
+    # bottom arrow points left
+    painter.drawLine(QPointF(size * 0.20, lower), QPointF(size * 0.80, lower))
+    painter.drawLine(QPointF(size * 0.20 + head, lower - head), QPointF(size * 0.20, lower))
+    painter.drawLine(QPointF(size * 0.20 + head, lower + head), QPointF(size * 0.20, lower))
 
 
 def _instances(painter: QPainter, size: float) -> None:
@@ -120,4 +120,4 @@ def _settings(painter: QPainter, size: float) -> None:
         painter.restore()
 
 
-_DRAWERS = {"account": _account, "instances": _instances, "settings": _settings}
+_DRAWERS = {"switch": _switch, "instances": _instances, "settings": _settings}

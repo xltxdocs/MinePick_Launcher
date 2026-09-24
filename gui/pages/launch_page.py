@@ -74,7 +74,7 @@ class LaunchPage(QWidget):
         self.account_label.setObjectName("hint")
         self.account_button = QPushButton()
         self.account_button.setObjectName("iconButton")
-        self.account_button.setIcon(icons.icon("account"))
+        self.account_button.setIcon(icons.icon("switch"))
         self.account_button.setToolTip(tr("launch.account.switch"))
         self.account_button.setFixedWidth(46)
         self.memory_spin = NoWheelDoubleSpinBox()
