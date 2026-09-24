@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPlainTextEdit,
     QPushButton,
+    QSizePolicy,
     QSpinBox,
     QStyle,
     QStyledItemDelegate,
@@ -299,6 +300,52 @@ def add_search_icon(line_edit) -> None:
     icon_path = paths.resource_path("gui/resources/search.png")
     if icon_path.exists():
         line_edit.addAction(QIcon(str(icon_path)), QLineEdit.LeadingPosition)
+
+
+class ElidedLabel(QLabel):
+    """One-line label that paints its text elided in the middle, keeping the full value.
+
+    Qt has no elide mode for QLabel, and a word-wrapped value inside a QFormLayout keeps the
+    row at its unwrapped height, which clipped long paths (measured on the instance overview:
+    the effective game directory was cut off by the next row). Painting an elided form keeps
+    every row exactly one line tall, while `text()` still returns the logical value and the
+    tooltip plus text selection keep the whole string reachable.
+    """
+
+    def __init__(
+        self,
+        text: str = "",
+        parent=None,
+        elide_mode: Qt.TextElideMode = Qt.TextElideMode.ElideMiddle,
+    ) -> None:
+        super().__init__(parent)
+        self._full_text = ""
+        self._elide_mode = elide_mode
+        self.setWordWrap(False)
+        self.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        # Ignore the (long) size hint so the surrounding layout hands over the real width
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+        self.setText(text)
+
+    def setText(self, text: str) -> None:
+        self._full_text = text or ""
+        self.setToolTip(self._full_text)
+        self._apply_elide()
+
+    def text(self) -> str:
+        """The logical (unelided) value — what tests and callers expect from text()."""
+        return self._full_text
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._apply_elide()
+
+    def _apply_elide(self) -> None:
+        metrics = self.fontMetrics()
+        width = max(0, self.width() - 2)
+        super().setText(
+            metrics.elidedText(self._full_text, self._elide_mode, width)
+        )
 
 
 class EmptyState(QLabel):

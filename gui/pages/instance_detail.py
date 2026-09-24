@@ -57,6 +57,7 @@ from gui import i18n
 from gui.errors import show_fatal
 from gui.view_state import remember_column_widths
 from gui.widgets import (
+    ElidedLabel,
     EmptyState,
     NoWheelDoubleSpinBox,
     NumericTableItem,
@@ -230,9 +231,9 @@ class InstanceDetail(QWidget):
         self.name_label.setObjectName("title")
         self.id_label = QLabel("")
         self.id_label.setObjectName("hint")
-        self.dir_label = QLabel("")
+        # Paths read better elided on the left: the tail (folder name) is the informative part
+        self.dir_label = ElidedLabel("", elide_mode=Qt.TextElideMode.ElideLeft)
         self.dir_label.setObjectName("hint")
-        self.dir_label.setWordWrap(True)
         self.launch_button = QPushButton(tr("instances.launch"))
         row = QHBoxLayout()
         row.setContentsMargins(0, 0, 0, 0)
@@ -301,9 +302,12 @@ class InstanceDetail(QWidget):
         ):
             title = QLabel(tr(label_key))
             title.setObjectName("hint")
-            value = QLabel(tr("instances.detail.value.none"))
-            value.setWordWrap(True)
-            value.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+            value = ElidedLabel(
+                tr("instances.detail.value.none"),
+                elide_mode=(
+                    Qt.TextElideMode.ElideLeft if key == "game_dir" else Qt.TextElideMode.ElideMiddle
+                ),
+            )
             self.overview_values[key] = value
             form.addRow(title, value)
         layout.addLayout(form)

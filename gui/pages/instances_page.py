@@ -142,6 +142,8 @@ class InstancesPage(QWidget):
 
         self.list = QListWidget()
         apply_no_focus_outline(self.list)
+        # Long rows (profile labels, notes) must elide with an ellipsis, not clip mid-glyph
+        self.list.setTextElideMode(Qt.TextElideMode.ElideRight)
         self.empty_instances = EmptyState(tr("empty.instances"))
         self.empty_search = EmptyState(tr("instances.search.none"))
         self.list_stack = QStackedWidget()
