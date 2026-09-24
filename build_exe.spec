@@ -1,4 +1,4 @@
-﻿# -*- mode: python ; coding: utf-8 -*-
+# -*- mode: python ; coding: utf-8 -*-
 # MinePick Launcher（UI 分支）PyInstaller 打包：只产出 GUI 版
 #   MinePick_Launcher.exe —— GUI（无控制台窗口，双击启动）
 # 本分支不提供 CLI 版，因此不构建 MinePick_Launcher_cli.exe
@@ -37,7 +37,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name="MinePick_UI_Trial",
+    name="MinePick_Launcher",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

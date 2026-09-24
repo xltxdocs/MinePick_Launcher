@@ -15,11 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with MinePick Launcher. If not, see <https://www.gnu.org/licenses/>.
 
-# UI trial helper: render every page offscreen to PNG so the redesign can be compared
-# side by side with the released build. Reads a project tree read-only; all preview
-# config/data live inside the trial folder.
+# Page renderer: render every page offscreen to PNG for the README screenshots and for
+# eye-checking layout work. Reads a project tree read-only; all preview config/data live
+# inside the preview folder.
 
-"""Offscreen page renderer for the UI trial build."""
+"""Offscreen page renderer for the launcher UI."""
 
 from __future__ import annotations
 
@@ -188,7 +188,7 @@ def main() -> int:
     parser.add_argument(
         "--preview",
         default="",
-        help="where to keep _preview data (defaults to --root; point at the trial folder when rendering the released tree)",
+        help="where to keep _preview data (defaults to --root; point at the work folder when rendering the released tree)",
     )
     args = parser.parse_args()
 
@@ -295,13 +295,15 @@ def main() -> int:
     window.pages["java"].refresh()
     wait_for_workers(app, QThreadPool.globalInstance(), 15.0)
 
-    names = ["launch", "instances", "versions", "java", "account", "mods", "settings"]
+    from gui.main_window import NAV_KEYS  # single source of truth for the page order
+
+    names = list(NAV_KEYS)
     if args.pages:
         wanted = [item.strip() for item in args.pages.split(",") if item.strip()]
         names = [name for name in names if name in wanted]
     prefix = f"{args.label}_" if args.label else ""
     for name in names:
-        index = ["launch", "instances", "versions", "java", "account", "mods", "settings"].index(name)
+        index = NAV_KEYS.index(name)
         window.sidebar.setCurrentRow(index)
         for _ in range(8):
             app.processEvents()

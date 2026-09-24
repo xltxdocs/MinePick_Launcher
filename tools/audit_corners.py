@@ -15,14 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with MinePick Launcher. If not, see <https://www.gnu.org/licenses/>.
 
-# UI trial helper: render every page offscreen and audit the four corners of each
+# Corner audit helper: render every page offscreen and audit the four corners of each
 # panel-like widget. Qt style sheets produce a few corner artifacts that are hard to
 # spot by eye (a rounded header section exposes the base style's light background, a
 # thicker left border pokes out of a rounded corner), so this prints a verdict per
 # corner: "round" (window background shows through), "SQUARE" (the widget's own
 # background reaches the corner) or "ODD" (some third colour = an artifact).
 
-"""Offscreen corner audit for the UI trial build."""
+"""Offscreen corner audit for the launcher UI."""
 
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ def main() -> int:
     parser.add_argument("--theme", default="dark", choices=["dark", "light"])
     args = parser.parse_args()
 
-    root = Path(os.environ.get("TRIAL_ROOT", r"D:\dsh-workspace\MinePick_UI_Trial")).resolve()
+    root = Path(os.environ.get("UI_AUDIT_ROOT", Path(__file__).resolve().parents[1])).resolve()
     os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
     os.environ["QT_QPA_PLATFORM"] = "offscreen"
     sys.path.insert(0, str(root))

@@ -17,7 +17,7 @@
 
 """One command for the whole UI check: tests, lint, screenshots and the corner audit.
 
-Usage:  python tools/ui_regression.py          (from the trial folder)
+Usage:  python tools/ui_regression.py          (from the repository root)
         python tools/ui_regression.py --quick  (skip the screenshots)
 """
 

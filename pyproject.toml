@@ -1,7 +1,7 @@
 [project]
-name = "minecraft-launcher"
-version = "0.1.5"
-description = "Minecraft launcher core library + CLI + PySide6 thin GUI"
+name = "minepick-launcher"
+version = "0.2.0"
+description = "Portable Minecraft launcher: Microsoft/offline accounts, version install, Modrinth & CurseForge resources, isolated instances (PySide6 GUI)"
 readme = "README.md"
 license = "GPL-3.0-only"
 requires-python = ">=3.11"

@@ -1,6 +1,6 @@
-# 发布到 GitHub（MinePick Launcher — UI Trial）
+# 发布到 GitHub（MinePick Launcher）
 
-本仓库为 **MinePick_UI_Trial**（UI Trial 产品线）：远端 `https://github.com/xltxdocs/MinePick_UI_Trial.git`，分支 `main`，当前版本 `0.1.2`。
+本仓库为 **MinePick Launcher**：远端 `https://github.com/xltxdocs/MinePick_Launcher.git`，分支 `main`，当前版本 `0.2.0`。
 本产品线**只发布 GUI 版**，没有 CLI 可执行文件（既不构建 `MinePick_Launcher_cli.exe`，也不打包 `run_cli.py`）。
 以下命令均在 Windows 的 **CMD** 中执行；本机未安装 gh CLI，Release 在 GitHub 网页上创建。
 
@@ -12,9 +12,9 @@
 ```cmd
 git init
 git add .
-git commit -m "MinePick Launcher UI Trial 首个版本"
+git commit -m "MinePick Launcher 首个版本"
 git branch -M main
-git remote add origin https://github.com/xltxdocs/MinePick_UI_Trial.git
+git remote add origin https://github.com/xltxdocs/MinePick_Launcher.git
 git push -u origin main
 ```
 
@@ -25,10 +25,10 @@ git push -u origin main
 
 打包好的成品先暂存在仓库的 `Releases\` 文件夹（该文件夹已进 .gitignore，不随 git 提交），同时也会产出到 `dist\`：
 
-- `MinePick_UI_Trial.exe`（GUI 单文件 EXE，已签名，约 65 MB）
+- `MinePick_Launcher.exe`（GUI 单文件 EXE，已签名，约 65 MB）
 - `Source_code.zip`（源代码包，供 GPL-3.0 合规分发，约 1 MB）
 
-1. GitHub 仓库页 → Releases → Draft a new release，Tag 填 `v0.1.2`（当前版本；仓库已有 `v0.1.0`、`v0.1.1`、`v0.1.2`）；
+1. GitHub 仓库页 → Releases → Draft a new release，Tag 填 `v0.2.0`（当前版本；仓库已有 `v0.1.0`、`v0.1.1`、`v0.1.2`、`v0.1.3`、`v0.1.4`、`v0.1.5`）；
 2. 把上面两个文件拖进附件区；
 3. Release 说明按第四节的规范撰写，并写清：
    - 功能简介（参考 README 功能列表）；
@@ -43,7 +43,7 @@ git push -u origin main
 ```cmd
 cd /d D:\dsh-workspace\Source_code_UI
 git push
-git push origin v0.1.2
+git push origin v0.2.0
 ```
 
 > 注意：普通 `git push` **不会**推送标签，必须再执行一次 `git push origin vX.Y.Z`，否则 Release 页面选不到该 Tag。

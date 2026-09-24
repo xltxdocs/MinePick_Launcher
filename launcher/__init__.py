@@ -15,9 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with MinePick Launcher. If not, see <https://www.gnu.org/licenses/>.
 
-"""Minecraft launcher core library.
+"""MinePick Launcher core library.
 
-Current progress: project skeleton.
+Accounts, version installation, Java runtimes, mods/instances and launching live here; the
+PySide6 GUI in :mod:`gui` is a thin layer on top of it.
 """
 
-__version__ = "0.1.5"
+__version__ = "0.2.0"

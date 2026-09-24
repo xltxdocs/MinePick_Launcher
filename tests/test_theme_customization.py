@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with MinePick Launcher. If not, see <https://www.gnu.org/licenses/>.
 
-"""Custom accent color and UI font (UI trial): parsing, palette derivation and QSS placeholders."""
+"""Custom accent color and UI font: parsing, palette derivation and QSS placeholders."""
 
 import os
 

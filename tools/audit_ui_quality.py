@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with MinePick Launcher. If not, see <https://www.gnu.org/licenses/>.
 
-# UI trial helper: quality audit for the interface itself.
+# UI quality audit helper for the interface itself.
 #   1. text overflow  - does any label/button/header text not fit in 9 languages (ru/de are longest)?
 #   2. contrast       - WCAG ratio of the colour pairs defined in the theme module
 #   3. high DPI       - does the window still fit at 125% / 150% scaling?
@@ -88,7 +88,7 @@ def check_contrast() -> int:
 
 
 def check_text_overflow() -> int:
-    root = Path(os.environ.get("TRIAL_ROOT", r"D:\dsh-workspace\MinePick_UI_Trial")).resolve()
+    root = Path(os.environ.get("UI_AUDIT_ROOT", Path(__file__).resolve().parents[1])).resolve()
     os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
     os.environ["QT_QPA_PLATFORM"] = "offscreen"
     sys.path.insert(0, str(root))
@@ -186,7 +186,7 @@ def check_high_dpi(scale: float) -> int:
         {
             "QT_SCALE_FACTOR": str(scale),
             "QT_QPA_PLATFORM": "offscreen",
-            "TRIAL_ROOT": str(root),
+            "UI_AUDIT_ROOT": str(root),
             "PYTHONDONTWRITEBYTECODE": "1",
         }
     )
@@ -196,10 +196,10 @@ def check_high_dpi(scale: float) -> int:
 
 def _dpi_probe() -> int:
     """Worker mode: report the window size under the QT_SCALE_FACTOR set by the caller."""
-    root = Path(os.environ.get("TRIAL_ROOT", r"D:\dsh-workspace\MinePick_UI_Trial")).resolve()
+    root = Path(os.environ.get("UI_AUDIT_ROOT", Path(__file__).resolve().parents[1])).resolve()
     sys.path.insert(0, str(root))
     os.chdir(root)
-    # never touch the user's real launcher data: always use the trial preview folders
+    # never touch the user's real launcher data: always use the preview folders
     os.environ["MCLAUNCHER_DATA_DIR"] = str(root / "_preview" / "data")
     os.environ["MINECRAFT_GAME_DIR"] = str(root / "_preview" / "game")
 
@@ -232,7 +232,7 @@ def main() -> int:
     if "--dpi" in sys.argv:  # worker mode: no QApplication may exist yet
         return _dpi_probe()
     wants_json = "--json" in sys.argv
-    root = Path(os.environ.get("TRIAL_ROOT", r"D:\dsh-workspace\MinePick_UI_Trial")).resolve()
+    root = Path(os.environ.get("UI_AUDIT_ROOT", Path(__file__).resolve().parents[1])).resolve()
     os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
     sys.path.insert(0, str(root))
     os.chdir(root)

@@ -1,10 +1,10 @@
 [简体中文](github_release.md) | English
 
-# Publishing to GitHub (MinePick Launcher — UI Trial)
+# Publishing to GitHub (MinePick Launcher)
 
 > This document is also available in [Simplified Chinese](github_release.md).
 
-This repository is **MinePick_UI_Trial** (the UI Trial line): remote `https://github.com/xltxdocs/MinePick_UI_Trial.git`, branch `main`, current version `0.1.2`.
+This repository is **MinePick Launcher**: remote `https://github.com/xltxdocs/MinePick_Launcher.git`, branch `main`, current version `0.2.0`.
 This line ships a **GUI build only** — there is no CLI executable (no `MinePick_Launcher_cli.exe` is built, and `run_cli.py` is not packaged).
 Every command below is run in **CMD** on Windows; the gh CLI is not installed, so the Release is created on the GitHub web page.
 
@@ -16,9 +16,9 @@ Every command below is run in **CMD** on Windows; the gh CLI is not installed, s
 ```cmd
 git init
 git add .
-git commit -m "MinePick Launcher UI Trial 首个版本"
+git commit -m "MinePick Launcher 首个版本"
 git branch -M main
-git remote add origin https://github.com/xltxdocs/MinePick_UI_Trial.git
+git remote add origin https://github.com/xltxdocs/MinePick_Launcher.git
 git push -u origin main
 ```
 
@@ -29,10 +29,10 @@ git push -u origin main
 
 The packaged artifacts are staged first in the repository's `Releases\` folder (that folder is covered by .gitignore, so it is never committed), and are also produced in `dist\`:
 
-- `MinePick_UI_Trial.exe` (single-file GUI EXE, signed, roughly 65 MB)
+- `MinePick_Launcher.exe` (single-file GUI EXE, signed, roughly 65 MB)
 - `Source_code.zip` (source code package, for GPL-3.0 compliant distribution, roughly 1 MB)
 
-1. On the GitHub repository page → Releases → Draft a new release, and set the Tag to `v0.1.2` (the current version; the repository already has `v0.1.0`, `v0.1.1`, `v0.1.2`);
+1. On the GitHub repository page → Releases → Draft a new release, and set the Tag to `v0.2.0` (the current version; the repository already has `v0.1.0`, `v0.1.1`, `v0.1.2`, `v0.1.3`, `v0.1.4`, `v0.1.5`);
 2. Drag the two files above into the attachments area;
 3. Write the release notes following the convention in section 4, and state:
    - A brief feature overview (see the feature list in the README);
@@ -47,7 +47,7 @@ The version number lives in `launcher/__init__.py` and `pyproject.toml`; once th
 ```cmd
 cd /d D:\dsh-workspace\Source_code_UI
 git push
-git push origin v0.1.2
+git push origin v0.2.0
 ```
 
 > Note: a plain `git push` does **not** push tags, so you must run `git push origin vX.Y.Z` as well, otherwise the Release page cannot select that Tag.
