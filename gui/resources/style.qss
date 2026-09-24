@@ -383,6 +383,24 @@ QFrame#latestCard {
 QLabel#latestKind { color: #8fa2b8; font-size: 12px; }
 QLabel#latestVersion { font-size: 16px; font-weight: 700; color: #ffffff; }
 
+/* ---------- in-window overlay dialogs (crash diagnosis) ---------- */
+
+QWidget#overlayCard {
+    background: #161d27;
+    border: 1px solid #27303d;
+    border-radius: __RADIUS_LG__;
+}
+QLabel#overlayCode {
+    color: #ffffff;
+    background: #2a1a1e;
+    border: 1px solid #e5787f;
+    border-radius: __RADIUS_SM__;
+    padding: 2px 8px;
+    font-weight: 700;
+}
+QLabel#overlayBody { color: #d7e0ec; }
+QScrollArea#overlayScroll { background: transparent; }
+
 /* ---------- page header ---------- */
 
 QWidget#pageHeader { background: transparent; }

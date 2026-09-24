@@ -1,6 +1,6 @@
 # Third-party notices / 第三方许可声明
 
-MinePick Launcher 0.2.0 — <https://github.com/xltxdocs/MinePick_Launcher>
+MinePick Launcher 0.3.0 — <https://github.com/xltxdocs/MinePick_Launcher>
 
 MinePick Launcher itself is released under **GPL-3.0-only** (see [LICENSE](LICENSE)). It uses the third-party components and services listed below; their own licences and terms apply to those parts.
 

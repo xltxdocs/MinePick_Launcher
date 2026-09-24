@@ -21,4 +21,4 @@ Accounts, version installation, Java runtimes, mods/instances and launching live
 PySide6 GUI in :mod:`gui` is a thin layer on top of it.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"

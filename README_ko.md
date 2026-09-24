@@ -6,7 +6,7 @@ Python + PySide6로 만든 포터블 Minecraft 런처: Microsoft/오프라인 �
 Modrinth & CurseForge 리소스, Fabric/Forge/NeoForge/Quilt 로더, 격리된 인스턴스 — 단일
 포터블 EXE로 패키징되어 있습니다.
 
-**현재 버전 0.2.0** —— GUI 빌드만 제공하며, 이 저장소에는 CLI 실행 파일이 없습니다.
+**현재 버전 0.3.0** —— GUI 빌드만 제공하며, 이 저장소에는 CLI 실행 파일이 없습니다.
 
 ## 스크린샷
 

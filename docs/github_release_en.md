@@ -4,7 +4,7 @@
 
 > This document is also available in [Simplified Chinese](github_release.md).
 
-This repository is **MinePick Launcher**: remote `https://github.com/xltxdocs/MinePick_Launcher.git`, branch `main`, current version `0.2.0`.
+This repository is **MinePick Launcher**: remote `https://github.com/xltxdocs/MinePick_Launcher.git`, branch `main`, current version `0.3.0`.
 This line ships a **GUI build only** — there is no CLI executable (no `MinePick_Launcher_cli.exe` is built, and `run_cli.py` is not packaged).
 Every command below is run in **CMD** on Windows; the gh CLI is not installed, so the Release is created on the GitHub web page.
 
@@ -32,7 +32,7 @@ The packaged artifacts are staged first in the repository's `Releases\` folder (
 - `MinePick_Launcher.exe` (single-file GUI EXE, signed, roughly 65 MB)
 - `Source_code.zip` (source code package, for GPL-3.0 compliant distribution, roughly 1 MB)
 
-1. On the GitHub repository page → Releases → Draft a new release, and set the Tag to `v0.2.0` (the current version; the repository already has `v0.1.0`, `v0.1.1`, `v0.1.2`, `v0.1.4`, `v0.1.5`, and the remote carries an extra `v0.1.3`);
+1. On the GitHub repository page → Releases → Draft a new release, and set the Tag to `v0.3.0` (the current version; the repository already has `v0.1.0`, `v0.1.1`, `v0.1.2`, `v0.1.4`, `v0.1.5`, `v0.2.0`, and the remote carries an extra `v0.1.3`);
 2. Drag the two files above into the attachments area;
 3. Write the release notes following the convention in section 4, and state:
    - A brief feature overview (see the feature list in the README);
@@ -47,7 +47,7 @@ The version number lives in `launcher/__init__.py` and `pyproject.toml`; once th
 ```cmd
 cd /d D:\dsh-workspace\Source_code_UI
 git push
-git push origin v0.2.0
+git push origin v0.3.0
 ```
 
 > Note: a plain `git push` does **not** push tags, so you must run `git push origin vX.Y.Z` as well, otherwise the Release page cannot select that Tag.

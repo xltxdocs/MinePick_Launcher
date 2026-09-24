@@ -211,6 +211,16 @@ def main() -> int:
         help="show this game directory instead of the preview folder (keeps build paths out of published screenshots)",
     )
     parser.add_argument(
+        "--dialog-shot",
+        action="store_true",
+        help="also render the crash diagnosis dialog over the instances page",
+    )
+    parser.add_argument(
+        "--no-blur",
+        action="store_true",
+        help="render the dialog without the blurred backdrop (shows the plain scrim)",
+    )
+    parser.add_argument(
         "--preview",
         default="",
         help="where to keep _preview data (defaults to --root; point at the work folder when rendering the released tree)",
@@ -337,6 +347,15 @@ def main() -> int:
             app.processEvents()
             time.sleep(0.05)
         wait_for_workers(app, QThreadPool.globalInstance(), 8.0)
+        if name == "instances":
+            # An instance page without a selection only shows the hint: select a demo instance
+            # (prefer the second row, which is the modded one) so the detail panel is visible.
+            page = window.pages["instances"]
+            if page.list.count():
+                page.list.setCurrentRow(1 if page.list.count() > 1 else 0)
+            for _ in range(6):
+                app.processEvents()
+                time.sleep(0.05)
         if args.scroll_bottom:
             _scroll_page_to_bottom(window.pages[name])
             for _ in range(4):
@@ -347,8 +366,51 @@ def main() -> int:
         pixmap.save(str(target))
         print(f"saved {target} ({pixmap.width()}x{pixmap.height()})")
 
+    if args.dialog_shot:
+        _render_dialog_shot(app, window, Path(game_dir), out_dir, prefix, blur=not args.no_blur)
+
     window.close()
     return 0
+
+
+def _render_dialog_shot(app, window, game_dir: Path, out_dir: Path, prefix: str, *, blur: bool) -> None:
+    """Render the crash diagnosis dialog over the instances page.
+
+    Uses one of the shipped sample logs so the picture shows a real diagnosis
+    (error code, findings, advice) instead of a placeholder.
+    """
+    from gui.dialogs.crash_dialog import CrashDiagnosisDialog, context_for_launch
+    from launcher.diagnostics import diagnose
+
+    logs = game_dir / "logs"
+    logs.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(Path("tests/data/crash_samples/oom.latest.log"), logs / "latest.log")
+
+    from gui.main_window import NAV_KEYS
+
+    window.sidebar.setCurrentRow(NAV_KEYS.index("instances"))
+    page = window.pages["instances"]
+    if page.list.count():
+        page.list.setCurrentRow(1 if page.list.count() > 1 else 0)
+    for _ in range(8):
+        app.processEvents()
+        time.sleep(0.05)
+
+    diagnosis = diagnose(
+        context_for_launch(
+            version_id="1.20.1", game_dir=game_dir, exit_code=1, started=time.time() - 60
+        )
+    )
+    dialog = CrashDiagnosisDialog(window, diagnosis, log_path=logs / "latest.log", blur=blur)
+    dialog.show()
+    for _ in range(12):
+        app.processEvents()
+        time.sleep(0.05)
+    pixmap = window.grab()
+    target = out_dir / f"{prefix}dialog.png"
+    pixmap.save(str(target))
+    print(f"saved {target} ({pixmap.width()}x{pixmap.height()})")
+    dialog.close()
 
 
 if __name__ == "__main__":

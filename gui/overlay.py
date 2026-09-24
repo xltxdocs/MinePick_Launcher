@@ -34,7 +34,7 @@ fails to open.
 from __future__ import annotations
 
 from PySide6.QtCore import QEasingCurve, QEvent, QPropertyAnimation, Qt
-from PySide6.QtGui import QColor, QKeyEvent, QPainter, QPalette, QPen, QPixmap
+from PySide6.QtGui import QColor, QKeyEvent, QPainter, QPixmap
 from PySide6.QtWidgets import QGraphicsOpacityEffect, QVBoxLayout, QWidget
 
 BLUR_DOWNSCALE = 8  # 1/8 scale + smooth upscale reads as a wide Gaussian blur
@@ -76,9 +76,10 @@ class BlurOverlay(QWidget):
         self._card_width = card_width
         self._card = QWidget(self)
         self._card.setObjectName("overlayCard")
-        # The card background is painted by the overlay itself (see paintEvent), so the
-        # overlay keeps working whatever the QSS theme does with unknown object names.
-        self._card.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        # The card's look comes from the theme's QSS (`QWidget#overlayCard`, the same way
+        # #latestCard is styled): reading the widget palette instead painted a white card in
+        # the dark theme, because QSS colours never reach QPalette.
+        self._card.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._content = QVBoxLayout(self._card)
         self._content.setContentsMargins(28, 24, 28, 24)
         self._content.setSpacing(14)
@@ -172,13 +173,6 @@ class BlurOverlay(QWidget):
             painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
             painter.drawPixmap(self.rect(), self._snapshot)
         painter.fillRect(self.rect(), SCRIM[self._severity])
-
-        palette = self.palette()
-        card = self._card.geometry()
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        painter.setBrush(palette.color(QPalette.ColorRole.Window))
-        painter.setPen(QPen(palette.color(QPalette.ColorRole.Mid), 1))
-        painter.drawRoundedRect(card, CARD_RADIUS, CARD_RADIUS)
 
     # ---------- interaction ----------
 

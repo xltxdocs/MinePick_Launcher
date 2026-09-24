@@ -5,7 +5,7 @@
 基于 Python + PySide6 的便携版 Minecraft 启动器：微软正版 / 离线登录、版本安装、Modrinth 与 CurseForge 资源、
 Fabric/Forge/NeoForge/Quilt 加载器、实例隔离管理 —— 打包为免安装单文件 EXE。
 
-**当前版本 0.2.0** —— 只提供 GUI 版，本仓库不含命令行可执行文件。
+**当前版本 0.3.0** —— 只提供 GUI 版，本仓库不含命令行可执行文件。
 
 ## 界面演示
 

@@ -6,7 +6,7 @@ Ein portabler Minecraft-Launcher auf Basis von Python + PySide6: Microsoft-/Offl
 Modrinth- & CurseForge-Ressourcen, Fabric/Forge/NeoForge/Quilt-Loader, isolierte Instanzen — verpackt als
 einzelne portable EXE.
 
-**Aktuelle Version: 0.2.0** — nur ein GUI-Build: eine Befehlszeilen-EXE enthält dieses Repository nicht.
+**Aktuelle Version: 0.3.0** — nur ein GUI-Build: eine Befehlszeilen-EXE enthält dieses Repository nicht.
 
 ## Screenshots
 
