@@ -24,6 +24,7 @@ script that runs after this process exits, because a running single-file EXE can
 
 from __future__ import annotations
 
+import logging
 import sys
 from pathlib import Path
 
@@ -456,7 +457,12 @@ class AboutPage(QWidget):
             script = updates.write_install_script(pending, Path(sys.executable), restart=False)
         except OSError:
             return  # closing must never raise; the staged update stays for the next start
-        updates.launch_install_script(script)
+        if not updates.launch_install_script(script):
+            # The staged update stays pending, and the log records why: an update that silently
+            # does nothing is worse than one that fails loudly.
+            logging.getLogger(__name__).warning(
+                "could not start the update helper %s; the staged update stays pending", script
+            )
 
     def auto_check_on_start(self) -> None:
         """Startup check; the "off" mode really means no automatic check.

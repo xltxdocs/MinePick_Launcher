@@ -246,7 +246,7 @@ def test_write_install_script_swaps_and_restores(ws_tmp) -> None:
     assert '.bak"' in text  # keeps a backup
     assert f'move /y "{target}.bak" "{target}"' in text  # and restores it when the move failed
     assert 'start ""' in text  # restart flag honoured
-    assert 'del "%~f0"' in text  # helper removes itself
+    assert '(goto) 2>nul & del /f /q "%~f0"' in text  # the reliable way for a batch to remove itself
 
 
 def test_write_install_script_without_restart(ws_tmp) -> None:
@@ -256,6 +256,39 @@ def test_write_install_script_without_restart(ws_tmp) -> None:
     target.write_bytes(b"MZ")
     text = updates.write_install_script(new_exe, target, restart=False).read_text(encoding="utf-8")
     assert 'if "0"=="1" start' in text
+    assert "goto swap" in text  # the wait loop is bounded and can always reach the swap
+    assert "apply-update.log" in text  # a silent no-op must be impossible
+
+
+def test_install_script_really_swaps_the_executable(ws_tmp) -> None:
+    """Run the helper for real: it must swap the file, keep a backup and delete itself.
+
+    Asserting the script's text is not enough. The helper was once started with DETACHED_PROCESS,
+    which left it without a console: it wrote its first log line and died, so the update was staged
+    and the launcher unchanged. Only actually running it proves an update installs.
+    """
+    import time
+
+    target = ws_tmp / "app" / "MinePick_Launcher.exe"
+    staged = ws_tmp / "data" / "updates" / "MinePick_Launcher.exe"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    staged.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(b"OLD-BUILD")
+    staged.write_bytes(b"NEW-BUILD")
+
+    # wait_pid points at a PID that is not running, so the helper swaps immediately
+    script = updates.write_install_script(staged, target, restart=False, wait_pid=999999)
+    assert updates.launch_install_script(script) is True
+
+    deadline = time.time() + 30
+    while time.time() < deadline and script.exists():
+        time.sleep(0.3)
+
+    assert target.read_bytes() == b"NEW-BUILD"  # the swap happened
+    assert Path(str(target) + ".bak").read_bytes() == b"OLD-BUILD"
+    assert not staged.exists()
+    assert not script.exists()  # the helper cleaned up after itself
+    assert (script.parent / "apply-update.log").is_file()
 
 
 def test_pending_roundtrip(ws_tmp, monkeypatch) -> None:

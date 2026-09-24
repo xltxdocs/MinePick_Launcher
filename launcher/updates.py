@@ -303,45 +303,90 @@ def _console_encoding() -> str:
     return "oem" if os.name == "nt" else "utf-8"
 
 
-def write_install_script(new_exe: Path, target_exe: Path, restart: bool) -> Path:
+def write_install_script(
+    new_exe: Path,
+    target_exe: Path,
+    restart: bool,
+    *,
+    wait_pid: int | None = None,
+) -> Path:
     """Write the swap helper that replaces ``target_exe`` once this process has exited.
 
-    The helper waits for this PID, keeps a ``.bak`` of the old file and puts it back when the move
-    failed, so the worst case is "nothing changed" rather than "no launcher".
+    The helper waits for this process's PID (bounded, so a stale or reused PID cannot wedge it
+    forever), keeps a ``.bak`` of the old file, puts it back when the swap failed, and logs every
+    step to ``apply-update.log`` next to itself. The worst case is "nothing changed" rather than
+    "no launcher", and a silent no-op is impossible - the log says what happened. ``wait_pid``
+    exists so tests can point the helper at a PID that is not running.
     """
     new_exe, target_exe = Path(new_exe), Path(target_exe)
     script = new_exe.parent / "apply-update.cmd"
+    log = new_exe.parent / "apply-update.log"
+    backup = Path(str(target_exe) + ".bak")
+    pid = os.getpid() if wait_pid is None else int(wait_pid)
     lines = [
         "@echo off",
         "setlocal",
-        f'set "PID={os.getpid()}"',
+        f'set "PID={pid}"',
+        f'set "LOG={log}"',
+        'echo [%DATE% %TIME%] helper start, waiting for PID %PID% >> "%LOG%"',
+        "set /a TRIES=0",
         ":wait",
-        'tasklist /fi "PID eq %PID%" 2>nul | find "%PID%" >nul',
-        "if not errorlevel 1 (",
-        "  ping -n 2 127.0.0.1 >nul",
-        "  goto wait",
-        ")",
-        f'move /y "{target_exe}" "{target_exe}.bak" >nul',
-        f'move /y "{new_exe}" "{target_exe}" >nul',
-        f'if not exist "{target_exe}" move /y "{target_exe}.bak" "{target_exe}" >nul',
+        # /nh drops the header, and the spaces around the number keep PID 1234 from matching 12345
+        'tasklist /nh 2>nul | findstr /r /c:" %PID% " >nul',
+        "if errorlevel 1 goto swap",
+        "set /a TRIES+=1",
+        "if %TRIES% GEQ 120 goto timeout",
+        "ping -n 2 127.0.0.1 >nul",
+        "goto wait",
+        ":timeout",
+        'echo [%DATE% %TIME%] still running after 120 checks, swapping anyway >> "%LOG%"',
+        ":swap",
+        f'move /y "{target_exe}" "{backup}" >> "%LOG%" 2>&1',
+        f'move /y "{new_exe}" "{target_exe}" >> "%LOG%" 2>&1',
+        f'if exist "{target_exe}" goto done',
+        # a move across volumes fails: copy instead, and restore the backup if even that fails
+        f'copy /y "{new_exe}" "{target_exe}" >> "%LOG%" 2>&1',
+        f'if not exist "{target_exe}" move /y "{backup}" "{target_exe}" >> "%LOG%" 2>&1',
+        ":done",
+        'echo [%DATE% %TIME%] swap finished >> "%LOG%"',
         f'if "{int(bool(restart))}"=="1" start "" "{target_exe}"',
-        'del "%~f0"',
+        # the only reliable way for a batch file to delete itself
+        '(goto) 2>nul & del /f /q "%~f0"',
     ]
     script.write_bytes(("\r\n".join(lines) + "\r\n").encode(_console_encoding(), errors="replace"))
     return script
 
 
 def launch_install_script(script: Path) -> bool:
-    """Run the swap helper detached so it outlives this process. Returns whether it started."""
+    """Run the swap helper detached so it outlives this process. Returns whether it started.
+
+    The helper must not depend on this process in any way: it gets its own working directory and
+    its standard handles point at the null device, because inheriting a console or pipe that dies
+    with the launcher can take the just-started ``cmd`` down with it - the update would then
+    silently never happen, which is exactly the failure this guards against.
+    """
     if os.name != "nt":
         return False
-    flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+    script = Path(script)
+    # CREATE_NO_WINDOW, not DETACHED_PROCESS: a batch file needs a console. Measured with
+    # DETACHED_PROCESS the helper wrote its first log line and then died silently - no cmd.exe left
+    # behind, nothing swapped, the script still on disk, which is the "the update never ran" report.
+    # CREATE_NO_WINDOW gives it an invisible console, and the null-device handles keep it from
+    # inheriting handles that die with the launcher.
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(
+        subprocess, "CREATE_NEW_PROCESS_GROUP", 0
+    )
     try:
-        subprocess.Popen(
-            ["cmd", "/c", str(script)],
-            creationflags=flags,
-            close_fds=True,
-        )
+        with open(os.devnull, "rb") as null_in, open(os.devnull, "wb") as null_out:
+            subprocess.Popen(
+                ["cmd", "/c", str(script)],
+                cwd=str(script.parent),
+                stdin=null_in,
+                stdout=null_out,
+                stderr=null_out,
+                creationflags=flags,
+                close_fds=True,
+            )
     except OSError:
         return False
     return True
