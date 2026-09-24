@@ -60,10 +60,18 @@ MinePick Launcher 本体以 **GPL-3.0-only** 发布(见 [LICENSE](LICENSE))。�
   - mod search
   - 模组检索
   - <https://www.curseforge.com/minecraft>
-- **Fabric, Forge & NeoForge**
-  - loader metadata and Maven repositories
-  - 加载器元数据与 Maven 仓库
+- **Fabric**
+  - the Fabric loader and its metadata
+  - Fabric 加载器与其元数据
   - <https://fabricmc.net/>
+- **Forge**
+  - the Forge loader and its Maven repository
+  - Forge 加载器与其 Maven 仓库
+  - <https://files.minecraftforge.net/>
+- **NeoForge**
+  - the NeoForge loader and its Maven repository
+  - NeoForge 加载器与其 Maven 仓库
+  - <https://neoforged.net/>
 - **Adoptium (Eclipse Temurin)**
   - Java runtime downloads
   - Java 运行时下载
@@ -75,7 +83,7 @@ MinePick Launcher 本体以 **GPL-3.0-only** 发布(见 [LICENSE](LICENSE))。�
 
 ## Inspiration and community / 灵感与社区
 
-- **Plain Craft Launcher 2 (PCL2) & PCL CE**
+- **Plain Craft Launcher 2 (PCL2) & PCL Community Edition (PCL CE)**
   - the inspiration for how this launcher organises its interface and its about/update pages. The technology stacks differ (C#/WPF versus Python/PySide6); this project is independently implemented and contains none of the upstream source code.
   - 本项目在界面组织与「关于 / 更新」信息架构上的灵感来源。技术栈不同（C#/WPF 与 Python/PySide6），本项目完全独立实现，未包含上游源代码。
   - <https://github.com/PCL-Community/PCL-CE>
@@ -86,7 +94,7 @@ MinePick Launcher 本体以 **GPL-3.0-only** 发布(见 [LICENSE](LICENSE))。�
 - **TheDarkLord234**
   - community member and author of MinePick Launcher Revision — thanks for exploring this space together.
   - 社区伙伴，《MinePick Launcher Revision》的作者，感谢在生态探索上的并肩前行。
-  - <https://github.com/TheDarkLord234/MinePick_Launcher_Revision>
+  - <https://github.com/TheDarkLord234>
 - **Prism Launcher**
   - provides the default Microsoft sign-in client id.
   - 提供了默认的微软登录 Client ID。

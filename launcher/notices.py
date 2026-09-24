@@ -61,14 +61,16 @@ SERVICES: tuple[Credit, ...] = (
     Credit("Mojang & Microsoft", "about.credit.mojang", url="https://www.minecraft.net/"),
     Credit("Modrinth", "about.credit.modrinth", url="https://modrinth.com/"),
     Credit("CurseForge", "about.credit.curseforge", url="https://www.curseforge.com/minecraft"),
-    Credit("Fabric, Forge & NeoForge", "about.credit.loaders", url="https://fabricmc.net/"),
+    Credit("Fabric", "about.credit.fabric", url="https://fabricmc.net/"),
+    Credit("Forge", "about.credit.forge", url="https://files.minecraftforge.net/"),
+    Credit("NeoForge", "about.credit.neoforge", url="https://neoforged.net/"),
     Credit("Adoptium (Eclipse Temurin)", "about.credit.adoptium", url="https://adoptium.net/"),
     Credit("GitHub", "about.credit.github", url="https://github.com/"),
 )
 
 COMMUNITY: tuple[Credit, ...] = (
     Credit(
-        "Plain Craft Launcher 2 (PCL2) & PCL CE",
+        "Plain Craft Launcher 2 (PCL2) & PCL Community Edition (PCL CE)",
         "about.credit.pcl",
         url="https://github.com/PCL-Community/PCL-CE",
     ),
@@ -80,7 +82,7 @@ COMMUNITY: tuple[Credit, ...] = (
     Credit(
         "TheDarkLord234",
         "about.credit.darklord",
-        url="https://github.com/TheDarkLord234/MinePick_Launcher_Revision",
+        url="https://github.com/TheDarkLord234",
     ),
     Credit("Prism Launcher", "about.credit.prism", url="https://prismlauncher.org/"),
 )
