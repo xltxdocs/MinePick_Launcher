@@ -140,10 +140,14 @@ class BlurOverlay(QWidget):
         from PySide6.QtCore import QRect
 
         available_h = max(120, self.height() - 2 * CARD_MARGIN)
+        # Long translations (German buttons, French hints) need more room than the default width:
+        # grow with the content, but never past the window minus the margins.
+        wanted = max(self._card_width, self._card.sizeHint().width())
+        width = min(wanted, max(200, self.width() - 2 * CARD_MARGIN))
         height = min(self._card.sizeHint().height(), available_h)
-        x = (self.width() - self._card_width) // 2
+        x = (self.width() - width) // 2
         y = max(CARD_MARGIN, (self.height() - height) // 2)
-        return QRect(x, y, self._card_width, height)
+        return QRect(x, y, width, height)
 
     def _place_card(self) -> None:
         rect = self._card_rect()

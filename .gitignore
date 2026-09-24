@@ -23,6 +23,9 @@ Releases/
 
 # 工具运行产物
 _preview/
+# Screenshot demo game directory (relative %APPDATA%\.minecraft): keeps published pictures free of
+# build-machine paths and user names while reading like the official launcher's folder
+/%APPDATA%/
 _selfcheck/
 
 

@@ -35,6 +35,7 @@ from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QGuiApplication
 from PySide6.QtWidgets import (
     QFileDialog,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -139,9 +140,8 @@ class CrashDiagnosisDialog:
         area.setMaximumHeight(320)
         layout.addWidget(area, 1)
 
-        buttons = QHBoxLayout()
+        buttons = QGridLayout()
         buttons.setSpacing(8)
-        buttons.addStretch(1)
         self._log_button = QPushButton(i18n.tr("diagnosis.dialog.open_log"))
         self._log_button.setObjectName("secondaryButton")
         self._log_button.setEnabled(self._log_path is not None and Path(self._log_path).exists())
@@ -155,8 +155,11 @@ class CrashDiagnosisDialog:
         dismiss = QPushButton(i18n.tr("diagnosis.dialog.dismiss"))
         dismiss.setObjectName("primaryButton")
         dismiss.clicked.connect(self.close)
-        for button in (self._log_button, self._export_button, self._copy_button, dismiss):
-            buttons.addWidget(button)
+        for index, button in enumerate(
+            (self._log_button, self._export_button, self._copy_button, dismiss)
+        ):
+            # Two columns: four long localized labels never fit on one line inside the card
+            buttons.addWidget(button, index // 2, index % 2)
         layout.addLayout(buttons)
 
     # ---------- actions ----------

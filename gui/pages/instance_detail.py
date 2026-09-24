@@ -621,6 +621,13 @@ class InstanceDetail(QWidget):
         style_form(form)
 
         self.isolation_combo = QComboBox()
+        # Long option texts must not dictate the page width (German/French labels otherwise push the
+        # whole window's minimum width past a 1024px screen): show a bounded number of characters
+        # and let the popup list size itself.
+        self.isolation_combo.setSizeAdjustPolicy(
+            QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon
+        )
+        self.isolation_combo.setMinimumContentsLength(14)
         self.isolation_combo.addItem(tr("instances.detail.settings.follow_global"), ISOLATION_FOLLOW)
         self.isolation_combo.addItem(tr("instances.detail.settings.isolation.on"), ISOLATION_ON)
         self.isolation_combo.addItem(tr("instances.detail.settings.isolation.off"), ISOLATION_OFF)

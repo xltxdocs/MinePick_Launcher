@@ -238,7 +238,10 @@ def main() -> int:
 
     data_dir, game_dir = ensure_preview(
         Path(args.preview).resolve() if args.preview else root,
-        Path(args.game_dir).resolve() if args.game_dir else None,
+        # Deliberately not resolved: the value is what the screenshots *display*, and a relative
+        # name keeps the build machine's path out of published pictures without needing write
+        # access outside the checkout (`--game-dir Minecraft` shows "Minecraft" in the UI).
+        Path(args.game_dir) if args.game_dir else None,
     )
     os.environ["MCLAUNCHER_DATA_DIR"] = str(data_dir)
     os.environ["MINECRAFT_GAME_DIR"] = str(game_dir)
@@ -407,7 +410,7 @@ def _render_dialog_shot(app, window, game_dir: Path, out_dir: Path, prefix: str,
         app.processEvents()
         time.sleep(0.05)
     pixmap = window.grab()
-    target = out_dir / f"{prefix}dialog.png"
+    target = out_dir / f"{prefix}9_dialog.png"  # index 9 keeps the driver's name pattern intact
     pixmap.save(str(target))
     print(f"saved {target} ({pixmap.width()}x{pixmap.height()})")
     dialog.close()
