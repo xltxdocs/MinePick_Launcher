@@ -61,9 +61,9 @@ def render() -> str:
         ),
         "",
         (
-            "MinePick Launcher 本体以 **GPL-3.0-only** 发布(见 [LICENSE](LICENSE))。下列第三方组件与服务"
-            "各自适用其自身许可与条款;Qt for Python(PySide6)以 **LGPL-3.0** 授权,以动态库形式提供且未作修改。"
-            "应用内的「关于」页展示同一份清单(按界面语言翻译)。"
+            "MinePick Launcher 本体以 **GPL-3.0-only** 发布（见 [LICENSE](LICENSE)）。下列第三方组件与服务"
+            "各自适用其自身许可与条款；Qt for Python（PySide6）以 **LGPL-3.0** 授权，以动态库形式提供且未作修改。"
+            "应用内的「关于」页展示同一份清单（按界面语言翻译）。"
         ),
         "",
     ]

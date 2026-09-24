@@ -51,6 +51,13 @@ DEPENDENCIES: tuple[Credit, ...] = (
     Credit("tenacity", "about.credit.tenacity", "Apache-2.0", "https://github.com/jd/tenacity"),
     Credit("rich", "about.credit.rich", "MIT", "https://github.com/Textualize/rich"),
     Credit("packaging", "about.credit.packaging", "Apache-2.0 or BSD-2-Clause", "https://github.com/pypa/packaging"),
+    Credit(
+        "cryptography (with OpenSSL)",
+        "about.credit.cryptography",
+        "Apache-2.0 or BSD-3-Clause",
+        "https://cryptography.io/",
+    ),
+    Credit("truststore", "about.credit.truststore", "MIT", "https://github.com/sethmlarson/truststore"),
 )
 
 DEV_TOOLS: tuple[Credit, ...] = (

@@ -6,7 +6,7 @@ MinePick Launcher itself is released under **GPL-3.0-only** (see [LICENSE](LICEN
 
 Qt for Python (PySide6) is licensed under **LGPL-3.0** and is shipped as a dynamically loaded library that the launcher does not modify. The About page inside the application shows the same list, translated into the interface language.
 
-MinePick Launcher 本体以 **GPL-3.0-only** 发布(见 [LICENSE](LICENSE))。下列第三方组件与服务各自适用其自身许可与条款;Qt for Python(PySide6)以 **LGPL-3.0** 授权,以动态库形式提供且未作修改。应用内的「关于」页展示同一份清单(按界面语言翻译)。
+MinePick Launcher 本体以 **GPL-3.0-only** 发布（见 [LICENSE](LICENSE)）。下列第三方组件与服务各自适用其自身许可与条款；Qt for Python（PySide6）以 **LGPL-3.0** 授权，以动态库形式提供且未作修改。应用内的「关于」页展示同一份清单（按界面语言翻译）。
 
 ## Dependencies / 依赖项
 
@@ -42,6 +42,14 @@ MinePick Launcher 本体以 **GPL-3.0-only** 发布(见 [LICENSE](LICENSE))。�
   - version parsing and comparison
   - 版本号解析与比较
   - <https://github.com/pypa/packaging>
+- **cryptography (with OpenSSL)** — `Apache-2.0 or BSD-3-Clause`
+  - token encryption and certificate handling (including OpenSSL)
+  - 令牌加密与证书校验（含 OpenSSL）
+  - <https://cryptography.io/>
+- **truststore** — `MIT`
+  - using the operating system's certificate store
+  - 使用系统证书存储
+  - <https://github.com/sethmlarson/truststore>
 - **pytest, respx, ruff, PyInstaller** — `MIT / BSD-3-Clause / GPL-2.0 with exception`
   - build-time tools, not shipped with the launcher
   - 开发期工具，不随程序分发
