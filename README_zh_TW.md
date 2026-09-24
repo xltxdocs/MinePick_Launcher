@@ -72,8 +72,8 @@ Modrinth 與 CurseForge 資源、Fabric/Forge/NeoForge/Quilt 載入器、隔離�
   關鍵字搜尋（包含中文社群譯名）、一鍵安裝、`.mrpack` 整合包安裝
 
 ### 關於與更新
-- **「關於」頁**:顯示目前版本、查看原始碼、授權與法律資訊、第三方鳴謝,並內建更新檢查(把本機版本與 GitHub 最新發佈比對)
-- **自動更新四檔**:自動下載並安裝、自動下載並提示(預設)、提示更新、不自動檢查;無法自動安裝時一律回退為開啟下載頁
+- **「關於」頁**：顯示目前版本、查看原始碼、授權與法律資訊、第三方鳴謝，並內建更新檢查（把本機版本與 GitHub 最新發佈比對）
+- **自動更新四種模式**：自動下載並安裝、自動下載並提示（預設）、提示更新、不自動檢查；無法自動安裝時一律回退為開啟發布頁
 
 ## 下載與使用
 
@@ -94,8 +94,8 @@ pytest -q                    # tests
 ruff check launcher gui tests
 ```
 
-建置與簽署：`pyinstaller build_exe.spec` → `scripts/sign_exe.ps1`（見 `docs/code_signing_en.md`）。
-此 spec 會產生單一 GUI 版 EXE（建置前置條件列於 `docs/github_release_en.md`）。
+建置與簽署：`pyinstaller build_exe.spec` → `scripts/sign_exe.ps1`（見 `docs/code_signing.md`）。
+此 spec 會產生單一 GUI 版 EXE（建置前置條件列於 `docs/github_release.md`）。
 
 一行指令完成介面檢查（測試 + lint + 對比度/溢出/高 DPI + 圓角稽核 + 畫面截圖）：
 
@@ -103,7 +103,7 @@ ruff check launcher gui tests
 python tools/ui_regression.py            # add --quick to skip the screenshots
 ```
 
-主題內部機制（預留位置、自訂掛鉤、如何新增選項）：`docs/theming_en.md`。
+主題內部機制（預留位置、自訂掛鉤、如何新增選項）：`docs/theming.md`。
 
 ## 授權條款
 
