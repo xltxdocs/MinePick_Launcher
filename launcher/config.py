@@ -136,6 +136,10 @@ class LauncherConfig(BaseModel):
         default="default",
         description="Corner radius preset: compact / default / round",
     )
+    auto_update_mode: str = Field(
+        default="download_notify",
+        description="Automatic update behaviour: download_install / download_notify / notify / off",
+    )
     curseforge_api_key: str = Field(
         default="",
         description="User-provided CurseForge API Key; empty = use the built-in default key",
