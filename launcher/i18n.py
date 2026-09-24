@@ -18,7 +18,8 @@
 """Core library localization: user-facing error/status messages.
 
 The GUI syncs the core language via gui.i18n.set_language; the CLI sets it in
-main() from the configured ui_language. Defaults to zh_cn (historical behavior).
+main() from the configured ui_language. Defaults to zh_cn (historical behavior);
+keys missing from the active language fall back to English, never to Chinese.
 """
 
 from __future__ import annotations
@@ -231,7 +232,8 @@ _merge_extra_core()
 
 def set_core_language(lang: str) -> None:
     global _current
-    _current = CORE_TRANSLATIONS.get(lang, CORE_TRANSLATIONS[ZH])
+    # Unknown language codes fall back to English (not to Simplified Chinese)
+    _current = CORE_TRANSLATIONS.get(lang) or CORE_TRANSLATIONS[EN]
 
 
 def get_core_language() -> str:
@@ -244,7 +246,8 @@ def get_core_language() -> str:
 def tr_core(key: str, *args) -> str:
     template = _current.get(key)
     if template is None:
-        template = CORE_TRANSLATIONS[ZH].get(key, key)
+        # Missing keys resolve to English, never to Simplified Chinese (see gui/i18n.py)
+        template = CORE_TRANSLATIONS[EN].get(key, key)
     if args:
         return template.format(*args)
     return template
