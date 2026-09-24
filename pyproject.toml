@@ -1,6 +1,6 @@
 [project]
 name = "minepick-launcher"
-version = "0.3.0"
+version = "0.3.1"
 description = "Portable Minecraft launcher: Microsoft/offline accounts, version install, Modrinth & CurseForge resources, isolated instances (PySide6 GUI)"
 readme = "README.md"
 license = "GPL-3.0-only"

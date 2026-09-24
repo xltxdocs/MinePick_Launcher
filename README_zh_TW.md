@@ -6,7 +6,7 @@
 Modrinth 與 CurseForge 資源、Fabric/Forge/NeoForge/Quilt 載入器、隔離實例 ——
 打包成單一免安裝 EXE。
 
-**目前版本 0.3.0** —— 只提供 GUI 版，本儲存庫不含命令列執行檔。
+**目前版本 0.3.1** —— 只提供 GUI 版，本儲存庫不含命令列執行檔。
 
 ## 介面截圖
 

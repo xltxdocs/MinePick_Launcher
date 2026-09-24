@@ -6,7 +6,7 @@ Un launcher portátil de Minecraft creado con Python + PySide6: cuentas de Micro
 recursos de Modrinth y CurseForge, cargadores Fabric/Forge/NeoForge/Quilt, instancias aisladas — empaquetado como un
 único EXE portátil.
 
-**Versión actual: 0.3.0** — solo compilación con GUI: este repositorio no incluye ningún ejecutable de CLI.
+**Versión actual: 0.3.1** — solo compilación con GUI: este repositorio no incluye ningún ejecutable de CLI.
 
 ## Capturas de pantalla
 

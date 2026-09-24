@@ -1,6 +1,6 @@
 # 发布到 GitHub（MinePick Launcher）
 
-本仓库为 **MinePick Launcher**：远端 `https://github.com/xltxdocs/MinePick_Launcher.git`，分支 `main`，当前版本 `0.3.0`。
+本仓库为 **MinePick Launcher**：远端 `https://github.com/xltxdocs/MinePick_Launcher.git`，分支 `main`，当前版本 `0.3.1`。
 本产品线**只发布 GUI 版**，没有 CLI 可执行文件（既不构建 `MinePick_Launcher_cli.exe`，也不打包 `run_cli.py`）。
 以下命令均在 Windows 的 **CMD** 中执行；本机未安装 gh CLI，Release 在 GitHub 网页上创建。
 
@@ -28,7 +28,7 @@ git push -u origin main
 - `MinePick_Launcher.exe`（GUI 单文件 EXE，已签名，约 65 MB）
 - `Source_code.zip`（源代码包，供 GPL-3.0 合规分发，约 1 MB）
 
-1. GitHub 仓库页 → Releases → Draft a new release，Tag 填 `v0.3.0`（当前版本；仓库已有 `v0.1.0`、`v0.1.1`、`v0.1.2`、`v0.1.4`、`v0.1.5`、`v0.2.0`，远端另有一个 `v0.1.3`）；
+1. GitHub 仓库页 → Releases → Draft a new release，Tag 填 `v0.3.1`（当前版本；仓库已有 `v0.1.0`、`v0.1.1`、`v0.1.2`、`v0.1.4`、`v0.1.5`、`v0.2.0`，远端另有一个 `v0.1.3`）；
 2. 把上面两个文件拖进附件区；
 3. Release 说明按第四节的规范撰写，并写清：
    - 功能简介（参考 README 功能列表）；
@@ -43,7 +43,7 @@ git push -u origin main
 ```cmd
 cd /d D:\dsh-workspace\Source_code_UI
 git push
-git push origin v0.3.0
+git push origin v0.3.1
 ```
 
 > 注意：普通 `git push` **不会**推送标签，必须再执行一次 `git push origin vX.Y.Z`，否则 Release 页面选不到该 Tag。

@@ -6,7 +6,7 @@ Un lanceur Minecraft portable écrit en Python + PySide6 : comptes Microsoft/hor
 ressources Modrinth et CurseForge, chargeurs Fabric/Forge/NeoForge/Quilt, instances isolées — le tout empaqueté
 dans un seul EXE portable.
 
-**Version actuelle : 0.3.0** — version GUI uniquement : ce dépôt ne contient aucun exécutable CLI.
+**Version actuelle : 0.3.1** — version GUI uniquement : ce dépôt ne contient aucun exécutable CLI.
 
 ## Captures d'écran
 
