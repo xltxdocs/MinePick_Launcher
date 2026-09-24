@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, QTimer
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
     QHBoxLayout,
@@ -36,6 +36,7 @@ from PySide6.QtWidgets import (
 from gui import i18n
 
 tr = i18n.tr
+from gui.pages.about_page import AboutPage
 from gui.pages.instances_page import InstancesPage
 from gui.pages.java_page import JavaPage
 from gui.pages.launch_page import LaunchPage
@@ -45,7 +46,7 @@ from gui.pages.settings_page import SettingsPage
 from gui.pages.versions_page import VersionsPage
 from gui.wizard_overlay import BulletList, OptionGrid, WizardOverlay, WizardStep
 
-NAV_KEYS = ["launch", "instances", "versions", "java", "account", "mods", "settings"]
+NAV_KEYS = ["launch", "instances", "versions", "java", "account", "mods", "settings", "about"]
 
 
 class MainWindow(QMainWindow):
@@ -103,6 +104,18 @@ class MainWindow(QMainWindow):
         self.build_pages()
         self.sidebar.setCurrentRow(0)
         self.set_status(tr("status.ready"))
+        # Startup update check: delayed so the window is up first, once per session
+        self._update_checked = False
+        QTimer.singleShot(2500, self._auto_check_updates)
+
+    def _auto_check_updates(self) -> None:
+        """Let the About page run its startup check (it honours the configured update mode)."""
+        if self._update_checked:
+            return
+        self._update_checked = True
+        page = self.pages.get("about")
+        if page is not None:
+            page.auto_check_on_start()
 
     def set_status(self, text: str, level: str | None = None) -> None:
         """Single status line of the app: ``level`` is "info" (default), "warning" or "error".
@@ -130,6 +143,7 @@ class MainWindow(QMainWindow):
             "account": LoginPage(),
             "mods": ResourcesPage(),
             "settings": SettingsPage(),
+            "about": AboutPage(),
         }
         # Clear and rebuild the navigation + page stack
         self.sidebar.blockSignals(True)
@@ -389,6 +403,9 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event) -> None:
         from launcher import config
 
+        page = self.pages.get("about")
+        if page is not None:
+            page.install_pending_on_exit()  # "download and install" mode swaps the EXE on exit
         cfg, cfg_path = config.load()
         if cfg.window_start_mode == "remember":
             geometry = self.normalGeometry() if self.isMaximized() else self.geometry()

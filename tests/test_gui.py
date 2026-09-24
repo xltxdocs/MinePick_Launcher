@@ -633,6 +633,132 @@ def test_versions_refresh_does_not_park_focus_on_uninstall(app, monkeypatch, ws_
         apply_theme("dark")  # restore the default theme for other cases
 
 
+def test_about_page_modes_and_credits(app, monkeypatch, ws_tmp):
+    """The About page offers the four update modes, saves the choice and renders every credit."""
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data19"))
+    from PySide6.QtWidgets import QLabel
+
+    from gui.pages.about_page import MODE_KEYS
+    from gui.theme import apply_theme
+    from launcher import config as config_mod
+    from launcher import notices
+
+    apply_theme("dark")
+    from gui.main_window import MainWindow
+
+    window = None
+    try:
+        window = MainWindow()
+        page = window.pages["about"]
+        assert page.mode_combo.count() == len(MODE_KEYS) == 4
+        assert page.current_mode() == "download_notify"  # the default the user picked
+        page.mode_combo.setCurrentIndex(page.mode_combo.findData("off"))
+        app.processEvents()
+        cfg, _ = config_mod.load()
+        assert cfg.auto_update_mode == "off"
+        labels = [label.text() for label in page.findChildren(QLabel)]
+        for entry in notices.all_entries():
+            assert any(entry.name in text for text in labels), f"credit not rendered: {entry.name}"
+        assert any("TheDarkLord234" in text for text in labels)
+    finally:
+        if window is not None:
+            window.close()
+            app.processEvents()
+        apply_theme("dark")
+
+
+def test_about_source_button_opens_the_repository(app, monkeypatch, ws_tmp):
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data20"))
+    import gui.pages.about_page as about
+    from gui.theme import apply_theme
+
+    apply_theme("dark")
+    opened = []
+    monkeypatch.setattr(
+        about.QDesktopServices, "openUrl", staticmethod(lambda url: opened.append(url.toString()))
+    )
+    from gui.main_window import MainWindow
+
+    window = None
+    try:
+        window = MainWindow()
+        page = window.pages["about"]
+        page.source_button.click()
+        assert opened == [about.SOURCE_URL]
+        opened.clear()
+        page.open_page_button.click()
+        assert opened == [about.updates.RELEASES_PAGE]  # no known release yet: the releases landing page
+    finally:
+        if window is not None:
+            window.close()
+            app.processEvents()
+        apply_theme("dark")
+
+
+def test_about_check_download_and_install_refusal(app, monkeypatch, ws_tmp):
+    """A stub dispatcher keeps this synchronous: no threads, and the prompts never block."""
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data21"))
+    import gui.pages.about_page as about
+    from gui.theme import apply_theme
+
+    apply_theme("dark")
+    staged = ws_tmp / "staged.exe"
+    staged.write_bytes(b"MZ")
+
+    def _sync(fn, *args, on_result=None, on_error=None, on_finished=None, **kwargs):
+        try:
+            result = fn(*args, **kwargs)
+        except Exception as exc:  # noqa: BLE001 - mirror the worker contract
+            if on_error is not None:
+                on_error(str(exc))
+        else:
+            if on_result is not None:
+                on_result(result)
+        finally:
+            if on_finished is not None:
+                on_finished()
+
+    release = about.updates.ReleaseInfo(
+        version="9.9.9",
+        tag="v9.9.9",
+        page_url="https://example.invalid/release",
+        notes="",
+        exe_url="https://example.invalid/exe",
+        exe_name="MinePick_Launcher.exe",
+        exe_size=2,
+    )
+    monkeypatch.setattr(about, "run_in_background", _sync)
+    monkeypatch.setattr(
+        about.updates,
+        "check_for_update",
+        lambda *a, **k: about.updates.UpdateCheck(
+            status="update_available", current="0.2.0", latest="9.9.9", release=release
+        ),
+    )
+    monkeypatch.setattr(about.updates, "download_release_exe", lambda *a, **k: staged)
+    monkeypatch.setattr(about.AboutPage, "_prompt_install", lambda self, version: None)
+    from gui.main_window import MainWindow
+
+    window = None
+    try:
+        window = MainWindow()
+        page = window.pages["about"]
+        page.mode_combo.setCurrentIndex(page.mode_combo.findData("download_notify"))
+        page.check_updates()
+        app.processEvents()
+        assert "9.9.9" in window.status_label.text()
+        assert page.has_pending_install() is True
+        assert not page.open_page_button.isHidden()
+        # installing must be refused from a source checkout instead of touching anything
+        page.install_now()
+        assert "无法自动安装" in window.status_label.text()
+    finally:
+        if window is not None:
+            window.close()
+            app.processEvents()
+        apply_theme("dark")
+
+
 def test_loader_prompt_dialog(app, monkeypatch, ws_tmp):
     monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data14"))
     from gui.pages.versions_page import _LoaderPromptDialog
@@ -703,7 +829,9 @@ def test_after_launch_hide_and_exit(app, monkeypatch, ws_tmp):
     monkeypatch.setattr(
         launch_page_mod.QTimer,
         "singleShot",
-        staticmethod(lambda ms, fn: quit_calls.append(fn) if callable(fn) else None),
+        # QTimer is a shared Qt class, so this patch sees every module's scheduled call: record only
+        # this page's own 600 ms timer, not e.g. the main window's delayed update check.
+        staticmethod(lambda ms, fn: quit_calls.append(fn) if ms == 600 and callable(fn) else None),
     )
     from gui.main_window import MainWindow
 

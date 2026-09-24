@@ -47,6 +47,20 @@ def ws_tmp():
 
 
 @pytest.fixture(autouse=True)
+def _no_startup_update_check(monkeypatch):
+    """Keep the tests off the network and off slow real IO.
+
+    Building the main window schedules an update check a couple of seconds later, and the Java page
+    probes the machine for runtimes: both start workers that can outlive a closed window, which is
+    the crash class described in the standard process document ([P9] - measured as 0xC0000005 inside
+    ``launcher/java/locate.py`` from a worker while a test was tearing down). The real code paths stay
+    covered by tests/test_updates.py and tests/test_locate.py.
+    """
+    monkeypatch.setattr("gui.pages.about_page.AboutPage.auto_check_on_start", lambda self: None)
+    monkeypatch.setattr("gui.pages.java_page.list_java", lambda *args, **kwargs: [])
+
+
+@pytest.fixture(autouse=True)
 def _settle_background_work():
     """Let the worker pool finish before the next test tears widgets down.
 
