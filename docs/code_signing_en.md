@@ -11,14 +11,14 @@
 - Certificate thumbprint: 609714616FD61C6B7BF179C03903F07A13EABDBA
 - Private key backup: build/codesign.pfx (the export password is kept on this machine only — never write it into any file that would be committed)
 - The root certificate has been imported into `Cert:\CurrentUser\Root` on this machine (trusted here; other people's computers will still warn about an unknown publisher)
-- Both EXEs are signed: `Get-AuthenticodeSignature` → `Status: Valid`, and the signer WDNDXLTX is visible in the file properties
+- The executable is signed: `Get-AuthenticodeSignature` → `Status: Valid`, and the signer WDNDXLTX is visible in the file properties
 
 ### Re-signing after every rebuild (on this machine, no Windows SDK installation needed)
 
 ```powershell
 $cert = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert | Where-Object { $_.Subject -like "CN=WDNDXLTX*" } | Select-Object -First 1
 Set-AuthenticodeSignature -FilePath dist\MinePick_Launcher.exe -Certificate $cert -HashAlgorithm SHA256 -TimestampServer "http://timestamp.digicert.com"
-Set-AuthenticodeSignature -FilePath dist\MinePick_Launcher_cli.exe -Certificate $cert -HashAlgorithm SHA256 -TimestampServer "http://timestamp.digicert.com"
+# this repository builds a GUI executable only: there is no MinePick_Launcher_cli.exe to sign
 ```
 
 > Note: Set-AuthenticodeSignature requires the certificate chain to be trusted on this machine, so the root
@@ -63,7 +63,7 @@ This needs signtool.exe from the Windows SDK (or the Visual Studio build tools).
 ```
 
 Notes:
-- Both EXEs (MinePick_Launcher.exe and MinePick_Launcher_cli.exe) have to be signed;
+- Only `MinePick_Launcher.exe` has to be signed — this repository ships the GUI build only, so no CLI executable is produced;
 - With a real certificate, prefer a hardware token or the certificate store (use `/sha1 <thumbprint>`
   instead of `/f`);
 - Every PyInstaller onefile build invalidates the signature, so the EXE has to be signed again (the build

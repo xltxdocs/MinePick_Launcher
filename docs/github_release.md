@@ -28,7 +28,7 @@ git push -u origin main
 - `MinePick_Launcher.exe`（GUI 单文件 EXE，已签名，约 65 MB）
 - `Source_code.zip`（源代码包，供 GPL-3.0 合规分发，约 1 MB）
 
-1. GitHub 仓库页 → Releases → Draft a new release，Tag 填 `v0.2.0`（当前版本；仓库已有 `v0.1.0`、`v0.1.1`、`v0.1.2`、`v0.1.3`、`v0.1.4`、`v0.1.5`）；
+1. GitHub 仓库页 → Releases → Draft a new release，Tag 填 `v0.2.0`（当前版本；仓库已有 `v0.1.0`、`v0.1.1`、`v0.1.2`、`v0.1.4`、`v0.1.5`，远端另有一个 `v0.1.3`）；
 2. 把上面两个文件拖进附件区；
 3. Release 说明按第四节的规范撰写，并写清：
    - 功能简介（参考 README 功能列表）；
@@ -74,7 +74,7 @@ git push origin v0.2.0
 - 分发二进制（Release 的 EXE）应同时提供源代码，Source_code.zip 即为此用途；
 - 若他人索取源码，指向仓库或 Source_code.zip 均可。
 
-## 七、发版前自检（硬门槛）
+## 六、发版前自检（硬门槛）
 
 ```powershell
 python tools\ui_regression.py --quick      # 必须全部 OK；检查项清单以脚本为准，不在此枚举
@@ -106,7 +106,7 @@ python tools\ui_regression.py --list-checks  # 列出当前检查项
 - 已发布版本的产物不改写，修好发下一个 PATCH；
 - 升位时同步：`launcher/__init__.py`、`pyproject.toml`、9 份 README，提交信息用纯版本号，新建标签，重建 EXE 与源码包。
 
-## 六、构建前置（打包用）
+## 七、构建前置（打包用）
 
 `python -m PyInstaller build_exe.spec --noconfirm` 需要两项本地资源（都不进仓库，由 `.gitignore` 覆盖）：
 

@@ -38,8 +38,6 @@ INCLUDE_FILES = (
     "requirements.txt",
     "requirements-dev.txt",
     "run_cli.py",
-    "_bootstrap_pip.py",
-    "_fetch_gpl2.py",
 )
 FORBIDDEN_PARTS = {".git", ".venv", "build", "dist", "__pycache__", ".pytest_cache", "_preview", "preview", ".work"}
 FORBIDDEN_FILES = {"cf_key.txt", "codesign.pfx", "Source_code.zip"}

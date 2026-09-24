@@ -32,7 +32,7 @@ The packaged artifacts are staged first in the repository's `Releases\` folder (
 - `MinePick_Launcher.exe` (single-file GUI EXE, signed, roughly 65 MB)
 - `Source_code.zip` (source code package, for GPL-3.0 compliant distribution, roughly 1 MB)
 
-1. On the GitHub repository page → Releases → Draft a new release, and set the Tag to `v0.2.0` (the current version; the repository already has `v0.1.0`, `v0.1.1`, `v0.1.2`, `v0.1.3`, `v0.1.4`, `v0.1.5`);
+1. On the GitHub repository page → Releases → Draft a new release, and set the Tag to `v0.2.0` (the current version; the repository already has `v0.1.0`, `v0.1.1`, `v0.1.2`, `v0.1.4`, `v0.1.5`, and the remote carries an extra `v0.1.3`);
 2. Drag the two files above into the attachments area;
 3. Write the release notes following the convention in section 4, and state:
    - A brief feature overview (see the feature list in the README);
@@ -78,7 +78,7 @@ Describe only what a user of the **previous released version** could observe; bu
 - Distributing the binaries (the EXE in the Release) should be accompanied by the source code; Source_code.zip exists for that purpose;
 - If someone asks you for the source code, pointing them to the repository or to Source_code.zip is fine either way.
 
-## 7. Self-check before a release (hard gate)
+## 6. Self-check before a release (hard gate)
 
 ```powershell
 python tools\ui_regression.py --quick        # every check must pass; the list lives in the script
@@ -113,7 +113,7 @@ python tools\ui_regression.py --list-checks  # print the current checks
 - When bumping, update `launcher/__init__.py`, `pyproject.toml` and all nine READMEs, commit with the bare
   version as the message, tag it, and rebuild the EXE and the source package.
 
-## 6. Build prerequisites (for packaging)
+## 7. Build prerequisites (for packaging)
 
 `python -m PyInstaller build_exe.spec --noconfirm` requires two local resources (neither goes into the repository; both are covered by `.gitignore`):
 

@@ -14,7 +14,7 @@
 ```powershell
 $cert = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert | Where-Object { $_.Subject -like "CN=WDNDXLTX*" } | Select-Object -First 1
 Set-AuthenticodeSignature -FilePath dist\MinePick_Launcher.exe -Certificate $cert -HashAlgorithm SHA256 -TimestampServer "http://timestamp.digicert.com"
-Set-AuthenticodeSignature -FilePath dist\MinePick_Launcher_cli.exe -Certificate $cert -HashAlgorithm SHA256 -TimestampServer "http://timestamp.digicert.com"
+# 本仓库只产出 GUI 版：没有 MinePick_Launcher_cli.exe 需要签名
 ```
 
 > 注：Set-AuthenticodeSignature 要求证书链被本机信任，因此根证书必须先导入受信任根
@@ -57,7 +57,7 @@ Export-PfxCertificate -Cert $cert -FilePath .\build\codesign.pfx -Password $pass
 ```
 
 注意：
-- 双 EXE（MinePick_Launcher.exe 与 MinePick_Launcher_cli.exe）都要签名；
+- 只需签名 `MinePick_Launcher.exe` —— 本仓库只产出 GUI 版，不构建 CLI 可执行文件；
 - 正式证书建议使用硬件令牌或证书库（`/sha1 <指纹>` 代替 `/f`）；
 - 每次 PyInstaller 重新打包后签名失效，需重新签名（打包脚本可自动追加签名步骤）；
 - 一键脚本见 scripts/sign_exe.ps1（需先完成第一步并导出 pfx）。
