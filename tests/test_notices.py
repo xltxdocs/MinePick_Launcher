@@ -34,7 +34,7 @@ INDEPENDENT_MARKERS = {
     "en_us": "contains none of the upstream source code",
     "ja_jp": "上流のソースコードを一切含みません",
     "ko_kr": "상위 소스 코드를 포함하지 않습니다",
-    "ru_ru": "не содержит исходного кода upstream",
+    "ru_ru": "не содержит исходного кода",
     "fr_fr": "ne contient aucun code source de l'amont",
     "es_es": "no contiene código fuente del proyecto original",
     "de_de": "enthält keinen Quellcode des Ursprungsprojekts",
