@@ -101,6 +101,82 @@ def test_failing_exit_shows_the_diagnosis(app, ws_tmp):
         window.close()
 
 
+def test_record_and_load_diagnosis_roundtrip(app, ws_tmp):
+    """The recorded summary survives a restart and tolerates a missing or corrupt file."""
+    from gui.dialogs.crash_dialog import load_recorded_diagnosis, record_diagnosis
+    from launcher.diagnostics import diagnose
+
+    game = _game_with_log(ws_tmp, "oom.latest.log")
+    diagnosis = diagnose(context_for_launch(game_dir=game, exit_code=1, started=0.0))
+    folder = ws_tmp / "instance"
+    written = record_diagnosis(folder, diagnosis)
+    assert written is not None and written.is_file()
+
+    record = load_recorded_diagnosis(folder)
+    assert record is not None
+    assert record["code"] == diagnosis.code
+    assert record["lines"] and record["recorded_at"]
+
+    assert load_recorded_diagnosis(ws_tmp / "nothing-here") is None
+    (folder / "diagnosis.json").write_text("{ not json", encoding="utf-8")
+    assert load_recorded_diagnosis(folder) is None
+
+
+def test_diagnostics_tab_shows_the_recorded_code(app, ws_tmp, monkeypatch):
+    """The instance's diagnosis tab reads diagnosis.json and shows code plus summary."""
+    import json
+
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data_diag"))
+    from launcher import config as config_mod
+
+    game = ws_tmp / "mc"
+    version_id = "1.20.1"
+    folder = game / "versions" / version_id
+    folder.mkdir(parents=True)
+    (folder / (version_id + ".json")).write_text(
+        json.dumps({"id": version_id}), encoding="utf-8"
+    )
+    (folder / "diagnosis.json").write_text(
+        json.dumps(
+            {
+                "code": "MPL-Crash-0107",
+                "phase": "fatal",
+                "confidence": "high",
+                "recorded_at": 1.0,
+                "lines": ["可能原因：内存不足", "建议：调高内存上限"],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    cfg, cfg_path = config_mod.load()
+    cfg.game_dir = game
+    config_mod.save(cfg, cfg_path)
+
+    from gui.main_window import MainWindow
+    from gui.pages.instance_detail import TAB_DIAGNOSIS
+
+    window = None
+    try:
+        window = MainWindow()
+        page = window.pages["instances"]
+        page.list.setCurrentRow(0)
+        app.processEvents()
+        detail = page.detail
+        detail.set_tab(TAB_DIAGNOSIS)
+        app.processEvents()
+        assert detail.diagnosis_code.text() == "MPL-Crash-0107"
+        assert "内存不足" in detail.diagnosis_body.text()
+        assert detail.diagnosis_empty.isVisible() is False
+        assert detail.diagnosis_copy_button.isEnabled() is True
+        detail.copy_diagnosis()
+        assert "MPL-Crash-0107" in QApplication.clipboard().text()
+    finally:
+        if window is not None:
+            window.close()
+            app.processEvents()
+
+
 def test_dialog_renders_from_a_prepared_diagnosis(app, ws_tmp):
     """The dialog itself takes any diagnosis: build one directly from the knowledge base."""
     from launcher.diagnostics import diagnose

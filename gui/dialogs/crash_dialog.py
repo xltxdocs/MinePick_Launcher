@@ -81,6 +81,10 @@ class CrashDiagnosisDialog:
         return self._overlay
 
     @property
+    def diagnosis(self) -> Diagnosis:
+        return self._diagnosis
+
+    @property
     def code_label(self) -> QLabel:
         return self._code_label
 
@@ -214,6 +218,59 @@ def diagnose_after_exit(
     return dialog
 
 
+RECORD_FILENAME = "diagnosis.json"
+
+
+def record_diagnosis(instance_dir: Path, diagnosis: Diagnosis) -> Path | None:
+    """Store a compact summary of the last diagnosis inside the instance folder.
+
+    Only the code, phase, confidence, time and the rendered lines are kept, so the
+    instance's diagnostics tab can show what happened last without re-running the
+    analysis. The rendered lines are written in the language active at the time: a
+    later language change does not retranslate them (the fresh diagnosis always is,
+    and a report export carries the details). Never raises: a failure to record must
+    not break the dialog that is already on screen.
+    """
+    import json
+    import logging
+    import time
+
+    folder = Path(instance_dir)
+    try:
+        folder.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "code": diagnosis.code,
+            "phase": diagnosis.phase,
+            "confidence": diagnosis.confidence,
+            "recorded_at": time.time(),
+            "lines": render_lines(diagnosis, i18n.tr),
+        }
+        target = folder / RECORD_FILENAME
+        tmp = folder / (RECORD_FILENAME + ".tmp")
+        tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp.replace(target)
+        return target
+    except OSError:
+        logging.getLogger(__name__).warning(
+            "diagnostics: could not record the diagnosis in %s", folder, exc_info=True
+        )
+        return None
+
+
+def load_recorded_diagnosis(instance_dir: Path) -> dict | None:
+    """Read a recorded diagnosis summary (None when absent, corrupt or unreadable)."""
+    import json
+
+    path = Path(instance_dir) / RECORD_FILENAME
+    if not path.is_file():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
 def context_for_launch(
     *,
     version_id: str = "",
@@ -246,4 +303,11 @@ def context_for_launch(
     )
 
 
-__all__ = ["CrashDiagnosisDialog", "context_for_launch", "diagnose_after_exit"]
+__all__ = [
+    "RECORD_FILENAME",
+    "CrashDiagnosisDialog",
+    "context_for_launch",
+    "diagnose_after_exit",
+    "load_recorded_diagnosis",
+    "record_diagnosis",
+]

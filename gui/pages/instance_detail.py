@@ -32,7 +32,7 @@ from functools import partial
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer, QUrl, Signal
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtGui import QDesktopServices, QGuiApplication
 from PySide6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
@@ -104,8 +104,8 @@ from launcher.mods.modrinth import (
 tr = i18n.tr
 
 # Stacked-page order of the horizontal tab row
-TAB_OVERVIEW, TAB_MODS, TAB_RESOURCES, TAB_SAVES, TAB_SETTINGS = range(5)
-_TAB_KEYS = ("overview", "mods", "resources", "saves", "settings")
+TAB_OVERVIEW, TAB_MODS, TAB_RESOURCES, TAB_SAVES, TAB_SETTINGS, TAB_DIAGNOSIS = range(6)
+_TAB_KEYS = ("overview", "mods", "resources", "saves", "settings", "diagnosis")
 _CONTENT_SUBDIRS = ("resourcepacks", "shaderpacks")
 
 
@@ -265,6 +265,7 @@ class InstanceDetail(QWidget):
             self._build_resources,
             self._build_saves,
             self._build_settings,
+            self._build_diagnosis,
         )
         for index, (key, builder) in enumerate(zip(_TAB_KEYS, builders, strict=True)):
             button = QPushButton(tr("instances.detail.tab." + key))
@@ -519,6 +520,97 @@ class InstanceDetail(QWidget):
         self.saves_refresh_button.clicked.connect(self.reload_saves)
         self.saves_folder_button.clicked.connect(self.open_saves_folder)
         return page
+
+    def _build_diagnosis(self) -> QWidget:
+        """Diagnostics tab: the last recorded diagnosis plus the crash reports on disk."""
+        box = QWidget()
+        layout = QVBoxLayout(box)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+
+        self.diagnosis_empty = EmptyState(tr("instances.detail.diagnosis.none"))
+        layout.addWidget(self.diagnosis_empty)
+
+        self.diagnosis_code = QLabel("")
+        self.diagnosis_code.setObjectName("title")
+        self.diagnosis_code.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.diagnosis_time = QLabel("")
+        self.diagnosis_time.setObjectName("hint")
+        self.diagnosis_body = QLabel("")
+        self.diagnosis_body.setObjectName("hint")
+        self.diagnosis_body.setWordWrap(True)
+        self.diagnosis_body.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        self.diagnosis_body.setAlignment(Qt.AlignmentFlag.AlignTop)
+        for widget in (self.diagnosis_code, self.diagnosis_time, self.diagnosis_body):
+            widget.setVisible(False)
+            layout.addWidget(widget)
+        layout.addStretch(1)
+
+        row = QHBoxLayout()
+        row.setSpacing(8)
+        self.diagnosis_copy_button = QPushButton(tr("instances.detail.diagnosis.copy"))
+        self.diagnosis_copy_button.setObjectName("secondaryButton")
+        self.diagnosis_copy_button.clicked.connect(self.copy_diagnosis)
+        self.diagnosis_reports_label = QLabel("")
+        self.diagnosis_reports_label.setObjectName("hint")
+        row.addWidget(self.diagnosis_copy_button)
+        row.addWidget(self.diagnosis_reports_label)
+        row.addStretch(1)
+        layout.addLayout(row)
+        self._diagnosis_lines: list[str] = []
+        self.diagnosis_copy_button.setEnabled(False)
+        return box
+
+    def refresh_diagnosis(self) -> None:
+        """Show the diagnosis recorded for this instance, plus its crash report count."""
+        from gui.crash_viewer import collect_crash_reports
+        from gui.dialogs.crash_dialog import load_recorded_diagnosis
+
+        if self.instance_id is None:
+            return
+        record = load_recorded_diagnosis(instance_dir(self.game_dir, self.instance_id))
+        has_record = bool(record and record.get("code"))
+        self.diagnosis_empty.setVisible(not has_record)
+        for widget in (self.diagnosis_code, self.diagnosis_time, self.diagnosis_body):
+            widget.setVisible(has_record)
+        self.diagnosis_copy_button.setEnabled(has_record)
+        self._diagnosis_lines = []
+        if has_record:
+            self.diagnosis_code.setText(str(record.get("code", "")))
+            recorded_at = record.get("recorded_at")
+            stamp = ""
+            if recorded_at:
+                try:
+                    stamp = time.strftime("%Y-%m-%d %H:%M", time.localtime(float(recorded_at)))
+                except (TypeError, ValueError, OSError):
+                    stamp = ""
+            self.diagnosis_time.setText(tr("instances.detail.diagnosis.recorded", stamp))
+            self._diagnosis_lines = [str(line) for line in record.get("lines", []) if str(line)]
+            self.diagnosis_body.setText("\n".join(self._diagnosis_lines))
+        else:
+            self.diagnosis_code.clear()
+            self.diagnosis_time.clear()
+            self.diagnosis_body.clear()
+        try:
+            count = len(collect_crash_reports(self.effective_dir()))
+        except OSError:
+            count = 0
+        self.diagnosis_reports_label.setText(tr("instances.detail.diagnosis.reports", count))
+
+    def effective_dir(self) -> Path:
+        """The directory the game actually uses for this instance (its own folder when isolated)."""
+        if self.resolved is not None:
+            return self.resolved.launch_dir
+        return self.game_dir
+
+    def copy_diagnosis(self) -> None:
+        if not self._diagnosis_lines:
+            return
+        summary = self.diagnosis_code.text() + "\n" + "\n".join(self._diagnosis_lines)
+        QGuiApplication.clipboard().setText(summary)
+        set_app_status(self, tr("instances.detail.diagnosis.copied"))
 
     def _build_settings(self) -> QWidget:
         page = QWidget()
@@ -786,15 +878,17 @@ class InstanceDetail(QWidget):
         self._on_tab_clicked(index)
 
     def _ensure_tab_data(self, index: int, force: bool = False) -> None:
-        if index not in (TAB_RESOURCES, TAB_SAVES):
+        if index not in (TAB_RESOURCES, TAB_SAVES, TAB_DIAGNOSIS):
             return
         if not force and index in self._loaded_tabs:
             return
         self._loaded_tabs.add(index)
         if index == TAB_RESOURCES:
             self.reload_resources()
-        else:
+        elif index == TAB_SAVES:
             self.reload_saves()
+        else:
+            self.refresh_diagnosis()
 
     # ---------- overview actions ----------
 
@@ -925,10 +1019,21 @@ class InstanceDetail(QWidget):
         if self._require_instance() is None:
             return
         instance_id = self.instance_id
+        message = tr("instances.delete.msg", instance_id)
+        # A version other profiles inherit from cannot be removed without breaking them:
+        # say so before the confirmation, not after the loss.
+        from launcher.install import find_version_dependents
+
+        try:
+            dependents = find_version_dependents(self.game_dir, instance_id)
+        except OSError:
+            dependents = []
+        if dependents:
+            message += "\n\n" + tr("instances.detail.delete.dependents", ", ".join(dependents))
         answer = QMessageBox.question(
             self,
             tr("instances.delete.dialog"),
-            tr("instances.delete.msg", instance_id),
+            message,
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
@@ -1416,12 +1521,17 @@ class InstanceDetail(QWidget):
             tail=tail,
             instance=resolved,
         )
-        diagnose_after_exit(
+        dialog = diagnose_after_exit(
             self.window(),
             context,
             log_path=resolved.launch_dir / "logs" / "latest.log",
             blur=cfg.blur_dialogs,
         )
+        if dialog is not None:
+            # Remember it inside the instance so the diagnostics tab can show it later
+            from gui.dialogs.crash_dialog import record_diagnosis
+
+            record_diagnosis(instance_dir(resolved.game_dir, resolved.id), dialog.diagnosis)
 
     def _on_game_started(self, _value=None) -> None:
         from PySide6.QtCore import QTimer
