@@ -26,8 +26,6 @@ from PySide6.QtCore import QTimer, Signal
 from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
-    QHBoxLayout,
-    QLabel,
     QLineEdit,
     QPushButton,
     QVBoxLayout,
@@ -38,7 +36,6 @@ from gui import i18n
 from gui.errors import show_fatal
 from gui.widgets import (
     NoWheelDoubleSpinBox,
-    NoWheelSpinBox,
     build_page_header,
     disable_keeping_focus,
     set_app_status,
@@ -67,38 +64,25 @@ class LaunchPage(QWidget):
         self.version_combo = QComboBox()
         self.version_combo.setEditable(True)
         self.account_combo = QComboBox()
-        self.offline_edit = QLineEdit()
-        self.offline_edit.setPlaceholderText(tr("launch.offline.placeholder"))
         self.memory_spin = NoWheelDoubleSpinBox()
         self.memory_spin.setRange(0.5, 64.0)
         self.memory_spin.setSingleStep(0.5)
         self.memory_spin.setSuffix(" " + tr("unit.gb"))
-        self.language_combo = QComboBox()
-        for code, label in config.GAME_LANGUAGES:
-            label = label if code else tr("settings.game_language.follow")
-            self.language_combo.addItem(label, code)
-        self.jvm_args_edit = QLineEdit()
-        self.jvm_args_edit.setPlaceholderText(tr("launch.jvm_args.placeholder"))
         self.server_edit = QLineEdit()
         self.server_edit.setPlaceholderText(tr("launch.server.placeholder"))
-        self.server_port_spin = NoWheelSpinBox()
-        self.server_port_spin.setRange(0, 65535)
-        self.server_port_spin.setSpecialValueText(tr("common.off"))
         self.launch_button = QPushButton(tr("launch.button"))
 
+        # Only what a normal launch needs: version, account, memory and (optionally) a server to
+        # join. The offline user name, the game language, custom JVM arguments and the server port
+        # used to sit here too, but almost nobody touched them: the language and the JVM arguments
+        # are launcher settings, an offline name falls back to "Player", and the port defaults to
+        # 25565. They all still work - just not as clutter on the main page.
         form = QFormLayout()
         style_form(form)
         form.addRow(tr("launch.version"), self.version_combo)
         form.addRow(tr("launch.account"), self.account_combo)
-        form.addRow(tr("launch.offline"), self.offline_edit)
         form.addRow(tr("launch.memory"), self.memory_spin)
-        form.addRow(tr("launch.language"), self.language_combo)
-        form.addRow(tr("launch.jvm_args"), self.jvm_args_edit)
-        server_row = QHBoxLayout()
-        server_row.addWidget(self.server_edit, 1)
-        server_row.addWidget(QLabel(tr("launch.port")))
-        server_row.addWidget(self.server_port_spin)
-        form.addRow(tr("launch.server"), server_row)
+        form.addRow(tr("launch.server"), self.server_edit)
 
         layout = QVBoxLayout(self)
         style_page_layout(layout)
@@ -117,9 +101,6 @@ class LaunchPage(QWidget):
     def refresh_config(self) -> None:
         cfg, _ = config.load()
         self.memory_spin.setValue(cfg.memory_gb)
-        index = self.language_combo.findData(cfg.game_language)
-        self.language_combo.setCurrentIndex(max(index, 0))
-        self.jvm_args_edit.setText(cfg.jvm_args or "")
 
     def refresh_account(self) -> None:
         cfg, _ = config.load()
@@ -191,32 +172,24 @@ class LaunchPage(QWidget):
         if not version_id:
             set_app_status(self, tr("launch.msg.need_id"))
             return
-        cfg, cfg_path = config.load()
+        cfg, _ = config.load()
         env_value = os.environ.get(paths.ENV_GAME_DIR)
         game_dir = (
             cfg.game_dir
             or (Path(env_value).expanduser() if env_value else None)
             or paths.default_game_dir()
         )
-        # Custom JVM args: save to config so they are prefilled next time (demo mode / auto-hide on the settings page)
-        jvm_args = self.jvm_args_edit.text().strip() or None
-        if (cfg.jvm_args or "") != (jvm_args or ""):
-            cfg.jvm_args = jvm_args or ""
-            config.save(cfg, cfg_path)
         disable_keeping_focus(self.launch_button)
         set_app_status(self, tr("launch.msg.preparing", version_id))
-        offline_name = self.offline_edit.text().strip() or None
-        # Offline-mode gate: explicit offline launch or the no-account fallback both require unlock
-        if (offline_name or not cfg.selected_account):
+        # Offline-mode gate: the no-account fallback still requires the offline unlock
+        if not cfg.selected_account:
             from launcher.config import offline_mode_allowed
 
             if not offline_mode_allowed():
                 self.launch_button.setEnabled(True)
                 set_app_status(self, tr("launch.msg.offline_locked"), "warning")
                 return
-        language = self.language_combo.currentData()
         server = self.server_edit.text().strip() or None
-        server_port = self.server_port_spin.value() or None
         # Auto memory: size the heap from mod count and available RAM at launch time
         memory_gb = self.memory_spin.value()
         if cfg.memory_auto:
@@ -235,7 +208,7 @@ class LaunchPage(QWidget):
         def do_prepare() -> object:
             try:
                 account = resolve_launch_account(
-                    AccountStore(), cfg.selected_account, offline_name
+                    AccountStore(), cfg.selected_account, None
                 )
                 from launcher.instances import resolve_instance
 
@@ -249,11 +222,10 @@ class LaunchPage(QWidget):
                     demo=cfg.demo_mode,
                     launch_dir=resolved.launch_dir,
                     java_path=resolved.java_path,
-                    language=language,
-                    jvm_args=resolved.jvm_args or jvm_args,
+                    language=cfg.game_language or None,
+                    jvm_args=resolved.jvm_args or (cfg.jvm_args or None),
                     game_args=resolved.game_args,
                     server=server,
-                    server_port=server_port,
                 )
                 return ("ok", prepared, resolved)
             except JavaMissingError as exc:

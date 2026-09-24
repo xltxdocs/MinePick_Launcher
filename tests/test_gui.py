@@ -252,10 +252,17 @@ def test_batch1_widgets_exist(app, monkeypatch, ws_tmp):
     versions = window.pages["versions"]
     assert versions.open_instance_button.text() == "打开实例"
     assert versions.model.columnCount() == 4
-    # launch page JVM args input
+    # launch page: the main page keeps only what a normal launch needs
     launch = window.pages["launch"]
-    assert launch.jvm_args_edit is not None
-    assert launch.jvm_args_edit.placeholderText()
+    assert launch.version_combo is not None
+    assert launch.account_combo is not None
+    assert launch.memory_spin is not None
+    assert launch.server_edit is not None
+    # trimmed in 0.3.0: duplicated settings or details with a sane default
+    assert not hasattr(launch, "jvm_args_edit")
+    assert not hasattr(launch, "language_combo")
+    assert not hasattr(launch, "offline_edit")  # offline accounts are created on the account page
+    assert not hasattr(launch, "server_port_spin")
     # settings page token encryption
     settings = window.pages["settings"]
     assert settings.encrypt_check is not None
@@ -273,7 +280,7 @@ def test_batch3_widgets_exist(app, monkeypatch, ws_tmp):
     window = MainWindow()
     launch = window.pages["launch"]
     assert launch.server_edit is not None
-    assert launch.server_port_spin is not None
+    assert not hasattr(launch, "server_port_spin")  # the port defaults to 25565 now
     assert not hasattr(launch, "auto_close_check")  # moved to the settings page
     versions = window.pages["versions"]
     assert versions.detail_button.text() == "详情"

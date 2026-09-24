@@ -224,15 +224,21 @@ def test_e2e_version_delete_via_instances_page(app, monkeypatch, ws_tmp):
             app.processEvents()
 
 
-def test_e2e_launch_jvm_args_persist(app, monkeypatch, ws_tmp):
+def test_e2e_launch_uses_configured_jvm_args(app, monkeypatch, ws_tmp):
+    """Custom JVM arguments are a launcher setting now: the launch page no longer has a field,
+    it must pick the configured value up and hand it to the launcher."""
     monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data5"))
     _cfg, _p = config_mod.load()
     _cfg.offline_unlocked = True
+    _cfg.jvm_args = "-XX:+UseG1GC"
     config_mod.save(_cfg, _p)
     import gui.pages.launch_page as launch_page_mod
     from launcher.launch import JavaMissingError
 
+    seen: dict = {}
+
     def fake_prepare(*args, **kwargs):
+        seen.update(kwargs)
         raise JavaMissingError(8)
 
     monkeypatch.setattr(launch_page_mod, "prepare_launch", fake_prepare)
@@ -249,12 +255,10 @@ def test_e2e_launch_jvm_args_persist(app, monkeypatch, ws_tmp):
         window = MainWindow()
         page = window.pages["launch"]
         page.version_combo.setEditText("1.20.1")
-        page.jvm_args_edit.setText("-XX:+UseG1GC")
         page.launch()
         app.processEvents()
-        cfg, _ = config_mod.load()
-        assert cfg.jvm_args == "-XX:+UseG1GC"  # persisted on launch
         assert _wait_until(app, lambda: "已取消" in window.status_label.text())
+        assert "-XX:+UseG1GC" in (seen.get("jvm_args") or "")
     finally:
         if window is not None:
             window.close()
