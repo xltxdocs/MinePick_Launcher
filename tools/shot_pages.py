@@ -81,11 +81,16 @@ FAKE_VERSIONS = [
 ]
 
 
-def ensure_preview(root: Path) -> tuple[Path, Path]:
-    """Create the preview data/game directories used by the renderer."""
+def ensure_preview(root: Path, game_dir: Path | None = None) -> tuple[Path, Path]:
+    """Create the preview data/game directories used by the renderer.
+
+    ``game_dir`` overrides where the demo game directory lives. The settings page shows that path,
+    and the pictures end up in the READMEs and the source package, so a render for the release
+    passes a neutral directory to keep the build machine's paths out of the screenshots.
+    """
     preview = root / "_preview"
     data = preview / "data"
-    game = preview / "game"
+    game = Path(game_dir) if game_dir is not None else preview / "game"
     # Managed Java runtimes are detected by directory only (runtime/java-<major>), so the
     # preview never plants a fake java.exe: the launcher would probe it and Windows would
     # pop "unsupported 16-bit application" dialogs for the bogus executable.
@@ -186,6 +191,11 @@ def main() -> int:
     )
     parser.add_argument("--pages", default="", help="comma separated page subset, e.g. launch,settings")
     parser.add_argument(
+        "--game-dir",
+        default="",
+        help="show this game directory instead of the preview folder (keeps build paths out of published screenshots)",
+    )
+    parser.add_argument(
         "--preview",
         default="",
         help="where to keep _preview data (defaults to --root; point at the work folder when rendering the released tree)",
@@ -201,7 +211,10 @@ def main() -> int:
     sys.path.insert(0, str(root))
     os.chdir(root)
 
-    data_dir, game_dir = ensure_preview(Path(args.preview).resolve() if args.preview else root)
+    data_dir, game_dir = ensure_preview(
+        Path(args.preview).resolve() if args.preview else root,
+        Path(args.game_dir).resolve() if args.game_dir else None,
+    )
     os.environ["MCLAUNCHER_DATA_DIR"] = str(data_dir)
     os.environ["MINECRAFT_GAME_DIR"] = str(game_dir)
 
