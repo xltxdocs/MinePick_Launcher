@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -126,33 +127,47 @@ def ensure_preview(root: Path, game_dir: Path | None = None) -> tuple[Path, Path
             encoding="utf-8",
         )
 
-    instances = [
-        ("整合包演示", "fabric-loader-0.19.3-1.21.11", "Fabulously Optimized 整合包，含性能模组"),
-        ("生存存档", "1.20.1", "长期存档，装了 JEI 和 Create"),
+    # Instances *are* version folders now (0.3.0): two of them carry a display name, a note and
+    # their own mods/saves, which is exactly what makes them isolate themselves (see
+    # launcher.instances.isolation_enabled), so the screenshots show real per-instance data.
+    demo_instances = [
+        ("整合包演示", "fabric-loader-0.19.3-1.21.11", "Fabulously Optimized 整合包，含性能模组", True),
+        ("生存存档", "1.20.1", "长期存档，装了 JEI 和 Create", False),
     ]
-    for name, vid, note in instances:
-        idir = game / "instances" / name
+    for name, parent_id, note, star in demo_instances:
+        idir = game / "versions" / name
         (idir / "mods").mkdir(parents=True, exist_ok=True)
         (idir / "saves").mkdir(parents=True, exist_ok=True)
-        (idir / "versions" / vid).mkdir(parents=True, exist_ok=True)
-        (idir / "versions" / vid / f"{vid}.json").write_text(
-            json.dumps({"id": vid}), encoding="utf-8"
+        (idir / f"{name}.json").write_text(
+            json.dumps(
+                {"id": name, "inheritsFrom": parent_id, "mainClass": "net.minecraft.client.main.Main"}
+            ),
+            encoding="utf-8",
         )
-        (idir / "instance.json").write_text(
+        (idir / "minepick.json").write_text(
             json.dumps(
                 {
-                    "name": name,
-                    "version_id": vid,
-                    "created_at": time.time() - 86400 * 9,
+                    "id": name,
+                    "display_name": name,
                     "note": note,
-                    "base": False,
+                    "star": star,
+                    "created_at": time.time() - 86400 * 9,
+                    "isolated": "follow",
                 },
                 ensure_ascii=False,
             ),
             encoding="utf-8",
         )
     for jar in ("sodium-fabric-0.6.5.jar", "lithium-fabric-0.15.3.jar", "iris-fabric-1.8.1.jar"):
-        (game / "instances" / "整合包演示" / "mods" / jar).write_bytes(b"PK\x03\x04trial")
+        (game / "versions" / "整合包演示" / "mods" / jar).write_bytes(b"PK\x03\x04trial")
+    world = game / "versions" / "生存存档" / "saves" / "新世界"
+    world.mkdir(parents=True, exist_ok=True)
+    (world / "level.dat").write_bytes(b"\x0a\x00\x00")
+    # The pre-0.3.0 layout must not linger in the preview: the overview would otherwise show
+    # the "old instances/ folder detected" notice in every published screenshot.
+    legacy = game / "instances"
+    if legacy.is_dir():
+        shutil.rmtree(legacy, ignore_errors=True)
     return data, game
 
 
