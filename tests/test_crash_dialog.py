@@ -101,6 +101,53 @@ def test_failing_exit_shows_the_diagnosis(app, ws_tmp):
         window.close()
 
 
+def test_launch_instance_buttons_navigate(app, ws_tmp, monkeypatch):
+    """实例选择 jumps to the instances page; 实例设置 opens that profile's settings tab."""
+    import json
+
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data_nav"))
+    from launcher import config as config_mod
+
+    game = ws_tmp / "mc"
+    version_id = "1.20.1"
+    folder = game / "versions" / version_id
+    folder.mkdir(parents=True)
+    (folder / (version_id + ".json")).write_text(
+        json.dumps({"id": version_id}), encoding="utf-8"
+    )
+    cfg, cfg_path = config_mod.load()
+    cfg.game_dir = game
+    config_mod.save(cfg, cfg_path)
+
+    from gui.main_window import MainWindow
+    from gui.pages.instance_detail import TAB_SETTINGS
+
+    window = None
+    try:
+        window = MainWindow()
+        launch = window.pages["launch"]
+        launch.version_combo.setEditText(version_id)
+        instances = window.pages["instances"]
+
+        launch.select_instance_button.click()
+        app.processEvents()
+        assert window.stack.currentWidget() is instances
+        assert instances.detail.instance_id == version_id
+
+        launch.instance_settings_button.click()
+        app.processEvents()
+        assert window.stack.currentWidget() is instances
+        assert instances.detail.stack.currentIndex() == TAB_SETTINGS
+
+        launch.account_button.click()
+        app.processEvents()
+        assert window.stack.currentWidget() is window.pages["account"]
+    finally:
+        if window is not None:
+            window.close()
+            app.processEvents()
+
+
 def test_record_and_load_diagnosis_roundtrip(app, ws_tmp):
     """The recorded summary survives a restart and tolerates a missing or corrupt file."""
     from gui.dialogs.crash_dialog import load_recorded_diagnosis, record_diagnosis

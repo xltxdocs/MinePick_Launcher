@@ -96,10 +96,8 @@ def test_e2e_offline_login_updates_launch_page(app, monkeypatch, ws_tmp):
         cfg, _ = config_mod.load()
         accounts = AccountStore().load()
         assert cfg.selected_account in accounts
-        # integration: the launch page account dropdown updates
-        combo = window.pages["launch"].account_combo
-        assert combo.count() >= 2  # (none) + Steve
-        assert "Steve" in combo.itemText(combo.count() - 1)
+        # integration: the launch page shows which account is active (switching lives on this page)
+        assert "Steve" in window.pages["launch"].account_label.text()
         # the account list shows this account
         assert page.accounts_list.count() == 1
     finally:
@@ -135,7 +133,7 @@ def test_e2e_account_switch(app, monkeypatch, ws_tmp):
         app.processEvents()
         cfg, _ = config_mod.load()
         assert cfg.selected_account == second.id
-        assert "Bob" in window.pages["launch"].account_combo.currentText()
+        assert "Bob" in window.pages["launch"].account_label.text()
     finally:
         if window is not None:
             window.close()

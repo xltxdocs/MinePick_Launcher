@@ -165,6 +165,9 @@ class MainWindow(QMainWindow):
         self.pages["settings"].settings_changed.connect(self._on_settings_changed)
         self.pages["versions"].launch_requested.connect(self._goto_launch)
         self.pages["versions"].instance_requested.connect(self._goto_instance)
+        self.pages["launch"].instance_requested.connect(self._goto_instance)
+        self.pages["launch"].instance_settings_requested.connect(self._goto_instance_settings)
+        self.pages["launch"].account_requested.connect(self._goto_account)
         self.pages["versions"].versions_changed.connect(self.pages["launch"].refresh_versions)
 
     def _on_nav_changed(self, row: int) -> None:
@@ -217,6 +220,17 @@ class MainWindow(QMainWindow):
         """The versions page hands an installed profile over to the instances page."""
         self.sidebar.setCurrentRow(NAV_KEYS.index("instances"))
         self.pages["instances"].select_instance(version_id)
+
+    def _goto_instance_settings(self, version_id: str) -> None:
+        """Open the per-instance settings of the profile selected on the launch page."""
+        from gui.pages.instance_detail import TAB_SETTINGS
+
+        self._goto_instance(version_id)
+        self.pages["instances"].detail.set_tab(TAB_SETTINGS)
+
+    def _goto_account(self) -> None:
+        """The launch page's account button: switching happens on the account page."""
+        self.sidebar.setCurrentRow(NAV_KEYS.index("account"))
 
     def apply_window_mode(self) -> None:
         """Apply the window startup state from config: default/maximized/minimized/remember last size."""

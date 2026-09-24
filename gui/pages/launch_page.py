@@ -26,13 +26,15 @@ from PySide6.QtCore import QTimer, Signal
 from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
+    QHBoxLayout,
+    QLabel,
     QLineEdit,
     QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
-from gui import i18n
+from gui import i18n, icons
 from gui.errors import show_fatal
 from gui.widgets import (
     NoWheelDoubleSpinBox,
@@ -58,12 +60,23 @@ tr = i18n.tr
 
 class LaunchPage(QWidget):
     account_changed = Signal()
+    instance_requested = Signal(str)  # show this profile on the instances page
+    instance_settings_requested = Signal(str)  # ... and open its per-instance settings
+    account_requested = Signal()  # the account button jumps to the account page
 
     def __init__(self) -> None:
         super().__init__()
         self.version_combo = QComboBox()
         self.version_combo.setEditable(True)
-        self.account_combo = QComboBox()
+        # Accounts are picked on the account page: an icon-only button jumps there, and the label
+        # next to it says which account is active.
+        self.account_label = QLabel("")
+        self.account_label.setObjectName("hint")
+        self.account_button = QPushButton()
+        self.account_button.setObjectName("iconButton")
+        self.account_button.setIcon(icons.icon("account"))
+        self.account_button.setToolTip(tr("launch.account.switch"))
+        self.account_button.setFixedWidth(46)
         self.memory_spin = NoWheelDoubleSpinBox()
         self.memory_spin.setRange(0.5, 64.0)
         self.memory_spin.setSingleStep(0.5)
@@ -71,28 +84,50 @@ class LaunchPage(QWidget):
         self.server_edit = QLineEdit()
         self.server_edit.setPlaceholderText(tr("launch.server.placeholder"))
         self.launch_button = QPushButton(tr("launch.button"))
+        self.select_instance_button = QPushButton(tr("launch.instances.select"))
+        self.select_instance_button.setObjectName("secondaryButton")
+        self.select_instance_button.setIcon(icons.icon("instances"))
+        self.instance_settings_button = QPushButton(tr("launch.instances.settings"))
+        self.instance_settings_button.setObjectName("secondaryButton")
+        self.instance_settings_button.setIcon(icons.icon("settings"))
 
         # Only what a normal launch needs: version, account, memory and (optionally) a server to
         # join. The offline user name, the game language, custom JVM arguments and the server port
         # used to sit here too, but almost nobody touched them: the language and the JVM arguments
         # are launcher settings, an offline name falls back to "Player", and the port defaults to
         # 25565. They all still work - just not as clutter on the main page.
+        account_row = QHBoxLayout()
+        account_row.setContentsMargins(0, 0, 0, 0)
+        account_row.setSpacing(6)
+        account_row.addWidget(self.account_label, 1)
+        account_row.addWidget(self.account_button)
+
         form = QFormLayout()
         style_form(form)
         form.addRow(tr("launch.version"), self.version_combo)
-        form.addRow(tr("launch.account"), self.account_combo)
+        form.addRow(tr("launch.account"), account_row)
         form.addRow(tr("launch.memory"), self.memory_spin)
         form.addRow(tr("launch.server"), self.server_edit)
+
+        instance_actions = QHBoxLayout()
+        instance_actions.setContentsMargins(0, 0, 0, 0)
+        instance_actions.setSpacing(6)
+        instance_actions.addWidget(self.select_instance_button)
+        instance_actions.addWidget(self.instance_settings_button)
+        instance_actions.addStretch(1)
 
         layout = QVBoxLayout(self)
         style_page_layout(layout)
         layout.addWidget(build_page_header(tr("nav.launch"), tr("page.launch.desc")))
         layout.addLayout(form)
         layout.addWidget(self.launch_button)
+        layout.addLayout(instance_actions)
         layout.addStretch(1)
 
         self.launch_button.clicked.connect(self.launch)
-        self.account_combo.currentIndexChanged.connect(self._on_account_selected)
+        self.account_button.clicked.connect(self.account_requested.emit)
+        self.select_instance_button.clicked.connect(self._request_instance)
+        self.instance_settings_button.clicked.connect(self._request_instance_settings)
 
         self.refresh_config()
         self.refresh_account()
@@ -103,30 +138,35 @@ class LaunchPage(QWidget):
         self.memory_spin.setValue(cfg.memory_gb)
 
     def refresh_account(self) -> None:
+        """Show the selected account; switching happens on the account page (one click away)."""
         cfg, _ = config.load()
         accounts = AccountStore().load()
-        # Block signals so rebuilding the list doesn't accidentally trigger a save
-        self.account_combo.blockSignals(True)
-        self.account_combo.clear()
-        self.account_combo.addItem(tr("launch.account.none.item"), None)
-        for account_id, account in sorted(accounts.items(), key=lambda kv: kv[1].username):
-            kind = tr("kind.ms") if account.type == "microsoft" else tr("kind.offline")
-            self.account_combo.addItem(
-                tr("launch.account.label", account.username, kind), account_id
-            )
-        index = self.account_combo.findData(cfg.selected_account)
-        self.account_combo.setCurrentIndex(max(index, 0))
-        self.account_combo.blockSignals(False)
-
-    def _on_account_selected(self) -> None:
-        """Dropdown account switch: write the config and sync the account page."""
-        account_id = self.account_combo.currentData()
-        cfg, cfg_path = config.load()
-        if cfg.selected_account == account_id:
+        account = accounts.get(cfg.selected_account) if cfg.selected_account else None
+        if account is None:
+            self.account_label.setText(tr("launch.account.none.item"))
             return
-        cfg.selected_account = account_id
-        config.save(cfg, cfg_path)
-        self.account_changed.emit()
+        kind = tr("kind.ms") if account.type == "microsoft" else tr("kind.offline")
+        self.account_label.setText(tr("launch.account.label", account.username, kind))
+
+    def _current_version_id(self) -> str:
+        """The profile id behind the version dropdown (it shows display names, stores ids)."""
+        return str(self.version_combo.currentData() or self.version_combo.currentText().strip())
+
+    def _request_instance(self) -> None:
+        """Jump to the instances page showing the selected profile."""
+        version_id = self._current_version_id()
+        if not version_id:
+            set_app_status(self, tr("launch.msg.need_id"), "warning")
+            return
+        self.instance_requested.emit(version_id)
+
+    def _request_instance_settings(self) -> None:
+        """Jump to the selected profile's per-instance settings."""
+        version_id = self._current_version_id()
+        if not version_id:
+            set_app_status(self, tr("launch.msg.need_id"), "warning")
+            return
+        self.instance_settings_requested.emit(version_id)
 
     def set_version_id(self, version_id: str) -> None:
         index = self.version_combo.findData(version_id)

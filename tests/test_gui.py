@@ -255,7 +255,8 @@ def test_batch1_widgets_exist(app, monkeypatch, ws_tmp):
     # launch page: the main page keeps only what a normal launch needs
     launch = window.pages["launch"]
     assert launch.version_combo is not None
-    assert launch.account_combo is not None
+    assert launch.account_button is not None  # icon-only button that jumps to the account page
+    assert not hasattr(launch, "account_combo")  # accounts are switched on the account page now
     assert launch.memory_spin is not None
     assert launch.server_edit is not None
     # trimmed in 0.3.0: duplicated settings or details with a sane default

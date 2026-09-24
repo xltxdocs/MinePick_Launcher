@@ -383,6 +383,17 @@ QFrame#latestCard {
 QLabel#latestKind { color: #8fa2b8; font-size: 12px; }
 QLabel#latestVersion { font-size: 16px; font-weight: 700; color: #ffffff; }
 
+/* ---------- icon-only buttons (launch page: switch account) ---------- */
+
+QPushButton#iconButton {
+    background: transparent;
+    border: 1px solid #27303d;
+    border-radius: __RADIUS_SM__;
+    padding: 4px;
+}
+QPushButton#iconButton:hover { background: #1c2531; border-color: __ACCENT__; }
+QPushButton#iconButton:pressed { background: #161d27; }
+
 /* ---------- in-window overlay dialogs (crash diagnosis) ---------- */
 
 QWidget#overlayCard {
