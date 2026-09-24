@@ -255,7 +255,7 @@ class LaunchPage(QWidget):
                     server=server,
                     server_port=server_port,
                 )
-                return ("ok", prepared)
+                return ("ok", prepared, resolved)
             except JavaMissingError as exc:
                 return ("java", exc.required_major)
 
@@ -308,16 +308,17 @@ class LaunchPage(QWidget):
         )
 
     def _on_prepared(self, result) -> None:
-        kind, payload = result
+        kind = result[0]
         if kind == "java":
-            major = payload
+            major = result[1]
             if self._confirm_java_download(major):
                 self._download_java_then_retry(major)
             else:
                 set_app_status(self, tr("launch.msg.cancelled", major))
             return
-        prepared = payload
+        _kind, prepared, resolved = result
         command = prepared.command
+        self._last_launch = (prepared, resolved)  # the exit callback needs it for the diagnosis
         set_app_status(
             self,
             tr(
@@ -340,13 +341,14 @@ class LaunchPage(QWidget):
 
         def do_run() -> object:
             started = __import__("time").time()
-            code = run_process(
+            run = run_process(
                 command.argv,
                 command.cwd,
                 on_started=start_bridge if cfg2.after_launch_behavior != "keep" else None,
+                capture_tail=True,  # the tail is the only trace when the game dies before logging
             )
             crashes = find_new_crash_reports(command.cwd, started)
-            return code, crashes
+            return run, crashes, started
 
         run_in_background(
             do_run,
@@ -377,13 +379,51 @@ class LaunchPage(QWidget):
         QTimer.singleShot(600, QApplication.instance().quit)
 
     def _on_game_exit(self, result) -> None:
-        code, crashes = result
+        run, crashes, started = result
+        code = getattr(run, "exit_code", run)
+        tail = list(getattr(run, "tail", ()) or ())
         message = tr("launch.msg.exit", code)
         if crashes:
             message += tr("launch.msg.crash", len(crashes))
         set_app_status(self, message)
+        self._diagnose(code, tail, started)
+
+    def _diagnose(self, code, tail, started) -> None:
+        """Run the knowledge base for a finished launch and show the diagnosis overlay."""
+        cfg, _ = config.load()
+        if not cfg.auto_crash_analysis:
+            return
+        pending = getattr(self, "_last_launch", None)
+        if pending is None:
+            return
+        prepared, resolved = pending
+        from gui.dialogs.crash_dialog import context_for_launch, diagnose_after_exit
+
+        context = context_for_launch(
+            version_id=prepared.version.id,
+            game_dir=resolved.game_dir,
+            launch_dir=resolved.launch_dir,
+            exit_code=code,
+            started=started,
+            tail=tail,
+            instance=resolved,
+        )
+        diagnose_after_exit(
+            self.window(), context, log_path=resolved.launch_dir / "logs" / "latest.log",
+            blur=cfg.blur_dialogs,
+        )
 
     def _on_launch_error(self, message: str) -> None:
         text = tr("launch.msg.fail", message)
         set_app_status(self, text, "error")
         show_fatal(self, text)  # fatal error dialog
+        cfg, _ = config.load()
+        if not cfg.auto_crash_analysis:
+            return
+        from gui.dialogs.crash_dialog import context_for_launch, diagnose_after_exit
+
+        game_dir = cfg.game_dir or paths.default_game_dir()
+        context = context_for_launch(
+            version_id="", game_dir=game_dir, error_text=text, memory_gb=cfg.memory_gb
+        )
+        diagnose_after_exit(self.window(), context, blur=cfg.blur_dialogs)

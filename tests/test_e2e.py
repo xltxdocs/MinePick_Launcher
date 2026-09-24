@@ -298,7 +298,7 @@ def test_e2e_launch_flow_runs_and_reports_exit(app, monkeypatch, ws_tmp):
             isolated=False,
         )
 
-    def fake_run_process(process_argv, process_cwd, on_started=None):
+    def fake_run_process(process_argv, process_cwd, on_started=None, **_kwargs):
         run_calls.append((process_argv, process_cwd, on_started))
         if on_started is not None:  # the real runner signals "process is up" first
             on_started()

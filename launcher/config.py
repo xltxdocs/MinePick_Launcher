@@ -72,6 +72,14 @@ class LauncherConfig(BaseModel):
         default=True,
         description="Default isolation policy for new instances: each instance keeps its own saves/mods/config under versions/<id>/ (an instance can override this)",
     )
+    auto_crash_analysis: bool = Field(
+        default=True,
+        description="Analyse the logs automatically when a launch fails or the game crashes, and show the diagnosis dialog",
+    )
+    blur_dialogs: bool = Field(
+        default=True,
+        description="Blur the window behind in-window dialogs (crash diagnosis); off = plain dimmed backdrop",
+    )
     game_language: str = Field(
         default="",
         description="Game language code (zh_cn/en_us/ja_jp...); empty = follow in-game setting (not forced)",

@@ -1333,7 +1333,7 @@ class InstanceDetail(QWidget):
                     jvm_args=resolved.jvm_args or None,
                     game_args=resolved.game_args,
                 )
-                return ("ok", prepared)
+                return ("ok", prepared, resolved)
             except Exception as exc:  # noqa: BLE001 - reported as a launch failure
                 return ("error", str(exc))
 
@@ -1347,13 +1347,14 @@ class InstanceDetail(QWidget):
         self.launch_button.setEnabled(True)
 
     def _on_prepared(self, result) -> None:
-        kind, payload = result
+        kind = result[0]
         if kind == "error":
-            text = tr("instances.msg.launch_fail", str(payload))
+            text = tr("instances.msg.launch_fail", str(result[1]))
             set_app_status(self, text, "error")
             show_fatal(self, text)  # fatal error dialog
             return
-        prepared = payload
+        _kind, prepared, resolved = result
+        self._last_launch = (prepared, resolved)  # the exit callback needs it for the diagnosis
         command = prepared.command
         set_app_status(self, tr("instances.msg.running", prepared.version.id, str(command.cwd)))
 
@@ -1365,13 +1366,14 @@ class InstanceDetail(QWidget):
 
         def do_run() -> object:
             started = time.time()
-            code = run_process(
+            run = run_process(
                 command.argv,
                 command.cwd,
                 on_started=start_bridge if cfg2.after_launch_behavior != "keep" else None,
+                capture_tail=True,  # keeps the last lines when the game dies before logging
             )
             crashes = find_new_crash_reports(command.cwd, started)
-            return code, crashes
+            return run, crashes, started
 
         run_in_background(
             do_run,
@@ -1385,11 +1387,41 @@ class InstanceDetail(QWidget):
         show_fatal(self, text)
 
     def _on_exit(self, result) -> None:
-        code, crashes = result
+        run, crashes, started = result
+        code = getattr(run, "exit_code", run)
+        tail = list(getattr(run, "tail", ()) or ())
         message = tr("launch.msg.exit", code)
         if crashes:
             message += tr("launch.msg.crash", len(crashes))
         set_app_status(self, message)
+        self._diagnose(code, tail, started)
+
+    def _diagnose(self, code, tail, started) -> None:
+        """Run the knowledge base for a finished launch and show the diagnosis overlay."""
+        cfg, _ = config.load()
+        if not cfg.auto_crash_analysis:
+            return
+        pending = getattr(self, "_last_launch", None)
+        if pending is None:
+            return
+        prepared, resolved = pending
+        from gui.dialogs.crash_dialog import context_for_launch, diagnose_after_exit
+
+        context = context_for_launch(
+            version_id=prepared.version.id,
+            game_dir=resolved.game_dir,
+            launch_dir=resolved.launch_dir,
+            exit_code=code,
+            started=started,
+            tail=tail,
+            instance=resolved,
+        )
+        diagnose_after_exit(
+            self.window(),
+            context,
+            log_path=resolved.launch_dir / "logs" / "latest.log",
+            blur=cfg.blur_dialogs,
+        )
 
     def _on_game_started(self, _value=None) -> None:
         from PySide6.QtCore import QTimer
