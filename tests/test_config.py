@@ -32,7 +32,7 @@ def test_defaults():
     assert c.game_dir is None
     assert c.java_path is None
     assert c.auto_install_java is False
-    assert c.version_isolation is True  # version isolation enabled by default
+    assert c.default_isolation is True  # new instances are isolated by default
     assert c.game_language == ""  # defaults to the in-game setting (not forced)
     assert c.language_initialized is False  # auto-set only on first launch
 

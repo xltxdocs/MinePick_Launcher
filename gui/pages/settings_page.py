@@ -312,7 +312,7 @@ class SettingsPage(QWidget):
         self.memory_auto_check.setChecked(cfg.memory_auto)
         self._refresh_memory_suggestion()
         self.concurrency_spin.setValue(cfg.max_concurrent_downloads)
-        self.isolation_check.setChecked(cfg.version_isolation)
+        self.isolation_check.setChecked(cfg.default_isolation)
         self.demo_check.setChecked(cfg.demo_mode)
         idx = self.after_launch_combo.findData(cfg.after_launch_behavior)
         self.after_launch_combo.setCurrentIndex(max(idx, 0))
@@ -398,7 +398,7 @@ class SettingsPage(QWidget):
         cfg.memory_gb = self.memory_spin.value()
         cfg.memory_auto = self.memory_auto_check.isChecked()
         cfg.max_concurrent_downloads = self.concurrency_spin.value()
-        cfg.version_isolation = self.isolation_check.isChecked()
+        cfg.default_isolation = self.isolation_check.isChecked()
         cfg.demo_mode = self.demo_check.isChecked()
         cfg.after_launch_behavior = self.after_launch_combo.currentData() or "keep"
         cfg.trim_memory_on_launch = self.trim_memory_check.isChecked()

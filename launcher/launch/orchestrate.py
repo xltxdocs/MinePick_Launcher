@@ -101,35 +101,27 @@ def prepare_launch(
     demo: bool = False,
     window_width: int | None = None,
     window_height: int | None = None,
-    isolated: bool = False,
+    launch_dir: Path | None = None,
+    java_path: Path | None = None,
     language: str | None = None,
     force: bool = False,
-    instance_name: str | None = None,
     jvm_args: str | None = None,
+    game_args: str = "",
     server: str | None = None,
     server_port: int | None = None,
 ) -> PreparedLaunch:
     """Prepare a launch (without running the process). May raise MetaError / LaunchError.
 
-    When instance_name is given: game directory = <game_dir>/instances/<name> (
-    saves/mods/config/logs are isolated), version files load from the instance directory,
-    and libraries & assets still share the global directories.
+    `game_dir` is the shared game directory (versions/libraries/assets always live
+    there). `launch_dir` is the effective working directory of the game: the
+    instance folder for an isolated instance, or None to share the game directory.
+    Callers get both from launcher.instances.resolve_instance().
     """
-    global_gp = paths.GamePaths(game_dir)
-    if instance_name is not None:
-        from launcher.instances import instance_dir as instance_dir_fn
-
-        launch_game_dir = instance_dir_fn(game_dir, instance_name)
-        gp = paths.GamePaths(launch_game_dir)
-        shared_libraries = global_gp.libraries_dir
-        shared_assets = global_gp.assets_dir
-        isolated_effective = False
-    else:
-        launch_game_dir = game_dir
-        gp = global_gp
-        shared_libraries = gp.libraries_dir
-        shared_assets = gp.assets_dir
-        isolated_effective = isolated
+    gp = paths.GamePaths(game_dir)
+    shared_libraries = gp.libraries_dir
+    shared_assets = gp.assets_dir
+    launch_game_dir = Path(launch_dir) if launch_dir is not None else game_dir
+    isolated_effective = launch_game_dir != game_dir
 
     version = load_version_json(
         version_id,
@@ -141,12 +133,19 @@ def prepare_launch(
     resolved = resolve_libraries(version.libraries, platform)
 
     required_major = version.java_version.major_version if version.java_version else 8
-    runtimes = list_java(probe_dir=cache_dir)
-    if not has_suitable_java(runtimes, required_major):
-        raise JavaMissingError(required_major)
-    java = match_java(runtimes, required_major)
-    if java is None:
-        raise JavaMissingError(required_major)
+    if java_path is not None:
+        # A pinned per-instance runtime wins; fall back to auto-detect if unusable
+        from launcher.java import JavaRuntime, probe_java_major
+
+        probed = probe_java_major(Path(java_path), probe_dir=cache_dir)
+        java = probed if probed is not None else JavaRuntime(path=Path(java_path), major=required_major)
+    else:
+        runtimes = list_java(probe_dir=cache_dir)
+        if not has_suitable_java(runtimes, required_major):
+            raise JavaMissingError(required_major)
+        java = match_java(runtimes, required_major)
+        if java is None:
+            raise JavaMissingError(required_major)
 
     natives_dir = gp.version_dir(version.id) / "natives"
     prepare_natives(resolved, shared_libraries, natives_dir)
@@ -182,9 +181,10 @@ def prepare_launch(
         language=language,
         assets_dir=shared_assets,
         extra_jvm_args=jvm_args,
+        extra_game_args=game_args,
         server=server,
         server_port=server_port,
     )
     return PreparedLaunch(
-        command=command, account=account, version=version, java=java, isolated=isolated
+        command=command, account=account, version=version, java=java, isolated=isolated_effective
     )

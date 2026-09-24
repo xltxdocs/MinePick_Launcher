@@ -541,7 +541,7 @@ class _ContentTab(QWidget):
             if self.kind == "mod":
                 target = resolve_mods_dir(
                     game_dir,
-                    isolated=cfg.version_isolation,
+                    isolated=cfg.default_isolation,
                     loader=loader,
                     game_version=game_version,
                 )
@@ -549,7 +549,7 @@ class _ContentTab(QWidget):
                 subdir = {"resourcepack": "resourcepacks", "shaderpack": "shaderpacks"}.get(
                     self.kind, self.kind
                 )
-                target = resolve_content_dir(game_dir, subdir, isolated=cfg.version_isolation)
+                target = resolve_content_dir(game_dir, subdir, isolated=cfg.default_isolation)
             return cf.download_file(picked, target), picked
 
         run_in_background(
@@ -604,7 +604,7 @@ class _ContentTab(QWidget):
                     game_dir=game_dir,
                     game_version=game_version,
                     mod_version_id=mod_version_id,
-                    isolated=cfg.version_isolation,
+                    isolated=cfg.default_isolation,
                 )
             if self.kind == "shaderpack":
                 return install_shaderpack(
@@ -612,7 +612,7 @@ class _ContentTab(QWidget):
                     game_dir=game_dir,
                     game_version=game_version,
                     mod_version_id=mod_version_id,
-                    isolated=cfg.version_isolation,
+                    isolated=cfg.default_isolation,
                 )
             return install_mod(
                 slug,
@@ -620,7 +620,7 @@ class _ContentTab(QWidget):
                 loader=loader,
                 game_version=game_version,
                 mod_version_id=mod_version_id,
-                isolated=cfg.version_isolation,
+                isolated=cfg.default_isolation,
             )
 
         run_in_background(
@@ -714,7 +714,7 @@ class _ContentTab(QWidget):
                     game_dir=game_dir,
                     game_version=self._current_game_version or None,
                     mod_version_id=self._current_mod_version_id or None,
-                    isolated=cfg.version_isolation,
+                    isolated=cfg.default_isolation,
                 )
             if self.kind == "shaderpack":
                 return install_shaderpack(
@@ -722,7 +722,7 @@ class _ContentTab(QWidget):
                     game_dir=game_dir,
                     game_version=self._current_game_version or None,
                     mod_version_id=self._current_mod_version_id or None,
-                    isolated=cfg.version_isolation,
+                    isolated=cfg.default_isolation,
                 )
             return install_mod(
                 mod.slug,
@@ -730,7 +730,7 @@ class _ContentTab(QWidget):
                 loader=self._current_loader or None,
                 game_version=self._current_game_version or None,
                 mod_version_id=self._current_mod_version_id or None,
-                isolated=cfg.version_isolation,
+                isolated=cfg.default_isolation,
             )
 
         disable_keeping_focus(self.install_button)
@@ -776,7 +776,7 @@ class _ContentTab(QWidget):
             "game_dir": cfg.game_dir or paths.default_game_dir(),
             "loader": self.loader_combo.currentData() if self.kind == "mod" else None,
             "game_version": self.game_version_edit.text().strip() or None,
-            "isolated": cfg.version_isolation,
+            "isolated": cfg.default_isolation,
         }
 
     # ---------- Folder ----------

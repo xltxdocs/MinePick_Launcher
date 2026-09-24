@@ -237,16 +237,21 @@ class LaunchPage(QWidget):
                 account = resolve_launch_account(
                     AccountStore(), cfg.selected_account, offline_name
                 )
+                from launcher.instances import resolve_instance
+
+                resolved = resolve_instance(version_id, cfg, game_dir)
                 prepared = prepare_launch(
                     version_id,
                     game_dir=game_dir,
                     cache_dir=paths.launcher_dir() / "cache",
                     account=account,
-                    memory_gb=memory_gb,
+                    memory_gb=resolved.memory_gb if resolved.memory_from_instance else memory_gb,
                     demo=cfg.demo_mode,
-                    isolated=cfg.version_isolation,
+                    launch_dir=resolved.launch_dir,
+                    java_path=resolved.java_path,
                     language=language,
-                    jvm_args=jvm_args,
+                    jvm_args=resolved.jvm_args or jvm_args,
+                    game_args=resolved.game_args,
                     server=server,
                     server_port=server_port,
                 )

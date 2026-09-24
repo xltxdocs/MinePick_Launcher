@@ -144,26 +144,27 @@ def build_argv(
     demo: bool = False,
     window_width: int | None = None,
     window_height: int | None = None,
-    isolated: bool = False,
+    launch_dir: Path | None = None,
     language: str | None = None,
     assets_dir: Path | None = None,
     extra_jvm_args: str | None = None,
+    extra_game_args: str | None = None,
     server: str | None = None,
     server_port: int | None = None,
 ) -> LaunchCommand:
     """Assemble the complete launch command (java + jvm args + main class + game args).
 
-    When isolated=True the game directory switches to versions/<id>/ (version-isolated saves/mods/config),
-    and natives live under versions/<id>/natives. language is passed to the game via --lang
-    (silently ignored by unsupported versions on the game side).
+    launch_dir is the effective working directory (the instance folder for an
+    isolated instance); None shares the game directory. language is passed to the
+    game via --lang (silently ignored by unsupported versions on the game side).
     """
     gp = paths.GamePaths(game_dir)
     version_dir = gp.versions_dir / version.id
-    effective_game_dir = version_dir if isolated else game_dir
+    effective_game_dir = Path(launch_dir) if launch_dir is not None else game_dir
     effective_assets_dir = assets_dir or gp.assets_dir
-    if isolated:
-        # version isolation: pre-create the mods directory (used by loaders), saves/config are created by the game
-        (version_dir / "mods").mkdir(parents=True, exist_ok=True)
+    if effective_game_dir != game_dir:
+        # isolated instance: pre-create the mods directory (used by loaders), saves/config are created by the game
+        (effective_game_dir / "mods").mkdir(parents=True, exist_ok=True)
     else:
         # instance/normal mode: ensure the game directory exists (saves/config are created by the game)
         effective_game_dir.mkdir(parents=True, exist_ok=True)
@@ -244,6 +245,10 @@ def build_argv(
         game_args += ["--server", server]
     if server_port is not None:
         game_args += ["--port", str(server_port)]
+
+    # per-instance extra game arguments (split like the JVM args, so quoting works the same way)
+    if extra_game_args and extra_game_args.strip():
+        game_args += _split_extra_jvm_args(extra_game_args)
 
     if log_arg_template and not any(
         arg.startswith("-Dlog4j.configurationFile") for arg in jvm_args

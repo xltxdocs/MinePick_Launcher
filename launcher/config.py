@@ -68,8 +68,9 @@ class LauncherConfig(BaseModel):
         default=None,
         description="Microsoft OAuth client id; None means use the built-in public client id (override by registering your own Azure app)",
     )
-    version_isolation: bool = Field(
-        default=True, description="Version isolation: each version's saves/mods/config live separately under versions/<id>/"
+    default_isolation: bool = Field(
+        default=True,
+        description="Default isolation policy for new instances: each instance keeps its own saves/mods/config under versions/<id>/ (an instance can override this)",
     )
     game_language: str = Field(
         default="",

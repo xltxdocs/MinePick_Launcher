@@ -78,7 +78,6 @@ from launcher.launch import (
     resolve_launch_account,
     run_process,
 )
-from launcher.mods import resolve_mods_dir
 from launcher.mods.local import install_mod_file, scan_mods, set_mod_enabled
 
 tr = i18n.tr
@@ -306,14 +305,14 @@ class InstancesPage(QWidget):
         else:
             ordered = sorted(instances.values(), key=lambda i: i.name)
         for inst in ordered:
-            if inst.base:
-                text = display_version_name(inst.name)  # base version: normalized profile name
-            else:
-                text = inst.name + "   [" + display_version_name(inst.version_id) + "]"
-                if inst.note:
-                    text += "  — " + inst.note
+            text = inst.name  # display name (falls back to the folder name)
+            label = display_version_name(inst.id)
+            if label != inst.name:
+                text += "   [" + label + "]"
+            if inst.note:
+                text += "  — " + inst.note
             item = QListWidgetItem(text)
-            item.setData(Qt.UserRole, inst.name)  # store name in a data role to avoid parsing text
+            item.setData(Qt.UserRole, inst.id)  # instance id in a data role to avoid parsing text
             self.list.addItem(item)
         self.empty_instances.update_for(self.list.count())
 
@@ -337,11 +336,10 @@ class InstancesPage(QWidget):
             return
         cfg, _ = config.load()
         game_dir = cfg.game_dir or paths.default_game_dir()
-        base = game_dir if inst.base else instance_dir(game_dir, inst.name)
         try:
-            self._mods_dir = resolve_mods_dir(
-                base, version_id=inst.version_id, isolated=cfg.version_isolation
-            )
+            from launcher.instances import resolve_instance
+
+            self._mods_dir = resolve_instance(inst.id, cfg, game_dir).mods_dir
         except Exception as exc:  # noqa: BLE001 - handle dir resolution failure via the hint
             self._mods_dir = None
             set_app_status(self, tr("instances.mods.msg.load_fail", exc), "error")
@@ -514,11 +512,11 @@ class InstancesPage(QWidget):
         )
 
     def _guard_base(self, name: str) -> bool:
-        """Base versions are managed on the Versions page; return True when the action must stop."""
-        inst = list_instances().get(name)
-        if inst is not None and inst.base:
-            set_app_status(self, tr("instances.base_hint"), "warning")
-            return True
+        """Every installed version is an instance now, so nothing is off limits here.
+
+        Kept as a single hook so the (phase C) page rework has one place to add
+        per-instance safety checks; returns True when the action must stop.
+        """
         return False
 
     def _delete(self) -> None:
@@ -678,11 +676,7 @@ class InstancesPage(QWidget):
             return
         cfg, _ = config.load()
         game_dir = cfg.game_dir or paths.default_game_dir()
-        inst = list_instances().get(name)
-        if inst is not None and inst.base:
-            target = game_dir / "versions" / inst.version_id
-        else:
-            target = instance_dir(game_dir, name)
+        target = instance_dir(game_dir, name)  # the instance folder == the version folder
         target.mkdir(parents=True, exist_ok=True)
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(target)))
         set_app_status(self, tr("instances.msg.folder_opened", str(target)))
@@ -694,10 +688,12 @@ class InstancesPage(QWidget):
         cfg, _ = config.load()
         base = cfg.game_dir or paths.default_game_dir()
         inst = self._selected_instance()
-        if inst is None or inst.base:
+        if inst is None:
             game_dir = base
         else:
-            game_dir = instance_dir(base, inst.name)
+            from launcher.instances import resolve_instance
+
+            game_dir = resolve_instance(inst.id, cfg, base).launch_dir
         CrashViewerDialog(game_dir, self).exec()
 
     def _launch(self) -> None:
@@ -712,7 +708,9 @@ class InstancesPage(QWidget):
             return
         cfg, _ = config.load()
         game_dir = cfg.game_dir or paths.default_game_dir()
-        instance_name_arg = None if inst.base else name
+        from launcher.instances import resolve_instance
+
+        resolved = resolve_instance(inst.id, cfg, game_dir)
         # Offline-mode gate: launching an instance without a licensed account counts as an offline launch
         if not cfg.selected_account:
             from launcher.config import offline_mode_allowed
@@ -733,10 +731,12 @@ class InstancesPage(QWidget):
                     game_dir=game_dir,
                     cache_dir=paths.launcher_dir() / "cache",
                     account=account,
-                    memory_gb=cfg.memory_gb,
+                    memory_gb=resolved.memory_gb if resolved.memory_from_instance else cfg.memory_gb,
                     language=cfg.game_language or None,
-                    instance_name=instance_name_arg,
-                    jvm_args=cfg.jvm_args or None,
+                    launch_dir=resolved.launch_dir,
+                    java_path=resolved.java_path,
+                    jvm_args=resolved.jvm_args or None,
+                    game_args=resolved.game_args,
                 )
                 return ("ok", prepared)
             except Exception as exc:  # noqa: BLE001

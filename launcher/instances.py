@@ -14,13 +14,17 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with MinePick Launcher. If not, see <https://www.gnu.org/licenses/>.
-"""Instance management: instances are recognized by their folder structure.
+"""Instance management: every installed version folder *is* an instance.
 
-Every subdirectory of <game dir>/instances/ is an instance. Optional metadata
-(name, version id, creation time, note) lives in <instance>/instance.json;
-folders without it are synthesized (version id read from versions/<id>/,
-creation time from the folder mtime). The legacy registry file instances.json
-is only used for a one-time metadata backfill.
+An instance is `<game dir>/versions/<id>/`, recognised by the presence of
+`<id>/<id>.json` (the same rule the launch page uses). Nothing is duplicated:
+isolation only decides whether the game's working directory is the instance
+folder itself (own saves/mods/config) or the shared game directory.
+
+Optional metadata lives inside the instance folder as `minepick.json`
+(display name, note, star flag, timestamps, isolation choice and per-instance
+setting overrides). Missing or corrupt metadata is tolerated: the folder
+structure stays the source of truth.
 """
 
 from __future__ import annotations
@@ -31,27 +35,79 @@ import re
 import shutil
 import time
 import zipfile
+from dataclasses import dataclass
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from launcher import paths
 from launcher.i18n import tr_core
 from launcher.meta.version import load_version_json
 
-INSTANCE_META_FILENAME = "instance.json"  # per-instance metadata inside the folder
-INSTANCES_FILENAME = "instances.json"  # legacy registry (migration source only)
+INSTANCE_META_FILENAME = "minepick.json"  # per-instance metadata inside the folder
+LEGACY_INSTANCES_DIRNAME = "instances"  # pre-0.3.0 layout, no longer used
+
+# Isolation is a per-instance tri-state; "follow" uses the auto rule below.
+ISOLATION_FOLLOW = "follow"
+ISOLATION_ON = "on"
+ISOLATION_OFF = "off"
+ISOLATION_CHOICES = (ISOLATION_FOLLOW, ISOLATION_ON, ISOLATION_OFF)
+
 _NAME_RE = re.compile(r"^[\w\u4e00-\u9fff][\w\u4e00-\u9fff ._-]{0,31}$")
+
+
+class InstanceSettings(BaseModel):
+    """Per-instance overrides; every field left empty follows the global setting."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    java: str = ""  # explicit java executable; empty = auto-detect
+    memory_gb: float | None = Field(default=None, gt=0, le=64)  # None = follow global
+    jvm_args: str = ""  # appended to the global custom JVM args
+    game_args: str = ""  # extra arguments for the game itself
 
 
 class Instance(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
-    name: str
-    version_id: str
-    created_at: float
-    note: str = ""  # user note
-    base: bool = False  # True = a base version detected in the global versions/ folder
+    id: str  # folder name under versions/ (this is the version id too)
+    display_name: str = ""  # shown in the UI; empty = use id
+    note: str = ""
+    star: bool = False
+    created_at: float = 0.0
+    last_played: float = 0.0
+    isolated: str = ISOLATION_FOLLOW
+    settings: InstanceSettings = InstanceSettings()
+
+    @property
+    def name(self) -> str:
+        """Display name (falls back to the folder name)."""
+        return self.display_name or self.id
+
+    @property
+    def version_id(self) -> str:
+        """The version id equals the instance id (kept for call-site compatibility)."""
+        return self.id
+
+
+@dataclass(frozen=True)
+class ResolvedInstance:
+    """Every path/setting a launch or a resource view needs, resolved once."""
+
+    id: str
+    game_dir: Path  # shared game directory (versions/libraries/assets)
+    launch_dir: Path  # effective working directory of the game
+    isolated: bool
+    java_path: Path | None  # None = auto-detect
+    memory_gb: float
+    jvm_args: str
+    game_args: str
+    mods_dir: Path
+    memory_from_instance: bool = False  # True when the instance pins its own heap size
+
+    @property
+    def version_id(self) -> str:
+        return self.id
 
 
 class InstancesError(Exception):
@@ -64,6 +120,13 @@ def _game_dir() -> Path:
 
     cfg, _ = config.load()
     return cfg.game_dir or paths.default_game_dir()
+
+
+def validate_name(name: str) -> str:
+    name = (name or "").strip()
+    if not name or not _NAME_RE.match(name):
+        raise InstancesError(tr_core("instances.name_invalid"))
+    return name
 
 
 def default_instance_name(version_id: str) -> str:
@@ -112,115 +175,187 @@ def display_version_name(version_id: str) -> str:
     return version_id
 
 
-def validate_name(name: str) -> str:
-    name = name.strip()
-    if not name or not _NAME_RE.match(name):
-        raise InstancesError(tr_core("instances.name_invalid"))
-    return name
+def instance_dir(game_dir: Path, instance_id: str) -> Path:
+    """The instance folder (identical to the version folder by design)."""
+    return game_dir / "versions" / instance_id
 
 
-def instance_dir(game_dir: Path, name: str) -> Path:
-    return game_dir / "instances" / name
+def legacy_instances_dir(game_dir: Path) -> Path | None:
+    """The pre-0.3.0 `instances/` folder, if it still exists (never migrated automatically)."""
+    legacy = game_dir / LEGACY_INSTANCES_DIRNAME
+    return legacy if legacy.is_dir() else None
 
 
-def _load_folder_meta(folder: Path) -> Instance:
-    """Read instance.json from the folder; synthesize metadata when missing."""
-    # Same detection logic as the launch page dropdown: an entry under
-    # versions/ only counts as a version when <id>/<id>.json exists.
-    version_id = ""
-    try:
-        from launcher.install import list_installed_versions
-
-        detected = list_installed_versions(folder)
-        if detected:
-            version_id = detected[0]
-    except ImportError:  # launcher.install is always present in practice
-        pass
-    created_at = time.time()
-    note = ""
+def _read_sidecar(folder: Path, instance_id: str) -> Instance:
+    """Read minepick.json; synthesize metadata from the folder when absent or corrupt."""
     try:
         created_at = folder.stat().st_mtime
     except OSError:
-        pass
+        created_at = time.time()
+    inst = Instance(id=instance_id, created_at=created_at)
     meta_file = folder / INSTANCE_META_FILENAME
     if meta_file.exists():
         try:
-            inst = Instance.model_validate(json.loads(meta_file.read_text(encoding="utf-8-sig")))
-            note = inst.note
-            # The folder structure is the source of truth: only keep the stored
-            # version id when the versions/ folder is absent.
-            if not version_id:
-                version_id = inst.version_id
-        except (ValueError, TypeError, OSError):  # fall back to synthesized metadata
+            raw = json.loads(meta_file.read_text(encoding="utf-8-sig"))
+            loaded = Instance.model_validate(raw)
+            loaded.id = instance_id  # the folder name is the source of truth
+            if not loaded.created_at:
+                loaded.created_at = created_at
+            return loaded
+        except (ValueError, TypeError, OSError):
             logging.getLogger(__name__).warning("Ignoring corrupt instance metadata: %s", meta_file)
-    return Instance(name=folder.name, version_id=version_id, created_at=created_at, note=note)
+    return inst
 
 
-def _write_folder_meta(folder: Path, inst: Instance) -> None:
+def _write_sidecar(folder: Path, inst: Instance) -> None:
     folder.mkdir(parents=True, exist_ok=True)
+    payload = inst.model_dump(mode="json")
     tmp = folder / (INSTANCE_META_FILENAME + ".tmp")
-    tmp.write_text(json.dumps(inst.model_dump(mode="json"), ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     tmp.replace(folder / INSTANCE_META_FILENAME)
 
 
-def _backfill_from_registry(game_dir: Path) -> None:
-    """One-time best-effort backfill of per-folder metadata from the legacy registry."""
-    for reg_path in (game_dir / INSTANCES_FILENAME, paths.launcher_dir() / INSTANCES_FILENAME):
-        if not reg_path.exists():
-            continue
-        try:
-            raw = json.loads(reg_path.read_text(encoding="utf-8-sig"))
-            entries = raw.get("instances", raw) if isinstance(raw, dict) else {}
-            if not isinstance(entries, dict):
-                continue
-            for key, value in entries.items():
-                folder = instance_dir(game_dir, str(key))
-                if not folder.is_dir() or (folder / INSTANCE_META_FILENAME).exists():
-                    continue
-                try:
-                    inst = Instance.model_validate(value)
-                    inst.name = str(key)
-                    _write_folder_meta(folder, inst)
-                except (ValueError, TypeError, OSError):  # skip corrupt entries
-                    logging.getLogger(__name__).warning("Skipping corrupt legacy instance entry: %s", key)
-        except Exception:  # migration is best-effort
-            logging.getLogger(__name__).debug("Instance registry backfill failed for %s", reg_path, exc_info=True)
+def _is_instance_folder(folder: Path) -> bool:
+    """A folder counts as an instance when <id>/<id>.json exists (launch-page rule)."""
+    return folder.is_dir() and (folder / (folder.name + ".json")).is_file()
 
 
-def list_instances() -> dict[str, Instance]:
-    """List launchable entries.
-
-    - Custom instances: every folder under <game dir>/instances/.
-    - Base versions/profiles: every installed version in <game dir>/versions/,
-      detected with the same rule as the launch page (needs <id>/<id>.json).
-    """
-    game_dir = _game_dir()
-    _backfill_from_registry(game_dir)
+def list_instances(game_dir: Path | None = None) -> dict[str, Instance]:
+    """Every installed version folder, keyed by instance id (== version id)."""
+    root = game_dir or _game_dir()
     out: dict[str, Instance] = {}
-    base = game_dir / "instances"
-    if base.is_dir():
-        for entry in sorted(base.iterdir()):
-            if entry.is_dir():
-                out[entry.name] = _load_folder_meta(entry)
-    # Base versions from the global versions folder (launch-page detection logic)
-    try:
-        from launcher.install import list_installed_versions
-
-        detected = sorted(list_installed_versions(game_dir))
-    except ImportError:
-        detected = []
-    for version_id in detected:
-        if version_id in out:
-            continue  # a custom instance with the same name wins
-        folder = game_dir / "versions" / version_id
-        try:
-            created_at = folder.stat().st_mtime
-        except OSError:
-            created_at = time.time()
-        out[version_id] = Instance(
-            name=version_id, version_id=version_id, created_at=created_at, base=True
-        )
+    versions = root / "versions"
+    if not versions.is_dir():
+        return out
+    for entry in sorted(versions.iterdir()):
+        if _is_instance_folder(entry):
+            out[entry.name] = _read_sidecar(entry, entry.name)
     return out
+
+
+def get_instance(instance_id: str, game_dir: Path | None = None) -> Instance | None:
+    return list_instances(game_dir).get(instance_id)
+
+
+def _require(instance_id: str, game_dir: Path | None) -> tuple[Instance, Path]:
+    root = game_dir or _game_dir()
+    folder = instance_dir(root, instance_id)
+    if not _is_instance_folder(folder):
+        raise InstancesError(tr_core("instances.missing", instance_id))
+    return _read_sidecar(folder, instance_id), folder
+
+
+def update_instance(instance_id: str, *, game_dir: Path | None = None, **changes) -> Instance:
+    """Update sidecar fields (display_name / note / star / last_played / isolated)."""
+    inst, folder = _require(instance_id, game_dir)
+    for key, value in changes.items():
+        if key not in Instance.model_fields:
+            raise InstancesError(tr_core("instances.field_unknown", key))
+        setattr(inst, key, value)
+    inst.id = instance_id
+    _write_sidecar(folder, inst)
+    return inst
+
+
+def update_instance_note(instance_id: str, note: str, game_dir: Path | None = None) -> Instance:
+    """Update the instance note (stored in the folder metadata)."""
+    return update_instance(instance_id, game_dir=game_dir, note=(note or "").strip())
+
+
+def set_instance_settings(
+    instance_id: str, *, game_dir: Path | None = None, **changes
+) -> Instance:
+    """Update per-instance setting overrides (java / memory_gb / jvm_args / game_args)."""
+    inst, folder = _require(instance_id, game_dir)
+    settings = inst.settings.model_copy(deep=True)
+    for key, value in changes.items():
+        if key not in InstanceSettings.model_fields:
+            raise InstancesError(tr_core("instances.field_unknown", key))
+        setattr(settings, key, value)
+    inst.settings = settings
+    _write_sidecar(folder, inst)
+    return inst
+
+
+def reset_instance_settings(instance_id: str, game_dir: Path | None = None) -> Instance:
+    """Drop every per-instance override (isolation returns to the default policy)."""
+    inst, folder = _require(instance_id, game_dir)
+    inst.settings = InstanceSettings()
+    inst.isolated = ISOLATION_FOLLOW
+    _write_sidecar(folder, inst)
+    return inst
+
+
+def isolation_enabled(inst: Instance, folder: Path, default_isolation: bool) -> bool:
+    """Resolve the tri-state isolation flag.
+
+    Explicit on/off wins; otherwise an instance that already holds mods or saves
+    is treated as isolated (so existing data keeps its own folder), and anything
+    else follows the launcher default.
+    """
+    if inst.isolated == ISOLATION_ON:
+        return True
+    if inst.isolated == ISOLATION_OFF:
+        return False
+    for sub in ("mods", "saves"):
+        directory = folder / sub
+        try:
+            if directory.is_dir() and any(directory.iterdir()):
+                return True
+        except OSError:
+            continue
+    return bool(default_isolation)
+
+
+def resolve_instance(
+    instance_id: str,
+    cfg=None,
+    game_dir: Path | None = None,
+) -> ResolvedInstance:
+    """Resolve every effective path and setting for one instance.
+
+    This is the single place that decides "global or per-instance"; the launch
+    path and the resource views never read the isolation config themselves.
+    """
+    if cfg is None:
+        from launcher import config
+
+        cfg, _ = config.load()
+    root = game_dir or cfg.game_dir or paths.default_game_dir()
+    inst, folder = _require(instance_id, root)
+    isolated = isolation_enabled(inst, folder, getattr(cfg, "default_isolation", True))
+    launch_dir = folder if isolated else root
+
+    java_path: Path | None = None
+    if inst.settings.java:
+        candidate = Path(inst.settings.java)
+        if candidate.is_file():
+            java_path = candidate
+        else:
+            logging.getLogger(__name__).warning(
+                "Instance %s pins a missing Java runtime, falling back to auto-detect: %s",
+                instance_id,
+                candidate,
+            )
+
+    memory_gb = inst.settings.memory_gb
+    from_instance = memory_gb is not None
+    if memory_gb is None:
+        memory_gb = float(getattr(cfg, "memory_gb", 4.0))
+    jvm_args = " ".join(part for part in (getattr(cfg, "jvm_args", "") or "", inst.settings.jvm_args or "") if part).strip()
+
+    return ResolvedInstance(
+        id=instance_id,
+        game_dir=root,
+        launch_dir=launch_dir,
+        isolated=isolated,
+        java_path=java_path,
+        memory_gb=float(memory_gb),
+        jvm_args=jvm_args,
+        game_args=(inst.settings.game_args or "").strip(),
+        mods_dir=launch_dir / "mods",
+        memory_from_instance=from_instance,
+    )
 
 
 def create_instance(
@@ -230,87 +365,91 @@ def create_instance(
     *,
     cache_dir: Path | None = None,
 ) -> Instance:
-    """Create an instance: copy the version JSON and client jar into the instance folder."""
+    """Create an instance by copying an installed profile under a new id.
+
+    Used to keep several independent setups of the same game version; installing
+    a version normally creates its instance implicitly (one folder per version).
+    """
     name = validate_name(name or default_instance_name(version_id))
     target = instance_dir(game_dir, name)
     if target.exists():
         raise InstancesError(tr_core("instances.exists", name))
-
     gp = paths.GamePaths(game_dir)
-    version = load_version_json(
-        version_id,
-        versions_dir=gp.versions_dir,
-        cache_dir=cache_dir,
-    )
-    target_versions = target / "versions"
-    version_dir = target_versions / version_id
-    version_dir.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(
-        version.model_dump(by_alias=True, exclude_none=True),
-        ensure_ascii=False,
-        indent=2,
-    )
-    (version_dir / (version_id + ".json")).write_text(payload, encoding="utf-8")
-    source_jar = gp.version_dir(version_id) / version.client_jar_name
-    dest_jar = version_dir / version.client_jar_name
-    if source_jar.exists():
-        shutil.copyfile(source_jar, dest_jar)
-    # Deferred import to avoid a circular dependency with the launcher.mods package
-    from launcher.mods.installer import _copy_game_jar
+    source = gp.version_dir(version_id)
+    if not (source / (version_id + ".json")).is_file():
+        raise InstancesError(tr_core("instances.source_missing", version_id))
 
-    _copy_game_jar(version_id, target)  # copy of the loader profile's parent jar
+    target.mkdir(parents=True, exist_ok=True)
+    raw = json.loads((source / (version_id + ".json")).read_text(encoding="utf-8"))
+    raw["id"] = name  # the folder name is the profile id
+    (target / (name + ".json")).write_text(
+        json.dumps(raw, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
 
-    instance = Instance(name=name, version_id=version_id, created_at=time.time())
-    _write_folder_meta(target, instance)
+    version = load_version_json(name, versions_dir=gp.versions_dir, cache_dir=cache_dir)
+    dest_jar = target / version.client_jar_name
+    for candidate in (source / (version_id + ".jar"), source / version.client_jar_name):
+        if candidate.is_file():
+            shutil.copyfile(candidate, dest_jar)
+            break
+    else:
+        # A loader profile keeps no jar of its own: fill it from the parent version
+        from launcher.mods.installer import _copy_game_jar
+
+        _copy_game_jar(name, game_dir)
+
+    instance = Instance(id=name, display_name=name, created_at=time.time())
+    _write_sidecar(target, instance)
     return instance
 
 
-def rename_instance(name: str, new_name: str, game_dir: Path) -> Instance:
-    """Rename an instance: rename its folder and update the folder metadata."""
-    name = validate_name(name)
-    new_name = validate_name(new_name)
-    old_dir = instance_dir(game_dir, name)
-    new_dir = instance_dir(game_dir, new_name)
-    if not old_dir.is_dir():
-        raise InstancesError(tr_core("instances.missing", name))
+def rename_instance(instance_id: str, new_id: str, game_dir: Path) -> Instance:
+    """Rename an instance: move the folder and rewrite the profile id."""
+    instance_id = validate_name(instance_id)
+    new_id = validate_name(new_id)
+    old_dir = instance_dir(game_dir, instance_id)
+    new_dir = instance_dir(game_dir, new_id)
+    if not _is_instance_folder(old_dir):
+        raise InstancesError(tr_core("instances.missing", instance_id))
     if new_dir.exists():
         raise InstancesError(tr_core("instances.dir_exists", str(new_dir)))
-    inst = _load_folder_meta(old_dir)
+
+    inst = _read_sidecar(old_dir, instance_id)
     old_dir.rename(new_dir)
-    inst.name = new_name
-    _write_folder_meta(new_dir, inst)
+    # Rewrite the profile JSON: the id and its file name must follow the folder
+    raw = json.loads((new_dir / (instance_id + ".json")).read_text(encoding="utf-8"))
+    raw["id"] = new_id
+    (new_dir / (instance_id + ".json")).unlink()
+    (new_dir / (new_id + ".json")).write_text(
+        json.dumps(raw, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    old_jar = new_dir / (instance_id + ".jar")
+    if old_jar.is_file():
+        old_jar.replace(new_dir / (new_id + ".jar"))
+    inst.id = new_id
+    if not inst.display_name or inst.display_name == instance_id:
+        inst.display_name = new_id
+    _write_sidecar(new_dir, inst)
     return inst
 
 
-def update_instance_note(name: str, note: str) -> Instance:
-    """Update the instance note (stored in the folder metadata)."""
-    name = validate_name(name)
-    folder = instance_dir(_game_dir(), name)
-    if not folder.is_dir():
-        raise InstancesError(tr_core("instances.missing", name))
-    inst = _load_folder_meta(folder)
-    inst.note = note.strip()
-    _write_folder_meta(folder, inst)
-    return inst
+def delete_instance(instance_id: str, game_dir: Path) -> None:
+    _, folder = _require(instance_id, game_dir)
+    shutil.rmtree(folder, ignore_errors=True)
 
 
-def export_instance(name: str, dest_zip: Path, game_dir: Path) -> Path:
-    """Export the instance to a zip archive (version files/saves/mods/config and metadata)."""
-    name = validate_name(name)
-    source = instance_dir(game_dir, name)
-    if not source.is_dir():
-        raise InstancesError(tr_core("instances.missing", name))
+def export_instance(instance_id: str, dest_zip: Path, game_dir: Path) -> Path:
+    """Export the instance to a zip archive (files plus metadata)."""
+    inst, source = _require(instance_id, game_dir)
     dest_zip.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest_zip.with_name(dest_zip.name + ".tmp")
     with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr(
-            "instance.json",
-            json.dumps(
-                _load_folder_meta(source).model_dump(mode="json"), ensure_ascii=False, indent=2
-            ),
+            INSTANCE_META_FILENAME,
+            json.dumps(inst.model_dump(mode="json"), ensure_ascii=False, indent=2),
         )
         for path in source.rglob("*"):
-            # The folder's own instance.json is replaced by the freshly written root one
+            # The folder's own sidecar is replaced by the freshly written root one
             if path.is_file() and path.name != INSTANCE_META_FILENAME:
                 zf.write(path, path.relative_to(source).as_posix())
     tmp.replace(dest_zip)
@@ -323,19 +462,19 @@ def import_instance(
     """Import an instance from a zip: extract into the instance folder and write metadata."""
     with zipfile.ZipFile(zip_path) as zf:
         names = zf.namelist()
-        if "instance.json" not in names:
+        if INSTANCE_META_FILENAME not in names:
             raise InstancesError(tr_core("instances.import_invalid"))
         try:
-            meta = Instance.model_validate(json.loads(zf.read("instance.json")))
+            meta = Instance.model_validate(json.loads(zf.read(INSTANCE_META_FILENAME)))
         except (json.JSONDecodeError, ValueError) as exc:
             raise InstancesError(tr_core("instances.import_invalid")) from exc
-        name = validate_name(new_name or meta.name)
+        name = validate_name(new_name or meta.display_name or meta.id)
         target = instance_dir(game_dir, name)
         if target.exists():
             raise InstancesError(tr_core("instances.dir_exists", str(target)))
         target.mkdir(parents=True)
         for entry in names:
-            if entry == "instance.json" or entry.endswith(("/", "\\")):
+            if entry == INSTANCE_META_FILENAME or entry.endswith(("/", "\\")):
                 continue
             rel = Path(entry)
             if ".." in rel.parts:  # zip-slip protection
@@ -344,19 +483,29 @@ def import_instance(
             dest.parent.mkdir(parents=True, exist_ok=True)
             with zf.open(entry) as src, dest.open("wb") as dst:
                 shutil.copyfileobj(src, dst)
+
+    # The zip may carry the source ids in file names; align them with the import name
+    profile = target / (meta.id + ".json")
+    if meta.id != name and profile.is_file():
+        raw = json.loads(profile.read_text(encoding="utf-8"))
+        raw["id"] = name
+        profile.unlink()
+        (target / (name + ".json")).write_text(
+            json.dumps(raw, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        jar = target / (meta.id + ".jar")
+        if jar.is_file():
+            jar.replace(target / (name + ".jar"))
+
     inst = Instance(
-        name=name,
-        version_id=meta.version_id,
-        created_at=meta.created_at or time.time(),
+        id=name,
+        display_name=meta.display_name or name,
         note=meta.note or "",
+        star=meta.star,
+        created_at=meta.created_at or time.time(),
+        last_played=meta.last_played,
+        isolated=meta.isolated,
+        settings=meta.settings,
     )
-    _write_folder_meta(target, inst)
+    _write_sidecar(target, inst)
     return inst
-
-
-def delete_instance(name: str, game_dir: Path) -> None:
-    name = validate_name(name)
-    folder = instance_dir(game_dir, name)
-    if not folder.is_dir():
-        raise InstancesError(tr_core("instances.missing", name))
-    shutil.rmtree(folder, ignore_errors=True)

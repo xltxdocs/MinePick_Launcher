@@ -212,7 +212,7 @@ def test_build_argv_language_and_isolation(ws_tmp):
         profile=PROFILE,
         platform=WIN,
         resolved_libraries=[_one_lib()],
-        isolated=True,
+        launch_dir=ws_tmp / "mc" / "versions" / "1.20.1",
         language="en_us",
     )
     assert cmd2.cwd == ws_tmp / "mc" / "versions" / "1.20.1"
@@ -234,7 +234,7 @@ def test_build_argv_language_and_isolation(ws_tmp):
         profile=PROFILE,
         platform=WIN,
         resolved_libraries=[_one_lib()],
-        isolated=True,
+        launch_dir=ws_tmp / "mc" / "versions" / "1.8.9",
         language="zh_cn",
     )
     game3 = cmd3.argv[cmd3.argv.index("net.minecraft.client.main.Main") + 1 :]

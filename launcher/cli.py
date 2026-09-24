@@ -608,7 +608,7 @@ def cmd_launch(args: argparse.Namespace) -> int:
             demo=args.demo,
             window_width=args.width,
             window_height=args.height,
-            isolated=cfg.version_isolation,
+            isolated=cfg.default_isolation,
             language=language,
             force=args.refresh,
             jvm_args=jvm_args,
@@ -814,7 +814,7 @@ def cmd_mods(args: argparse.Namespace) -> int:
                 game_version=args.game_version,
                 version_id=args.version_id,
                 mod_version_id=args.version,
-                isolated=cfg.version_isolation,
+                isolated=cfg.default_isolation,
                 progress=_install_progress_printer(),
             )
             print()
@@ -831,7 +831,7 @@ def cmd_mods(args: argparse.Namespace) -> int:
                 game_version=args.game_version,
                 version_id=args.version_id,
                 mod_version_id=args.version,
-                isolated=cfg.version_isolation,
+                isolated=cfg.default_isolation,
                 progress=_install_progress_printer(),
             )
             print()
@@ -844,7 +844,7 @@ def cmd_mods(args: argparse.Namespace) -> int:
                 game_version=args.game_version,
                 version_id=args.version_id,
                 mod_version_id=args.version,
-                isolated=cfg.version_isolation,
+                isolated=cfg.default_isolation,
                 progress=_install_progress_printer(),
             )
             print()
@@ -899,10 +899,10 @@ def cmd_instance(args: argparse.Namespace) -> int:
     if args.instance_action == "list":
         instances = list_instances()
         if not instances:
-            print("（空）实例目录:", instance_dir(game_dir, "").parent)
+            print("（空）实例目录:", game_dir / "versions")
             return 0
-        for name, inst in sorted(instances.items()):
-            print(name, "->", inst.version_id)
+        for instance_id, inst in sorted(instances.items()):
+            print(instance_id, "->", inst.version_id)
         return 0
 
     if args.instance_action == "create":
@@ -991,18 +991,23 @@ def cmd_instance(args: argparse.Namespace) -> int:
     jvm_args = args.jvm_args if args.jvm_args is not None else (cfg.jvm_args or None)
 
     def do_prepare():
+        from launcher.instances import resolve_instance
+
+        resolved = resolve_instance(inst.id, cfg, game_dir)
         return prepare_launch(
             inst.version_id,
             game_dir=game_dir,
             cache_dir=probe_dir,
             account=account,
-            memory_gb=memory,
+            memory_gb=resolved.memory_gb if resolved.memory_from_instance else memory,
             demo=args.demo,
             window_width=args.width,
             window_height=args.height,
+            launch_dir=resolved.launch_dir,
+            java_path=resolved.java_path,
             language=language or None,
-            instance_name=inst.name,
-            jvm_args=jvm_args,
+            jvm_args=resolved.jvm_args or jvm_args,
+            game_args=resolved.game_args,
             server=args.server,
             server_port=args.port,
         )

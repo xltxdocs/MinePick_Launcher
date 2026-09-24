@@ -69,11 +69,11 @@ def test_settings_isolation_toggle_saves(app, monkeypatch, ws_tmp):
     page.isolation_check.setChecked(False)
     page.save()
     cfg, _ = config_mod.load()
-    assert cfg.version_isolation is False
+    assert cfg.default_isolation is False
     page.isolation_check.setChecked(True)
     page.save()
     cfg, _ = config_mod.load()
-    assert cfg.version_isolation is True
+    assert cfg.default_isolation is True
     window.close()
 
 
@@ -89,7 +89,7 @@ def test_settings_autosave_without_save_button(app, monkeypatch, ws_tmp):
     # a checkbox writes straight through
     page.isolation_check.setChecked(False)
     cfg, _ = config_mod.load()
-    assert cfg.version_isolation is False
+    assert cfg.default_isolation is False
 
     # a spin box writes straight through
     page.concurrency_spin.setValue(7)
@@ -316,10 +316,11 @@ def test_instance_name_via_userrole(app, monkeypatch, ws_tmp):
     _cfg, _p = config_mod.load()
     _cfg.game_dir = ws_tmp / "mc"
     config_mod.save(_cfg, _p)
-    folder = ws_tmp / "mc" / "instances" / "tricky"
+    folder = ws_tmp / "mc" / "versions" / "tricky"
     folder.mkdir(parents=True)
+    (folder / "tricky.json").write_text("{}", encoding="utf-8")
     (folder / INSTANCE_META_FILENAME).write_text(
-        json.dumps(Instance(name="tricky", version_id="1.20.1", created_at=1.0, note="备注   [干扰]").model_dump(mode="json")),
+        json.dumps(Instance(id="tricky", display_name="tricky", created_at=1.0, note="备注   [干扰]").model_dump(mode="json")),
         encoding="utf-8",
     )
     from gui.main_window import MainWindow
@@ -977,10 +978,11 @@ def test_instance_open_folder_button(app, monkeypatch, ws_tmp):
     _cfg, _p = config_mod.load()
     _cfg.game_dir = ws_tmp / "mc"
     config_mod.save(_cfg, _p)
-    folder = ws_tmp / "mc" / "instances" / "t"
+    folder = ws_tmp / "mc" / "versions" / "t"
     folder.mkdir(parents=True)
-    (folder / "instance.json").write_text(
-        json.dumps(Instance(name="t", version_id="1.20.1", created_at=1.0).model_dump(mode="json")),
+    (folder / "t.json").write_text("{}", encoding="utf-8")
+    (folder / "minepick.json").write_text(
+        json.dumps(Instance(id="t", created_at=1.0).model_dump(mode="json")),
         encoding="utf-8",
     )
     import gui.pages.instances_page as inst_page_mod
@@ -1021,15 +1023,16 @@ def test_instances_mods_panel_loads(app, monkeypatch, ws_tmp):
 
     _cfg, _p = config_mod.load()
     _cfg.game_dir = ws_tmp / "mc"
-    _cfg.version_isolation = False
+    _cfg.default_isolation = False  # the folder itself decides: it already holds mods
     config_mod.save(_cfg, _p)
-    inst_folder = ws_tmp / "mc" / "instances" / "t"
+    inst_folder = ws_tmp / "mc" / "versions" / "t"
     inst_folder.mkdir(parents=True)
-    (inst_folder / "instance.json").write_text(
-        json.dumps(Instance(name="t", version_id="1.20.1", created_at=1.0).model_dump(mode="json")),
+    (inst_folder / "t.json").write_text("{}", encoding="utf-8")
+    (inst_folder / "minepick.json").write_text(
+        json.dumps(Instance(id="t", created_at=1.0).model_dump(mode="json")),
         encoding="utf-8",
     )
-    mods_dir = ws_tmp / "mc" / "instances" / "t" / "mods"
+    mods_dir = inst_folder / "mods"
     mods_dir.mkdir(parents=True)
     with zipfile.ZipFile(mods_dir / "demo.jar", "w") as zf:
         zf.writestr(
@@ -1120,10 +1123,13 @@ def test_instances_page_lists_base_versions(app, monkeypatch, ws_tmp):
         d = game / "versions" / vid
         d.mkdir(parents=True)
         (d / (vid + ".json")).write_text("{}", encoding="utf-8")
-    custom = game / "instances" / "custom1"
+    custom = game / "versions" / "custom1"
     custom.mkdir(parents=True)
+    (custom / "custom1.json").write_text("{}", encoding="utf-8")
     (custom / INSTANCE_META_FILENAME).write_text(
-        json.dumps(Instance(name="custom1", version_id="1.20.1", created_at=1.0).model_dump(mode="json")),
+        json.dumps(
+            Instance(id="custom1", display_name="红石测试", created_at=1.0).model_dump(mode="json")
+        ),
         encoding="utf-8",
     )
     cfg, cfg_path = config_mod.load()
@@ -1137,8 +1143,8 @@ def test_instances_page_lists_base_versions(app, monkeypatch, ws_tmp):
         page = window.pages["instances"]
         items = [page.list.item(i).text() for i in range(page.list.count())]
         assert "1.20.1" in items
-        assert "Fabric 0.15.11-1.20.1" in items
-        assert any("custom1" in t for t in items)
+        assert any("Fabric 0.15.11-1.20.1" in t for t in items)
+        assert any(t.startswith("红石测试") for t in items)  # display name wins over the id
     finally:
         if window is not None:
             window.close()
