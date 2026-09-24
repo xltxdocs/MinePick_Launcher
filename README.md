@@ -27,6 +27,12 @@ single portable EXE.
     <td align="center"><sub>Instances &amp; local mod manager</sub></td>
     <td align="center"><sub>Settings (interface customisation)</sub></td>
   </tr>
+  <tr>
+    <td colspan="2"><img src="docs/screenshots/diagnosis_en.png" width="720" alt="Crash diagnosis dialog"/></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><sub>Crash diagnosis, over a blurred backdrop</sub></td>
+  </tr>
 </table>
 
 ## Interface
@@ -61,15 +67,32 @@ single portable EXE.
 ### Versions & Java
 - Official version manifest with category tabs (release / snapshot / April Fools / legacy), "Latest release"
   and "Latest snapshot" cards, name search, one-click install & uninstall, version details
-- Version isolation: each version keeps its own saves / mods / configuration
+- Isolation is decided per instance — always isolated, never, or follow the policy for new instances
+  (an instance that already holds mods or saves keeps its own folder automatically)
 - Java requirement mapping (1.16.5→8, 1.17–1.20.4→17, 1.20.5–1.21.11→21, 26.1+→25) with automatic Adoptium
   download and a runtime manager
 
 ### Launching & instances
 - Memory suggestion from mod count and free RAM, custom JVM arguments, server direct-connect, game language,
   "after the game starts" behaviour, working-set trimming
-- Isolated instances with notes, rename, import/export, and a per-instance local mod manager (reads jar
-  metadata for Fabric / Quilt / NeoForge / Forge / mcmod.info, enable/disable, search & filter, drag-and-drop)
+- Instances are version folders: every installed version *is* an instance, so nothing is duplicated and
+  nothing has to be created first. Each one keeps its own saves / mods / configuration, and its own
+  overrides for isolation, Java, memory, JVM arguments and extra game arguments — each of which can
+  follow the global value or be reset in one action
+- The instances page is a list plus a detail view with tabs for overview, mods, resources, saves,
+  settings and diagnosis; instances carry notes, can be renamed, exported and imported, and the local
+  mod manager reads jar metadata (Fabric / Quilt / NeoForge / Forge / mcmod.info) with enable/disable,
+  search & filter and drag-and-drop
+
+### Crash & launch diagnosis
+- When a launch fails or the game exits abnormally, the launcher reads the game log, the crash reports,
+  any `hs_err` file and the output of the run it just watched, matches them against a built-in knowledge
+  base and explains **what probably happened, why and what to do about it**, with a stable error code
+  (`MPL-Launch-####` for launcher-side failures, `MPL-Crash-####` for game-side crashes)
+- The explanation appears in a dialog over a blurred backdrop and can be exported as a report (access
+  tokens and user paths are masked) or copied as code plus summary; the automatic analysis and the blur
+  can each be switched off, and every diagnosis is recorded per instance. Analysis is local — nothing is
+  uploaded
 
 ### Resources
 - Mods, resource packs, shaders and modpacks from **Modrinth** and **CurseForge**, the top 30 by downloads on each tab,

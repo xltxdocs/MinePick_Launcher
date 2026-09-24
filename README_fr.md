@@ -27,6 +27,12 @@ dans un seul EXE portable.
     <td align="center"><sub>Instances et gestionnaire de mods local</sub></td>
     <td align="center"><sub>Paramètres (personnalisation de l'interface)</sub></td>
   </tr>
+  <tr>
+    <td colspan="2"><img src="docs/screenshots/diagnosis_fr.png" width="720" alt="Fenêtre de diagnostic de plantage"/></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><sub>Diagnostic de plantage, sur un arrière-plan flouté</sub></td>
+  </tr>
 </table>
 
 ## Interface
@@ -63,7 +69,9 @@ dans un seul EXE portable.
 - Manifeste officiel des versions avec onglets par catégorie (version stable / snapshot / poisson d'avril /
   anciennes), cartes « Dernière version stable » et « Dernier snapshot », recherche par nom, installation et
   désinstallation en un clic, détails de version
-- Isolation des versions : chaque version conserve ses propres sauvegardes / mods / configurations
+- L'isolation se décide instance par instance — soit toujours isolée, soit jamais, soit selon la politique
+  des nouvelles instances (une instance qui contient déjà des mods ou des sauvegardes conserve
+  automatiquement son propre dossier)
 - Correspondance des exigences Java (1.16.5→8, 1.17–1.20.4→17, 1.20.5–1.21.11→21, 26.1+→25) avec téléchargement
   automatique depuis Adoptium et un gestionnaire de runtimes
 
@@ -71,9 +79,27 @@ dans un seul EXE portable.
 - Suggestion de mémoire selon le nombre de mods et la RAM disponible, arguments JVM personnalisés, connexion
   directe au serveur, langue du jeu, comportement « après le lancement du jeu »,
   libération de la mémoire du lanceur
-- Instances isolées avec notes, renommage, import/export, et un gestionnaire de mods local par instance (lecture
-  des métadonnées jar pour Fabric / Quilt / NeoForge / Forge / mcmod.info, activation/désactivation, recherche et
-  filtrage, glisser-déposer)
+- Les instances sont des dossiers de version : chaque version installée *est* une instance, rien n'est donc
+  dupliqué et rien n'a besoin d'être créé au préalable. Chacune conserve ses propres sauvegardes / mods /
+  configuration, ainsi que ses propres réglages pour l'isolation, Java, la mémoire, les arguments JVM et
+  les arguments de jeu supplémentaires — chacun pouvant suivre la valeur globale ou être réinitialisé en
+  une seule action
+- La page des instances est une liste, avec une vue détaillée comportant des onglets aperçu, mods,
+  ressources, sauvegardes, réglages et diagnostic ; les instances acceptent des notes, peuvent être
+  renommées, exportées et importées, et le gestionnaire de mods local lit les métadonnées des fichiers jar
+  (Fabric / Quilt / NeoForge / Forge / mcmod.info) avec activation/désactivation, recherche, filtrage et
+  glisser-déposer
+
+### Diagnostic de plantage et de lancement
+- Lorsqu'un lancement échoue ou que le jeu se termine anormalement, le lanceur lit le journal du jeu, les
+  rapports de plantage, un éventuel fichier `hs_err` et la sortie de l'exécution qu'il vient d'observer, les
+  confronte à une base de connaissances intégrée et explique **ce qui s'est probablement passé, pourquoi et
+  que faire**, avec un code d'erreur stable (`MPL-Launch-####` pour les échecs côté lanceur,
+  `MPL-Crash-####` pour les plantages côté jeu)
+- L'explication s'affiche dans une fenêtre par-dessus un arrière-plan flouté et peut être exportée sous
+  forme de rapport (jetons d'accès et chemins utilisateur masqués) ou copiée sous forme de code d'erreur et
+  de résumé ; l'analyse automatique et le flou peuvent être désactivés indépendamment, et chaque diagnostic
+  est enregistré pour l'instance concernée. L'analyse est locale — rien n'est envoyé
 
 ### Ressources
 - Mods, packs de ressources, shaders et modpacks depuis **Modrinth** et **CurseForge**, top 30 des plus téléchargés

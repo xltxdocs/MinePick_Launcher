@@ -27,6 +27,12 @@ einzelne portable EXE.
     <td align="center"><sub>Instanzen &amp; lokaler Mod-Manager</sub></td>
     <td align="center"><sub>Einstellungen (Anpassung der Oberfläche)</sub></td>
   </tr>
+  <tr>
+    <td colspan="2"><img src="docs/screenshots/diagnosis_de.png" width="720" alt="Absturzdiagnose-Dialog"/></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><sub>Absturzdiagnose, über einem weichgezeichneten Hintergrund</sub></td>
+  </tr>
 </table>
 
 ## Oberfläche
@@ -61,15 +67,33 @@ einzelne portable EXE.
 ### Versionen & Java
 - Offizielles Versions-Manifest mit Kategorie-Tabs (Release / Snapshot / Aprilscherz / Legacy), Karten „Neueste
   Version“ und „Neuester Snapshot“, Namenssuche, Ein-Klick-Installation & -Deinstallation, Versionsdetails
-- Versionsisolierung: Jede Version behält ihre eigenen Spielstände / Mods / Konfiguration
+- Isolation wird pro Instanz entschieden — immer isoliert, nie, oder der Richtlinie für neue Instanzen
+  folgen (eine Instanz, die bereits Mods oder Spielstände enthält, behält automatisch ihren eigenen Ordner)
 - Java-Anforderungszuordnung (1.16.5→8, 1.17–1.20.4→17, 1.20.5–1.21.11→21, 26.1+→25) mit automatischem
   Adoptium-Download und Runtime-Manager
 
 ### Start & Instanzen
 - Speicherempfehlung anhand Mod-Anzahl und verfügbarem RAM, eigene JVM-Argumente, Server-Direktverbindung,
   Spielsprache, Verhalten „Nach dem Spielstart“, Freigabe des Launcher-Arbeitsspeichers
-- Isolierte Instanzen mit Notizen, Umbenennen, Import/Export und einem lokalen Mod-Manager pro Instanz (liest
-  Jar-Metadaten für Fabric / Quilt / NeoForge / Forge / mcmod.info, Aktivieren/Deaktivieren, Suchen & Filtern, Drag-and-Drop)
+- Instanzen sind Versionsordner: jede installierte Version *ist* eine Instanz, es wird also nichts
+  dupliziert und nichts muss zuerst angelegt werden. Jede behält ihre eigenen Spielstände / Mods /
+  Konfiguration und ihre eigenen Abweichungen für Isolation, Java, Speicher, JVM-Argumente und
+  zusätzliche Spielargumente — all das kann dem globalen Wert folgen oder mit einer Aktion zurückgesetzt werden
+- Die Instanzenseite ist eine Liste plus eine Detailansicht mit Tabs für Übersicht, Mods, Ressourcen,
+  Spielstände, Einstellungen und Diagnose; Instanzen tragen Notizen, lassen sich umbenennen, exportieren
+  und importieren, und der lokale Mod-Manager liest jar-Metadaten (Fabric / Quilt / NeoForge / Forge /
+  mcmod.info) mit Aktivieren/Deaktivieren, Suchen & Filtern und Drag-and-Drop
+
+### Absturz- & Startdiagnose
+- Wenn ein Start fehlschlägt oder das Spiel ungewöhnlich beendet wird, liest der Launcher das Spiel-Log,
+  die Absturzberichte, eine etwaige `hs_err`-Datei und die Ausgabe des gerade überwachten Laufs, gleicht
+  sie mit einer eingebauten Wissensdatenbank ab und erklärt **was wahrscheinlich passiert ist, warum und
+  was dagegen zu tun ist** — mit stabilem Fehlercode (`MPL-Launch-####` für Fehler auf Launcher-Seite,
+  `MPL-Crash-####` für Abstürze auf Spiel-Seite)
+- Die Erklärung erscheint in einem Dialog über einem weichgezeichneten Hintergrund und kann als Bericht
+  exportiert (Zugriffstoken und Benutzerpfade werden maskiert) oder als Code plus Zusammenfassung kopiert
+  werden; die automatische Analyse und die Weichzeichnung lassen sich jeweils abschalten, und jede
+  Diagnose wird pro Instanz aufgezeichnet. Die Analyse erfolgt lokal — nichts wird hochgeladen
 
 ### Ressourcen
 - Mods, Ressourcenpakete, Shader und Modpacks von **Modrinth** und **CurseForge**, pro Tab die Top 30 nach

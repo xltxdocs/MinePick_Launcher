@@ -27,6 +27,12 @@ recursos de Modrinth y CurseForge, cargadores Fabric/Forge/NeoForge/Quilt, insta
     <td align="center"><sub>Instancias &amp; gestor de mods local</sub></td>
     <td align="center"><sub>Ajustes (personalización de la interfaz)</sub></td>
   </tr>
+  <tr>
+    <td colspan="2"><img src="docs/screenshots/diagnosis_es.png" width="720" alt="Cuadro de diálogo de diagnóstico de fallos"/></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><sub>Diagnóstico de fallos, sobre un fondo desenfocado</sub></td>
+  </tr>
 </table>
 
 ## Interfaz
@@ -62,15 +68,33 @@ recursos de Modrinth y CurseForge, cargadores Fabric/Forge/NeoForge/Quilt, insta
 - Lista oficial de versiones con pestañas por categoría (estable / snapshot / día de los inocentes / heredadas), tarjetas
   «Última versión estable» y «Última snapshot», búsqueda por nombre, instalación y desinstalación en un clic,
   detalles de la versión
-- Aislamiento de versiones: cada versión conserva sus propios guardados / mods / configuración
+- El aislamiento se decide por instancia — siempre aislada, nunca, o seguir la política para las instancias
+  nuevas (una instancia que ya contiene mods o guardados conserva su propia carpeta automáticamente)
 - Correspondencia de requisitos de Java (1.16.5→8, 1.17–1.20.4→17, 1.20.5–1.21.11→21, 26.1+→25) con descarga automática
   desde Adoptium y un gestor de runtimes
 
 ### Inicio e instancias
 - Sugerencia de memoria según el número de mods y la RAM libre, argumentos de JVM personalizados, conexión directa a
   servidores, idioma del juego, comportamiento «tras iniciar el juego», liberación de la memoria del launcher
-- Instancias aisladas con notas, renombrado, importación/exportación y un gestor de mods local por instancia (lee los
-  metadatos del jar de Fabric / Quilt / NeoForge / Forge / mcmod.info, activar/desactivar, búsqueda y filtro, arrastrar y soltar)
+- Las instancias son carpetas de versión: cada versión instalada *es* una instancia, así que nada se
+  duplica y no hay que crear nada primero. Cada una conserva sus propios guardados / mods / configuración
+  y sus propios ajustes de aislamiento, Java, memoria, argumentos de JVM y argumentos adicionales del
+  juego — cada uno de los cuales puede seguir el valor global o restablecerse en una sola acción
+- La página de instancias es una lista más una vista de detalle con pestañas de resumen, mods, recursos,
+  guardados, ajustes y diagnóstico; las instancias admiten notas, se pueden renombrar, exportar e importar,
+  y el gestor de mods local lee los metadatos del jar (Fabric / Quilt / NeoForge / Forge / mcmod.info) y
+  admite activar/desactivar, búsqueda y filtro, y arrastrar y soltar
+
+### Diagnóstico de fallos e inicio
+- Cuando un inicio falla o el juego termina de forma anómala, el launcher lee el registro del juego, los
+  informes de fallo, cualquier archivo `hs_err` y la salida de la ejecución que acaba de supervisar, los
+  compara con una base de conocimiento integrada y explica **qué ha pasado probablemente, por qué y qué
+  hacer al respecto**, con un código de error estable (`MPL-Launch-####` para fallos del launcher,
+  `MPL-Crash-####` para fallos del juego)
+- La explicación aparece en un diálogo sobre un fondo desenfocado y se puede exportar como informe (los
+  tokens de acceso y las rutas del usuario se enmascaran) o copiar como código más resumen; el análisis
+  automático y el desenfoque se pueden desactivar por separado, y cada diagnóstico se registra por
+  instancia. El análisis es local: no se sube nada
 
 ### Recursos
 - Mods, paquetes de recursos, shaders y modpacks de **Modrinth** y **CurseForge**, top 30 por descargas en cada pestaña,
