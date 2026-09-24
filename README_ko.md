@@ -1,16 +1,12 @@
 [English](README.md) | [简体中文](README_zh.md) | [繁體中文](README_zh_TW.md) | [日本語](README_ja.md) | **한국어** | [Русский](README_ru.md) | [Français](README_fr.md) | [Español](README_es.md) | [Deutsch](README_de.md)
 
-# MinePick Launcher — UI Trial
+# MinePick Launcher
 
 Python + PySide6로 만든 포터블 Minecraft 런처: Microsoft/오프라인 계정, 버전 설치,
 Modrinth & CurseForge 리소스, Fabric/Forge/NeoForge/Quilt 로더, 격리된 인스턴스 — 단일
 포터블 EXE로 패키징되어 있습니다.
 
-**이 저장소는 인터페이스 시험 라인(버전 0.1.5)입니다.** 메인 프로젝트와 동일한 런처 기능 세트에
-아래에 설명된 인터페이스 개편을 더했으며, **GUI 빌드만** 제공합니다 — 여기에는 CLI
-실행 파일이 없습니다.
-
-> 메인 런처: [xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
+**현재 버전 0.2.0** —— GUI 빌드만 제공하며, 이 저장소에는 CLI 실행 파일이 없습니다.
 
 ## 스크린샷
 
@@ -33,7 +29,7 @@ Modrinth & CurseForge 리소스, Fabric/Forge/NeoForge/Quilt 로더, 격리된 �
   </tr>
 </table>
 
-## 인터페이스(이 라인에서 바뀐 점)
+## 인터페이스
 
 - **창 안에서 진행되는 최초 실행 마법사** — 환영 안내가 별도 대화 상자가 아니라 메인 창 내부의 오버레이
   (왼쪽에 단계 안내, 오른쪽에 콘텐츠, 아래쪽에 동작 표시줄)로 표시되며, 완료하면
@@ -79,9 +75,15 @@ Modrinth & CurseForge 리소스, Fabric/Forge/NeoForge/Quilt 로더, 격리된 �
 - **Modrinth**와 **CurseForge**의 모드, 리소스팩, 셰이더, 모드팩, 탭별 다운로드 수 기준 인기 Top 30,
   키워드 검색, 원클릭 설치, `.mrpack` 모드팩 설치
 
+### 정보 및 업데이트
+- **「정보」페이지**: 현재 버전, 소스 코드 링크, 라이선스 및 법적 고지, 서드파티 감사 인사, 그리고 설치된
+  버전과 GitHub 최신 릴리스를 비교하는 업데이트 확인
+- **자동 업데이트 4단계**: 내려받아 설치 / 내려받고 알림(기본) / 알림만 / 자동 확인 안 함.
+  자동 설치가 불가능하면 릴리스 페이지를 여는 동작으로 대체됩니다
+
 ## 다운로드 및 사용법
 
-릴리스 페이지에서 `MinePick_UI_Trial.exe`를 내려받아 더블 클릭하면 됩니다 — 설치 프로그램도, 콘솔 창도
+릴리스 페이지에서 `MinePick_Launcher.exe`를 내려받아 더블 클릭하면 됩니다 — 설치 프로그램도, 콘솔 창도
 없습니다. 처음 실행하면 EXE 옆에 `config/` 폴더가 생성되므로 설정, 계정, 인스턴스가
 한 폴더 안에 유지됩니다.
 
@@ -95,7 +97,7 @@ Modrinth & CurseForge 리소스, Fabric/Forge/NeoForge/Quilt 로더, 격리된 �
 ```powershell
 pip install -r requirements-dev.txt
 python -m gui                # run the GUI
-pytest -q                    # tests (240+)
+pytest -q                    # tests
 ruff check launcher gui tests
 ```
 
@@ -117,5 +119,5 @@ GPL 소스 배포 요구 사항을 충족합니다.
 
 ## 관련 프로젝트
 
-- [MinePick Launcher](https://github.com/xltxdocs/MinePick_Launcher) — 메인 런처(GUI + CLI)
+- [MinePick Launcher Classic](https://github.com/xltxdocs/MinePick_Launcher_Classic) — 이 프로젝트의 전신(보관됨, GUI + CLI)
 - [MinePick Launcher Revision](https://github.com/TheDarkLord234/MinePick_Launcher_Revision) — 커뮤니티 동료가 만든 개정판

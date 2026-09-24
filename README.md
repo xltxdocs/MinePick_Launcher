@@ -1,16 +1,12 @@
 **English** | [简体中文](README_zh.md) | [繁體中文](README_zh_TW.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [Русский](README_ru.md) | [Français](README_fr.md) | [Español](README_es.md) | [Deutsch](README_de.md)
 
-# MinePick Launcher — UI Trial
+# MinePick Launcher
 
 A portable Minecraft launcher built with Python + PySide6: Microsoft/offline accounts, version installation,
 Modrinth & CurseForge resources, Fabric/Forge/NeoForge/Quilt loaders, isolated instances — packaged as a
 single portable EXE.
 
-**This repository is the UI trial line (version 0.1.5).** It has the same launcher feature set as the
-main project plus the interface rework described below, and it ships a **GUI build only** — there is no CLI
-executable here.
-
-> Main launcher: [xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
+**Current release: 0.2.0** — a GUI build only: this repository ships no command-line executable.
 
 ## Screenshots
 
@@ -33,7 +29,7 @@ executable here.
   </tr>
 </table>
 
-## Interface (what this line changes)
+## Interface
 
 - **First-run wizard, in the window** — the welcome flow is an overlay inside the main window
   (step rail on the left, content on the right, action bar at the bottom) instead of a separate
@@ -79,9 +75,15 @@ executable here.
 - Mods, resource packs, shaders and modpacks from **Modrinth** and **CurseForge**, the top 30 by downloads on each tab,
   keyword search, one-click install, `.mrpack` modpack install
 
+### About & updates
+- An **About** page: the installed version, a link to the source code, the licence and legal notices,
+  third-party credits, and an update checker that compares this build with the latest GitHub release
+- **Four automatic-update modes** — download & install, download & notify (default), notify only, or no
+  automatic check; whenever installing is not possible the launcher falls back to opening the release page
+
 ## Download & usage
 
-Grab `MinePick_UI_Trial.exe` from the Releases page and double-click it — no installer, no console window.
+Grab `MinePick_Launcher.exe` from the Releases page and double-click it — no installer, no console window.
 On first run a `config/` folder is created next to the EXE, so settings, accounts and instances stay inside
 one folder.
 
@@ -95,7 +97,7 @@ Everything is configured inside the app: **settings apply immediately, there is 
 ```powershell
 pip install -r requirements-dev.txt
 python -m gui                # run the GUI
-pytest -q                    # tests (240+)
+pytest -q                    # tests
 ruff check launcher gui tests
 ```
 
@@ -117,5 +119,5 @@ satisfies the GPL source-distribution requirement.
 
 ## Related projects
 
-- [MinePick Launcher](https://github.com/xltxdocs/MinePick_Launcher) — the main launcher (GUI + CLI)
+- [MinePick Launcher Classic](https://github.com/xltxdocs/MinePick_Launcher_Classic) — the archived predecessor of this launcher (GUI + CLI)
 - [MinePick Launcher Revision](https://github.com/TheDarkLord234/MinePick_Launcher_Revision) — a revised edition maintained by a community member

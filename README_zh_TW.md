@@ -1,15 +1,12 @@
 [English](README.md) | [简体中文](README_zh.md) | **繁體中文** | [日本語](README_ja.md) | [한국어](README_ko.md) | [Русский](README_ru.md) | [Français](README_fr.md) | [Español](README_es.md) | [Deutsch](README_de.md)
 
-# MinePick Launcher — UI Trial
+# MinePick Launcher
 
 以 Python + PySide6 打造的免安裝 Minecraft 啟動器：Microsoft/離線帳號、版本安裝、
 Modrinth 與 CurseForge 資源、Fabric/Forge/NeoForge/Quilt 載入器、隔離實例 ——
 打包成單一免安裝 EXE。
 
-**本儲存庫是介面試驗線（版本 0.1.5）。** 啟動器功能與主專案相同，再加上以下介面重做；
-而且**只提供 GUI 版** —— 這裡沒有 CLI 執行檔。
-
-> 主線啟動器：[xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
+**目前版本 0.2.0** —— 只提供 GUI 版，本儲存庫不含命令列執行檔。
 
 ## 介面截圖
 
@@ -32,7 +29,7 @@ Modrinth 與 CurseForge 資源、Fabric/Forge/NeoForge/Quilt 載入器、隔離�
   </tr>
 </table>
 
-## 介面（本線改了什麼）
+## 介面
 
 - **視窗內的首次啟動精靈** —— 歡迎流程是主視窗內的覆蓋層（左側步驟導覽列、右側內容、底部操作列），
   而不是獨立對話方塊，完成後直接關閉並交回主視窗
@@ -74,9 +71,13 @@ Modrinth 與 CurseForge 資源、Fabric/Forge/NeoForge/Quilt 載入器、隔離�
 - 來自 **Modrinth** 與 **CurseForge** 的模組、資源包、光影與整合包，每個頁籤依下載次數排序的 Top 30、
   關鍵字搜尋（包含中文社群譯名）、一鍵安裝、`.mrpack` 整合包安裝
 
+### 關於與更新
+- **「關於」頁**:顯示目前版本、查看原始碼、授權與法律資訊、第三方鳴謝,並內建更新檢查(把本機版本與 GitHub 最新發佈比對)
+- **自動更新四檔**:自動下載並安裝、自動下載並提示(預設)、提示更新、不自動檢查;無法自動安裝時一律回退為開啟下載頁
+
 ## 下載與使用
 
-從 Releases 頁面取得 `MinePick_UI_Trial.exe` 並雙擊執行 —— 免安裝、沒有主控台視窗。
+從 Releases 頁面取得 `MinePick_Launcher.exe` 並雙擊執行 —— 免安裝、沒有主控台視窗。
 首次執行時會在 EXE 旁邊建立 `config/` 資料夾，因此設定、帳號與實例都留在同一個資料夾裡。
 
 所有設定都在應用程式內調整：**設定即時生效，沒有儲存按鈕。**
@@ -89,7 +90,7 @@ Modrinth 與 CurseForge 資源、Fabric/Forge/NeoForge/Quilt 載入器、隔離�
 ```powershell
 pip install -r requirements-dev.txt
 python -m gui                # run the GUI
-pytest -q                    # tests (240+)
+pytest -q                    # tests
 ruff check launcher gui tests
 ```
 
@@ -111,5 +112,5 @@ GPL-3.0-only —— 見 [LICENSE](LICENSE)。每次發布隨附的原始碼套�
 
 ## 相關專案
 
-- [MinePick Launcher](https://github.com/xltxdocs/MinePick_Launcher) —— 主線啟動器（GUI + CLI）
+- [MinePick Launcher Classic](https://github.com/xltxdocs/MinePick_Launcher_Classic) —— 本專案的前身，已封存（GUI + CLI）
 - [MinePick Launcher Revision](https://github.com/TheDarkLord234/MinePick_Launcher_Revision) —— 由社群成員製作的修訂版

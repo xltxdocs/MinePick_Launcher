@@ -1,14 +1,11 @@
 [English](README.md) | **简体中文** | [繁體中文](README_zh_TW.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [Русский](README_ru.md) | [Français](README_fr.md) | [Español](README_es.md) | [Deutsch](README_de.md)
 
-# MinePick Launcher — UI Trial
+# MinePick Launcher
 
 基于 Python + PySide6 的便携版 Minecraft 启动器：微软正版 / 离线登录、版本安装、Modrinth 与 CurseForge 资源、
 Fabric/Forge/NeoForge/Quilt 加载器、实例隔离管理 —— 打包为免安装单文件 EXE。
 
-**本仓库是界面试验线（版本 0.1.5）**：启动器功能与主线一致，区别在于下面这套界面重做；并且**只提供 GUI 版**，
-不含命令行版可执行文件。
-
-> 主线启动器：[xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
+**当前版本 0.2.0** —— 只提供 GUI 版，本仓库不含命令行可执行文件。
 
 ## 界面演示
 
@@ -31,7 +28,7 @@ Fabric/Forge/NeoForge/Quilt 加载器、实例隔离管理 —— 打包为免�
   </tr>
 </table>
 
-## 界面（本线改了什么）
+## 界面
 
 - **窗口内的首次向导** —— 欢迎流程是主窗口里的覆盖层（左侧步骤栏、右侧内容、底部操作栏），不再是独立弹窗；
   完成后直接关闭并交回主窗口
@@ -68,9 +65,13 @@ Fabric/Forge/NeoForge/Quilt 加载器、实例隔离管理 —— 打包为免�
 - 来自 **Modrinth** 与 **CurseForge** 的模组 / 资源包 / 光影 / 整合包，每个页签按下载量排序的 Top 30、
   关键词搜索（含社区中文译名）、一键安装、`.mrpack` 整合包安装
 
+### 关于与更新
+- **「关于」页**:显示当前版本、查看源代码、许可与法律信息、第三方鸣谢,并内置更新检查(把本机版本与 GitHub 最新发布比对)
+- **自动更新四档**:自动下载并安装、自动下载并提示(默认)、提示更新、不自动检查;无法自动安装时一律回退为打开下载页
+
 ## 下载与使用
 
-到 Releases 页下载 `MinePick_UI_Trial.exe`，双击即用 —— 免安装、无控制台窗口。首次运行会在 EXE 同目录生成
+到 Releases 页下载 `MinePick_Launcher.exe`，双击即用 —— 免安装、无控制台窗口。首次运行会在 EXE 同目录生成
 `config/` 文件夹，配置、账号与实例都留在这一个文件夹里。
 
 所有设置都在界面内调整：**改完即生效，没有保存按钮。**
@@ -83,7 +84,7 @@ Fabric/Forge/NeoForge/Quilt 加载器、实例隔离管理 —— 打包为免�
 ```powershell
 pip install -r requirements-dev.txt
 python -m gui                # run the GUI
-pytest -q                    # tests (240+)
+pytest -q                    # tests
 ruff check launcher gui tests
 ```
 
@@ -104,5 +105,5 @@ GPL-3.0-only —— 见 [LICENSE](LICENSE)。每次发布附带的源码包（`S
 
 ## 相关项目
 
-- [MinePick Launcher](https://github.com/xltxdocs/MinePick_Launcher) —— 主线启动器（GUI + CLI）
+- [MinePick Launcher Classic](https://github.com/xltxdocs/MinePick_Launcher_Classic) —— 本项目的前身，已归档（GUI + CLI）
 - [MinePick Launcher Revision](https://github.com/TheDarkLord234/MinePick_Launcher_Revision) —— 由社区成员基于主线改制的修订版

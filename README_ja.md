@@ -1,16 +1,12 @@
 [English](README.md) | [简体中文](README_zh.md) | [繁體中文](README_zh_TW.md) | **日本語** | [한국어](README_ko.md) | [Русский](README_ru.md) | [Français](README_fr.md) | [Español](README_es.md) | [Deutsch](README_de.md)
 
-# MinePick Launcher — UI Trial
+# MinePick Launcher
 
 Python + PySide6 で作られたポータブルな Minecraft ランチャー：Microsoft アカウントとオフラインアカウント、バージョンの
 インストール、Modrinth と CurseForge のリソース、Fabric/Forge/NeoForge/Quilt ローダー、分離された
 インスタンス — 単一のポータブル EXE としてパッケージ化されています。
 
-**このリポジトリはインターフェース試験版（バージョン 0.1.5）です。** 本体プロジェクトと同じ
-ランチャー機能に、以下で説明するインターフェースの刷新を加えたもので、**GUI ビルドのみ**を提供します —
-CLI 実行ファイルは含まれていません。
-
-> 本体のランチャー: [xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
+**現在のバージョンは 0.2.0** —— GUI ビルドのみで、このリポジトリに CLI 実行ファイルは含まれていません。
 
 ## スクリーンショット
 
@@ -33,7 +29,7 @@ CLI 実行ファイルは含まれていません。
   </tr>
 </table>
 
-## インターフェース（このラインでの変更点）
+## インターフェース
 
 - **初回起動ウィザード（ウィンドウ内）** — ウェルカムフローは別ダイアログではなくメインウィンドウ内の
   オーバーレイ（左にステップバー、右にコンテンツ、下にアクションバー）で表示され、完了すると
@@ -79,9 +75,15 @@ CLI 実行ファイルは含まれていません。
 - **Modrinth** と **CurseForge** の Mod、リソースパック、シェーダー、Mod パック、タブごとのダウンロード数
   Top 30、キーワード検索、ワンクリックインストール、`.mrpack` Mod パックのインストール
 
+### 概要と更新
+- **「概要」ページ**:現在のバージョン、ソースコードへのリンク、ライセンスと法的情報、サードパーティの謝辞、
+  そしてインストール済みバージョンと GitHub の最新リリースを比較する更新チェック
+- **自動更新の4段階**:ダウンロードしてインストール / ダウンロードして通知(既定)/ 通知のみ / 自動チェックしない。
+  自動インストールができない場合は、必ずリリースページを開く動作に切り替わります
+
 ## ダウンロードと使い方
 
-Releases ページから `MinePick_UI_Trial.exe` を入手してダブルクリックするだけです — インストーラーもコンソール
+Releases ページから `MinePick_Launcher.exe` を入手してダブルクリックするだけです — インストーラーもコンソール
 ウィンドウもありません。初回起動時には EXE の隣に `config/` フォルダーが作成されるため、設定・アカウント・
 インスタンスは 1 つのフォルダー内に収まります。
 
@@ -95,7 +97,7 @@ Releases ページから `MinePick_UI_Trial.exe` を入手してダブルクリ�
 ```powershell
 pip install -r requirements-dev.txt
 python -m gui                # run the GUI
-pytest -q                    # tests (240+)
+pytest -q                    # tests
 ruff check launcher gui tests
 ```
 
@@ -117,5 +119,5 @@ GPL のソース配布要件を満たします。
 
 ## 関連プロジェクト
 
-- [MinePick Launcher](https://github.com/xltxdocs/MinePick_Launcher) — 本体のランチャー（GUI + CLI）
+- [MinePick Launcher Classic](https://github.com/xltxdocs/MinePick_Launcher_Classic) — 本プロジェクトの前身（アーカイブ済み、GUI + CLI）
 - [MinePick Launcher Revision](https://github.com/TheDarkLord234/MinePick_Launcher_Revision) — コミュニティメンバーによる改訂版

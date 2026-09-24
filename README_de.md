@@ -1,16 +1,12 @@
 [English](README.md) | [简体中文](README_zh.md) | [繁體中文](README_zh_TW.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [Русский](README_ru.md) | [Français](README_fr.md) | [Español](README_es.md) | **Deutsch**
 
-# MinePick Launcher — UI Trial
+# MinePick Launcher
 
 Ein portabler Minecraft-Launcher auf Basis von Python + PySide6: Microsoft-/Offline-Konten, Versionsinstallation,
 Modrinth- & CurseForge-Ressourcen, Fabric/Forge/NeoForge/Quilt-Loader, isolierte Instanzen — verpackt als
 einzelne portable EXE.
 
-**Dieses Repository ist die Oberflächen-Testlinie (Version 0.1.5).** Sie bietet denselben Funktionsumfang wie das
-Hauptprojekt, dazu die unten beschriebene Oberflächen-Überarbeitung, und liefert **nur einen GUI-Build** — eine
-Befehlszeilen-EXE gibt es hier nicht.
-
-> Haupt-Launcher: [xltxdocs/MinePick_Launcher](https://github.com/xltxdocs/MinePick_Launcher)
+**Aktuelle Version: 0.2.0** — nur ein GUI-Build: eine Befehlszeilen-EXE enthält dieses Repository nicht.
 
 ## Screenshots
 
@@ -33,7 +29,7 @@ Befehlszeilen-EXE gibt es hier nicht.
   </tr>
 </table>
 
-## Oberfläche (was diese Testlinie ändert)
+## Oberfläche
 
 - **Assistent beim ersten Start, im Fenster** — der Willkommensablauf ist ein Overlay im Hauptfenster
   (Schrittleiste links, Inhalt rechts, Aktionsleiste unten) statt eines separaten Dialogs und
@@ -79,9 +75,16 @@ Befehlszeilen-EXE gibt es hier nicht.
 - Mods, Ressourcenpakete, Shader und Modpacks von **Modrinth** und **CurseForge**, pro Tab die Top 30 nach
   Downloads, Stichwortsuche, Ein-Klick-Installation, `.mrpack`-Modpack-Installation
 
+### Über & Updates
+- Eine Seite **„Über“**: installierte Version, Link zum Quellcode, Lizenz und rechtliche Hinweise,
+  Danksagungen an Dritte sowie eine Update-Prüfung, die den Stand mit dem neuesten GitHub-Release vergleicht
+- **Vier Modi für automatische Updates**: herunterladen und installieren, herunterladen und benachrichtigen
+  (Standard), nur benachrichtigen oder nicht automatisch prüfen; ist keine Installation möglich, wird die
+  Release-Seite geöffnet
+
 ## Download & Verwendung
 
-Laden Sie `MinePick_UI_Trial.exe` von der Releases-Seite herunter und doppelklicken Sie darauf — kein Installer,
+Laden Sie `MinePick_Launcher.exe` von der Releases-Seite herunter und doppelklicken Sie darauf — kein Installer,
 kein Konsolenfenster. Beim ersten Start wird neben der EXE ein Ordner `config/` angelegt, sodass Einstellungen,
 Konten und Instanzen in einem einzigen Ordner bleiben.
 
@@ -95,7 +98,7 @@ Alles wird in der App konfiguriert: **Änderungen wirken sofort, es gibt keinen 
 ```powershell
 pip install -r requirements-dev.txt
 python -m gui                # run the GUI
-pytest -q                    # tests (240+)
+pytest -q                    # tests
 ruff check launcher gui tests
 ```
 
@@ -117,5 +120,5 @@ erfüllt die Anforderung der GPL zur Quellcode-Verteilung.
 
 ## Verwandte Projekte
 
-- [MinePick Launcher](https://github.com/xltxdocs/MinePick_Launcher) — der Haupt-Launcher (GUI + CLI)
+- [MinePick Launcher Classic](https://github.com/xltxdocs/MinePick_Launcher_Classic) — der archivierte Vorgänger dieses Projekts (GUI + CLI)
 - [MinePick Launcher Revision](https://github.com/TheDarkLord234/MinePick_Launcher_Revision) — eine überarbeitete Edition von einem Mitglied der Community
