@@ -164,12 +164,18 @@ class MainWindow(QMainWindow):
         self.pages["launch"].account_changed.connect(self.pages["account"].refresh)
         self.pages["settings"].settings_changed.connect(self._on_settings_changed)
         self.pages["versions"].launch_requested.connect(self._goto_launch)
+        self.pages["versions"].instance_requested.connect(self._goto_instance)
         self.pages["versions"].versions_changed.connect(self.pages["launch"].refresh_versions)
 
     def _on_nav_changed(self, row: int) -> None:
         """Refresh the version dropdown when switching to the launch page (auto-syncs after loader/modpack install)."""
         if row == 0:
             self.pages["launch"].refresh_versions()
+        if row == NAV_KEYS.index("instances"):
+            self.pages["instances"].refresh()
+        if row == NAV_KEYS.index("versions"):
+            # A version can be deleted on the instances page: re-mark the installed column
+            self.pages["versions"].refresh_installed()
         if row == NAV_KEYS.index("about"):
             self.pages["about"].refresh()  # the update settings may have changed elsewhere
         self._fade_in_current_page()
@@ -206,6 +212,11 @@ class MainWindow(QMainWindow):
     def _goto_launch(self, version_id: str) -> None:
         self.pages["launch"].set_version_id(version_id)
         self.sidebar.setCurrentRow(0)
+
+    def _goto_instance(self, version_id: str) -> None:
+        """The versions page hands an installed profile over to the instances page."""
+        self.sidebar.setCurrentRow(NAV_KEYS.index("instances"))
+        self.pages["instances"].select_instance(version_id)
 
     def apply_window_mode(self) -> None:
         """Apply the window startup state from config: default/maximized/minimized/remember last size."""

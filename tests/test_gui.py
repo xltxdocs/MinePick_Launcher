@@ -248,9 +248,9 @@ def test_batch1_widgets_exist(app, monkeypatch, ws_tmp):
     from gui.main_window import MainWindow
 
     window = MainWindow()
-    # versions page uninstall button + status column
+    # versions page: the uninstall button became a jump to the instance page
     versions = window.pages["versions"]
-    assert versions.uninstall_button.text() == "卸载所选版本"
+    assert versions.open_instance_button.text() == "打开实例"
     assert versions.model.columnCount() == 4
     # launch page JVM args input
     launch = window.pages["launch"]
@@ -601,7 +601,7 @@ def test_busy_button_does_not_hand_focus_to_another_control(app, monkeypatch, ws
 
 
 def test_versions_refresh_does_not_park_focus_on_uninstall(app, monkeypatch, ws_tmp):
-    """The real refresh handler must not hand focus to the neighbouring uninstall button."""
+    """The real refresh handler must not hand focus to the neighbouring action button."""
     monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data18"))
     from PySide6.QtCore import QThreadPool
 
@@ -625,7 +625,7 @@ def test_versions_refresh_does_not_park_focus_on_uninstall(app, monkeypatch, ws_
         page.refresh()  # the manifest fetch is stubbed to fail by the autouse fixture
         app.processEvents()
         assert not page.refresh_button.isEnabled()
-        assert not page.uninstall_button.hasFocus()  # where plain setEnabled(False) left it
+        assert not page.open_instance_button.hasFocus()  # where plain setEnabled(False) left it
         assert app.focusWidget() is None  # focus was given up, not handed on
     finally:
         if window is not None:
@@ -985,11 +985,11 @@ def test_instance_open_folder_button(app, monkeypatch, ws_tmp):
         json.dumps(Instance(id="t", created_at=1.0).model_dump(mode="json")),
         encoding="utf-8",
     )
-    import gui.pages.instances_page as inst_page_mod
+    import gui.pages.instance_detail as detail_mod
 
     opened = []
     monkeypatch.setattr(
-        inst_page_mod.QDesktopServices,
+        detail_mod.QDesktopServices,
         "openUrl",
         staticmethod(lambda url: opened.append(url.toString())),
     )
@@ -1145,6 +1145,280 @@ def test_instances_page_lists_base_versions(app, monkeypatch, ws_tmp):
         assert "1.20.1" in items
         assert any("Fabric 0.15.11-1.20.1" in t for t in items)
         assert any(t.startswith("红石测试") for t in items)  # display name wins over the id
+    finally:
+        if window is not None:
+            window.close()
+            app.processEvents()
+
+
+def _make_instance(game_dir, version_id, *, display_name="", note="", **fields):
+    """Create versions/<id>/<id>.json plus an optional sidecar (test helper)."""
+    import json
+
+    folder = game_dir / "versions" / version_id
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / (version_id + ".json")).write_text("{}", encoding="utf-8")
+    if display_name or note or fields:
+        from launcher.instances import INSTANCE_META_FILENAME, Instance
+
+        payload = Instance(id=version_id, display_name=display_name, note=note, **fields)
+        (folder / INSTANCE_META_FILENAME).write_text(
+            json.dumps(payload.model_dump(mode="json")), encoding="utf-8"
+        )
+    return folder
+
+
+def test_instance_detail_fills_on_selection(app, monkeypatch, ws_tmp):
+    """Selecting a row fills the detail panel with name, paths and the isolation state."""
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data_detail"))
+    from gui import i18n
+    from launcher import config as config_mod
+
+    game = ws_tmp / "mc"
+    _make_instance(game, "1.20.1")
+    cfg, cfg_path = config_mod.load()
+    cfg.game_dir = game
+    config_mod.save(cfg, cfg_path)
+    from gui.main_window import MainWindow
+
+    window = None
+    try:
+        window = MainWindow()
+        page = window.pages["instances"]
+        page.list.setCurrentRow(0)
+        detail = page.detail
+        assert page.detail_stack.currentWidget() is detail
+        assert detail.instance_id == "1.20.1"
+        assert detail.name_label.text() == "1.20.1"
+        assert "1.20.1" in detail.id_label.text()
+        assert str(game / "versions" / "1.20.1") in detail.dir_label.text()
+        assert detail.overview_values["version"].text() == "1.20.1"
+        assert detail.overview_values["game_dir"].text() == str(game / "versions" / "1.20.1")
+        # default_isolation=True and no mods/saves: resolved as isolated
+        assert detail.overview_values["isolation"].text().startswith(i18n.tr("common.on"))
+        assert detail.overview_values["java"].text() == i18n.tr("instances.detail.java.follow_auto")
+        assert detail.overview_values["last_played"].text() == i18n.tr(
+            "instances.detail.value.never"
+        )
+        assert not detail.mods_banner.isVisibleTo(detail)
+    finally:
+        if window is not None:
+            window.close()
+            app.processEvents()
+
+
+def test_instance_tab_row_switches_stacked_pages(app, monkeypatch, ws_tmp):
+    """The checkable tab row drives the QStackedWidget of the detail panel."""
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data_tabs"))
+    from launcher import config as config_mod
+
+    game = ws_tmp / "mc"
+    _make_instance(game, "1.20.1")
+    cfg, cfg_path = config_mod.load()
+    cfg.game_dir = game
+    config_mod.save(cfg, cfg_path)
+    from gui.main_window import MainWindow
+
+    window = None
+    try:
+        window = MainWindow()
+        page = window.pages["instances"]
+        page.list.setCurrentRow(0)
+        detail = page.detail
+        assert detail.stack.currentIndex() == 0
+        for index in range(len(detail.tabs)):
+            detail.tabs[index].click()
+            app.processEvents()
+            assert detail.stack.currentIndex() == index
+            assert detail.tabs[index].isChecked()
+    finally:
+        if window is not None:
+            window.close()
+            app.processEvents()
+
+
+def test_instance_settings_save_survives_reload(app, monkeypatch, ws_tmp):
+    """The 设置 tab writes per-instance overrides that survive a page reload."""
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data_set"))
+    from gui import i18n
+    from launcher import config as config_mod
+    from launcher.instances import get_instance
+
+    game = ws_tmp / "mc"
+    _make_instance(game, "1.20.1")
+    java = ws_tmp / "java.exe"
+    java.write_bytes(b"")
+    cfg, cfg_path = config_mod.load()
+    cfg.game_dir = game
+    config_mod.save(cfg, cfg_path)
+    from gui.main_window import MainWindow
+
+    window = None
+    try:
+        window = MainWindow()
+        page = window.pages["instances"]
+        page.list.setCurrentRow(0)
+        detail = page.detail
+        detail.set_tab(4)
+        detail.java_follow_check.setChecked(False)
+        detail.java_edit.setText(str(java))
+        detail.memory_follow_check.setChecked(False)
+        detail.memory_spin.setValue(6.0)
+        detail.jvm_args_edit.setText("-XX:+UseG1GC")
+        detail.game_args_edit.setText("--width 1280")
+        detail.settings_save_button.click()
+        app.processEvents()
+
+        stored = get_instance("1.20.1", game)
+        assert stored.settings.java == str(java)
+        assert stored.settings.memory_gb == 6.0
+        assert stored.settings.jvm_args == "-XX:+UseG1GC"
+        assert stored.settings.game_args == "--width 1280"
+
+        # a full page reload reads the overrides back into the widgets
+        page.refresh(select="1.20.1")
+        app.processEvents()
+        assert page.detail.instance_id == "1.20.1"
+        assert not page.detail.java_follow_check.isChecked()
+        assert page.detail.java_edit.text() == str(java)
+        assert not page.detail.memory_follow_check.isChecked()
+        assert page.detail.memory_spin.value() == 6.0
+        assert page.detail.jvm_args_edit.text() == "-XX:+UseG1GC"
+        assert page.detail.game_args_edit.text() == "--width 1280"
+        # the overview reports the instance's own memory
+        assert "6" in page.detail.overview_values["memory"].text()
+        assert i18n.tr("instances.detail.memory.source.instance") in (
+            page.detail.overview_values["memory"].text()
+        )
+    finally:
+        if window is not None:
+            window.close()
+            app.processEvents()
+
+
+def test_instance_settings_reset_clears_overrides(app, monkeypatch, ws_tmp):
+    """重置本实例设置 drops every override (and the isolation choice) after confirmation."""
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data_reset"))
+    from PySide6.QtWidgets import QMessageBox
+
+    from launcher import config as config_mod
+    from launcher.instances import get_instance, set_instance_settings, update_instance
+
+    game = ws_tmp / "mc"
+    _make_instance(game, "1.20.1")
+    cfg, cfg_path = config_mod.load()
+    cfg.game_dir = game
+    config_mod.save(cfg, cfg_path)
+    set_instance_settings("1.20.1", game_dir=game, memory_gb=8.0, jvm_args="-Xss4M")
+    update_instance("1.20.1", game_dir=game, isolated="off")
+    monkeypatch.setattr(
+        QMessageBox,
+        "question",
+        staticmethod(lambda *a, **k: QMessageBox.StandardButton.Yes),
+    )
+    from gui.main_window import MainWindow
+
+    window = None
+    try:
+        window = MainWindow()
+        page = window.pages["instances"]
+        page.list.setCurrentRow(0)
+        detail = page.detail
+        detail.set_tab(4)
+        assert detail.memory_spin.value() == 8.0
+        detail.settings_reset_button.click()
+        app.processEvents()
+
+        stored = get_instance("1.20.1", game)
+        assert stored.settings.memory_gb is None
+        assert stored.settings.jvm_args == ""
+        assert stored.isolated == "follow"
+        assert detail.memory_follow_check.isChecked()
+        assert detail.isolation_combo.currentData() == "follow"
+    finally:
+        if window is not None:
+            window.close()
+            app.processEvents()
+
+
+def test_instance_not_isolated_banner_and_one_click(app, monkeypatch, ws_tmp):
+    """A shared (non-isolated) instance warns on 模组/资源 and offers one-click isolation."""
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data_share"))
+    from gui import i18n
+    from launcher import config as config_mod
+    from launcher.instances import get_instance
+
+    game = ws_tmp / "mc"
+    _make_instance(game, "1.20.1")  # no mods/, no saves/: follows the global default
+    cfg, cfg_path = config_mod.load()
+    cfg.game_dir = game
+    cfg.default_isolation = False
+    config_mod.save(cfg, cfg_path)
+    from gui.main_window import MainWindow
+
+    window = None
+    try:
+        window = MainWindow()
+        page = window.pages["instances"]
+        page.list.setCurrentRow(0)
+        detail = page.detail
+        assert detail.overview_values["isolation"].text().startswith(i18n.tr("common.off"))
+        # the banner sits on top of the 模组 and 资源 tabs (a stacked page is only visible when current)
+        detail.set_tab(1)
+        assert detail.mods_banner.isVisibleTo(detail)
+        assert str(game) in detail.mods_banner_label.text()
+        detail.set_tab(2)
+        assert detail.res_banner.isVisibleTo(detail)
+
+        detail.enable_isolation()
+        app.processEvents()
+        assert get_instance("1.20.1", game).isolated == "on"
+        assert not detail.res_banner.isVisibleTo(detail)
+        detail.set_tab(1)
+        assert not detail.mods_banner.isVisibleTo(detail)
+        assert detail.overview_values["isolation"].text().startswith(i18n.tr("common.on"))
+    finally:
+        if window is not None:
+            window.close()
+            app.processEvents()
+
+
+def test_instances_search_filters_the_list(app, monkeypatch, ws_tmp):
+    """The search box filters by display name / id / profile label and reports an empty result."""
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data_search"))
+    from PySide6.QtCore import Qt
+
+    from launcher import config as config_mod
+
+    game = ws_tmp / "mc"
+    _make_instance(game, "1.20.1")
+    _make_instance(game, "fabric-loader-0.15.11-1.20.1", display_name="红石测试")
+    cfg, cfg_path = config_mod.load()
+    cfg.game_dir = game
+    config_mod.save(cfg, cfg_path)
+    from gui.main_window import MainWindow
+
+    window = None
+    try:
+        window = MainWindow()
+        page = window.pages["instances"]
+        assert page.list.count() == 2
+        page.search_edit.setText("红石")
+        page._on_search_changed()
+        assert page.list.count() == 1
+        assert page.list.item(0).data(Qt.ItemDataRole.UserRole) == "fabric-loader-0.15.11-1.20.1"
+        # the profile label is searchable too
+        page.search_edit.setText("Fabric")
+        page._on_search_changed()
+        assert page.list.count() == 1
+        page.search_edit.setText("nothing-matches")
+        page._on_search_changed()
+        assert page.list.count() == 0
+        assert page.list_stack.currentWidget() is page.empty_search
+        page.search_edit.clear()
+        page._on_search_changed()
+        assert page.list.count() == 2
+        assert page.list_stack.currentWidget() is page.list
     finally:
         if window is not None:
             window.close()

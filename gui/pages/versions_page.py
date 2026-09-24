@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with MinePick Launcher. If not, see <https://www.gnu.org/licenses/>.
 
-"""Versions page: manifest list, details, install (with progress), uninstall, jump to launch."""
+"""Versions page: manifest list, details, install (with progress) and a jump to the instance page."""
 
 from __future__ import annotations
 
@@ -35,7 +35,6 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
-    QMessageBox,
     QPlainTextEdit,
     QProgressBar,
     QPushButton,
@@ -64,12 +63,7 @@ from gui.workers import (
     run_in_background,
 )
 from launcher import config, paths
-from launcher.install import (
-    find_version_dependents,
-    install_version,
-    list_installed_versions,
-    uninstall_version,
-)
+from launcher.install import install_version, list_installed_versions
 from launcher.meta import fetch_manifest, version_category
 
 tr = i18n.tr
@@ -124,6 +118,7 @@ _COL_TIME = 2  # 表头顺序:版本 / 类型 / 发布时间 / 状态
 
 class VersionsPage(QWidget):
     launch_requested = Signal(str)
+    instance_requested = Signal(str)
     versions_changed = Signal()
 
     def __init__(self) -> None:
@@ -188,8 +183,10 @@ class VersionsPage(QWidget):
         self.info_label = QLabel(tr("versions.info.default"))
         self.info_label.setObjectName("hint")
         self.install_button = QPushButton(tr("versions.install"))
-        self.uninstall_button = QPushButton(tr("versions.uninstall"))
-        self.uninstall_button.setObjectName("dangerButton")
+        # Deleting an installed version happens on the instances page (its 删除 action),
+        # so this button only jumps there: one page owns "remove a version".
+        self.open_instance_button = QPushButton(tr("versions.open_instance"))
+        self.open_instance_button.setObjectName("secondaryButton")
         self.detail_button = QPushButton(tr("versions.detail"))
         self.detail_button.setObjectName("secondaryButton")
         self.launch_button = QPushButton(tr("versions.goto"))
@@ -247,7 +244,7 @@ class VersionsPage(QWidget):
         layout.addWidget(self.progress_bar)
         buttons = QHBoxLayout()
         buttons.addWidget(self.install_button)
-        buttons.addWidget(self.uninstall_button)
+        buttons.addWidget(self.open_instance_button)
         buttons.addWidget(self.detail_button)
         buttons.addWidget(self.launch_button)
         buttons.addStretch(1)
@@ -263,7 +260,7 @@ class VersionsPage(QWidget):
         self.search_edit.textChanged.connect(lambda _t: self._search_timer.start(200))
         self.table.selectionModel().selectionChanged.connect(lambda *_a: self._on_select())
         self.install_button.clicked.connect(self.install_selected)
-        self.uninstall_button.clicked.connect(self.uninstall_selected)
+        self.open_instance_button.clicked.connect(self.open_instance_selected)
         self.detail_button.clicked.connect(self.show_details)
         self.launch_button.clicked.connect(
             lambda: self.launch_requested.emit(self._selected_id() or "")
@@ -430,44 +427,16 @@ class VersionsPage(QWidget):
             on_finished=lambda: self.install_button.setEnabled(True),
         )
 
-    def uninstall_selected(self) -> None:
+    def open_instance_selected(self) -> None:
+        """Hand the selected profile over to the instances page (where it is managed/deleted)."""
         version_id = self._selected_id()
         if version_id is None:
             set_app_status(self, tr("versions.msg.need_select"), "warning")
             return
         if version_id not in self._installed:
-            set_app_status(
-                self, tr("versions.msg.uninstall_fail", tr("versions.status.not_installed")), "error"
-            )
+            set_app_status(self, tr("versions.msg.open_instance_fail", version_id), "error")
             return
-        game_dir = self._game_dir()
-        dependents = find_version_dependents(game_dir, version_id)
-        message = tr("versions.uninstall.msg", version_id)
-        if dependents:
-            message += tr("versions.uninstall.msg.deps", ", ".join(dependents))
-        answer = QMessageBox.question(
-            self,
-            tr("versions.uninstall.dialog"),
-            message,
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
-        )
-        if answer != QMessageBox.StandardButton.Yes:
-            return
-        disable_keeping_focus(self.uninstall_button)
-        set_app_status(self, tr("versions.msg.uninstalling", version_id))
-
-        def do_uninstall() -> object:
-            return uninstall_version(version_id, game_dir)
-
-        run_in_background(
-            do_uninstall,
-            on_result=lambda _deps: self._on_uninstalled(version_id),
-            on_error=lambda m: set_app_status(
-                self, tr("versions.msg.uninstall_fail", m), "error"
-            ),
-            on_finished=lambda: self.uninstall_button.setEnabled(True),
-        )
+        self.instance_requested.emit(version_id)
 
     def show_details(self) -> None:
         version_id = self._selected_id()
@@ -564,11 +533,10 @@ class VersionsPage(QWidget):
         except RuntimeError:
             pass  # dialog was closed while loading
 
-    def _on_uninstalled(self, version_id: str) -> None:
+    def refresh_installed(self) -> None:
+        """Re-read the installed profiles: another page may have removed a version."""
         self._refresh_installed()
         self._refilter()
-        set_app_status(self, tr("versions.msg.uninstalled", version_id))
-        self.versions_changed.emit()
 
     def _on_progress(self, p) -> None:
         if p.total_files:

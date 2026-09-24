@@ -18,7 +18,7 @@
 """E2E tests: pytest + offscreen GUI, simulating UI interactions to verify core flows.
 
 Covers: offline login integration, multi-account switching, mod search (respx-mocked Modrinth),
-the version uninstall flow (mocked confirmation dialog), launch-page JVM arg persistence,
+the version delete flow (instances page, mocked confirmation dialog), launch-page JVM arg persistence,
 the launch flow (prepare -> run -> exit code), crash report viewer.
 """
 
@@ -171,7 +171,8 @@ def test_e2e_mods_search_flow(app, monkeypatch, ws_tmp):
             app.processEvents()
 
 
-def test_e2e_version_uninstall_flow(app, monkeypatch, ws_tmp):
+def test_e2e_version_delete_via_instances_page(app, monkeypatch, ws_tmp):
+    """打开实例 hands the profile over to the instances page, where 删除 removes it."""
     monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data4"))
     game = ws_tmp / "mc"
     vdir = game / "versions" / "1.20.1"
@@ -188,7 +189,8 @@ def test_e2e_version_uninstall_flow(app, monkeypatch, ws_tmp):
         staticmethod(lambda *a, **k: QMessageBox.StandardButton.Yes),
     )
 
-    from gui.main_window import MainWindow
+    from gui.main_window import NAV_KEYS, MainWindow
+    from launcher.instances import list_instances
     from launcher.meta import ManifestVersion
 
     window = None
@@ -204,10 +206,17 @@ def test_e2e_version_uninstall_flow(app, monkeypatch, ws_tmp):
         assert page.model.rowCount() == 1
         assert page.model.data(page.model.index(0, 3)) == "已安装"
         page.table.selectRow(0)
-        page.uninstall_selected()
-        assert _wait_until(app, lambda: "已卸载" in window.status_label.text())
-        assert not vdir.exists()
-        # the status column refreshes
+        # 打开实例: the versions page only jumps, the instances page owns the entry
+        page.open_instance_selected()
+        assert window.sidebar.currentRow() == NAV_KEYS.index("instances")
+        instances = window.pages["instances"]
+        assert instances._current_name() == "1.20.1"
+
+        instances.detail.delete()
+        assert _wait_until(app, lambda: not vdir.exists())
+        assert list_instances(game) == {}
+        # the status column refreshes once the versions page re-reads the installed set
+        page.refresh_installed()
         assert page.model.data(page.model.index(0, 3)) == "—"
     finally:
         if window is not None:

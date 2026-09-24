@@ -15,37 +15,39 @@
 # You should have received a copy of the GNU General Public License
 # along with MinePick Launcher. If not, see <https://www.gnu.org/licenses/>.
 
-"""Instances page: create/delete/launch/rename/note/import-export of instances (separate saves, mods and configs)."""
+"""Instances page: list of installed instances on the left, details of the selected one on the right.
+
+An instance *is* a version folder (`versions/<id>/`), so this page owns every
+management action for the installed versions: launching, mods, resource packs,
+saves, per-instance settings, rename, export and delete. Everything that acts on
+one instance lives in @gui.pages.instance_detail.InstanceDetail; this module only
+keeps the list, the search box and the cross-instance actions.
+"""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer, QUrl
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
+    QFileDialog,
     QFormLayout,
     QHBoxLayout,
-    QInputDialog,
     QLabel,
     QLineEdit,
     QListWidget,
     QListWidgetItem,
-    QMenu,
-    QMessageBox,
     QPushButton,
-    QTableWidget,
-    QTableWidgetItem,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
 
 from gui import i18n
-from gui.errors import show_fatal
-from gui.view_state import remember_column_widths
+from gui.pages.instance_detail import InstanceDetail
 from gui.widgets import (
     EmptyState,
     add_search_icon,
@@ -57,33 +59,24 @@ from gui.widgets import (
 )
 from gui.workers import run_in_background
 from launcher import config, paths
-from launcher.auth import AccountStore
 from launcher.install import list_installed_versions
 from launcher.instances import (
-    InstancesError,
     create_instance,
     default_instance_name,
-    delete_instance,
     display_version_name,
-    export_instance,
     import_instance,
     instance_dir,
     list_instances,
-    rename_instance,
-    update_instance_note,
 )
-from launcher.launch import (
-    find_new_crash_reports,
-    prepare_launch,
-    resolve_launch_account,
-    run_process,
-)
-from launcher.mods.local import install_mod_file, scan_mods, set_mod_enabled
 
 tr = i18n.tr
 
+LEFT_WIDTH = 320  # the list column keeps a fixed width so the detail panel gets the rest
+
 
 class _CreateDialog(QDialog):
+    """Create another instance by copying an installed profile (instances are version folders)."""
+
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle(tr("instances.dialog.title"))
@@ -96,7 +89,9 @@ class _CreateDialog(QDialog):
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
         self.buttons.button(QDialogButtonBox.StandardButton.Ok).setText(tr("instances.create.ok"))
-        self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(tr("instances.create.cancel"))
+        self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(
+            tr("instances.create.cancel")
+        )
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
         self.version_combo.currentIndexChanged.connect(self._auto_name)
@@ -109,11 +104,7 @@ class _CreateDialog(QDialog):
         self._fill_versions()
 
     def _fill_versions(self) -> None:
-        """List installed versions only - the same source as the launch page.
-
-        An instance copies its version files from the global versions folder,
-        so only versions that exist there can be used.
-        """
+        """List installed profiles only - a copy needs the profile files to duplicate."""
         self.version_combo.clear()
         cfg, _ = config.load()
         game_dir = cfg.game_dir or paths.default_game_dir()
@@ -139,350 +130,249 @@ class _CreateDialog(QDialog):
         return self.name_edit.text().strip(), version_id
 
 
-class _ModsTable(QTableWidget):
-    """Mods table: supports drag-and-drop of .jar files to install."""
-
-    def __init__(self, page: InstancesPage) -> None:
-        super().__init__(0, 6)
-        self._page = page
-        self.setAcceptDrops(True)
-        self.setSelectionBehavior(QTableWidget.SelectRows)
-        self.setSelectionMode(QTableWidget.ExtendedSelection)
-        self.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.horizontalHeader().setStretchLastSection(True)
-
-    def _jar_urls(self, event) -> bool:
-        data = event.mimeData()
-        if not data.hasUrls():
-            return False
-        return any(
-            u.isLocalFile() and u.toLocalFile().lower().endswith(".jar")
-            for u in data.urls()
-        )
-
-    def dragEnterEvent(self, event) -> None:
-        if self._jar_urls(event):
-            event.acceptProposedAction()
-        else:
-            event.ignore()
-
-    def dragMoveEvent(self, event) -> None:
-        if self._jar_urls(event):
-            event.acceptProposedAction()
-        else:
-            event.ignore()
-
-    def dropEvent(self, event) -> None:
-        jars = [
-            Path(u.toLocalFile())
-            for u in event.mimeData().urls()
-            if u.isLocalFile() and u.toLocalFile().lower().endswith(".jar")
-        ]
-        if jars:
-            self._page._install_dropped(jars)
-            event.acceptProposedAction()
-        else:
-            event.ignore()
-
-
 class InstancesPage(QWidget):
+    """Master-detail instances page."""
+
     def __init__(self) -> None:
         super().__init__()
+        self.search_edit = QLineEdit()
+        add_search_icon(self.search_edit)
+        self.search_edit.setPlaceholderText(tr("instances.search.placeholder"))
+        self.search_edit.setClearButtonEnabled(True)
+
         self.list = QListWidget()
         apply_no_focus_outline(self.list)
+        self.empty_instances = EmptyState(tr("empty.instances"))
+        self.empty_search = EmptyState(tr("instances.search.none"))
+        self.list_stack = QStackedWidget()
+        self.list_stack.addWidget(self.list)
+        self.list_stack.addWidget(self.empty_instances)
+        self.list_stack.addWidget(self.empty_search)
+
         self.sort_combo = QComboBox()
         self.sort_combo.addItem(tr("instances.sort.name"), "name")
         self.sort_combo.addItem(tr("instances.sort.time"), "time")
-        self.create_button = QPushButton(tr("instances.create"))
-        self.open_folder_button = QPushButton(tr("instances.open_folder"))
-        self.open_folder_button.setObjectName("secondaryButton")
+
+        self.create_button = QPushButton(tr("instances.create_copy"))
         self.import_button = QPushButton(tr("instances.import"))
         self.import_button.setObjectName("secondaryButton")
-        self.delete_button = QPushButton(tr("instances.delete"))
-        self.delete_button.setObjectName("dangerButton")
-        self.launch_button = QPushButton(tr("instances.launch"))
-        self.crash_button = QPushButton(tr("crash.viewer"))
-        self.crash_button.setObjectName("secondaryButton")
 
-        # —— Mods management panel (acts on the currently selected instance) ——
-        self._mods: list = []
-        self._mods_dir: Path | None = None
-        self._filling_mods = False
-        self.mods_title = QLabel(tr("instances.mods.title"))
-        self.mods_title.setObjectName("title")
-        self.mods_table = _ModsTable(self)
-        apply_no_focus_outline(self.mods_table)
-        self.mods_table.setHorizontalHeaderLabels(
-            [
-                tr("instances.mods.col.enabled"),
-                tr("instances.mods.col.name"),
-                tr("instances.mods.col.id"),
-                tr("instances.mods.col.version"),
-                tr("instances.mods.col.loader"),
-                tr("instances.mods.col.file"),
-            ]
-        )
-        self.mods_table.setColumnWidth(0, 56)
-        self.mods_table.setColumnWidth(1, 180)
-        self.mods_table.setColumnWidth(2, 120)
-        self.mods_table.setColumnWidth(3, 72)
-        self.mods_table.setColumnWidth(4, 80)
-        self.mods_search = QLineEdit()
-        add_search_icon(self.mods_search)
-        self.mods_search.setPlaceholderText(tr("instances.mods.search.placeholder"))
-        self.mods_search.setClearButtonEnabled(True)
-        self.mods_filter = QComboBox()
-        self.mods_filter.addItem(tr("instances.mods.filter.all"), "all")
-        self.mods_filter.addItem(tr("instances.mods.filter.enabled"), "enabled")
-        self.mods_filter.addItem(tr("instances.mods.filter.disabled"), "disabled")
-        self.mods_refresh_button = QPushButton(tr("instances.mods.refresh"))
-        self.mods_refresh_button.setObjectName("secondaryButton")
-        self.mods_folder_button = QPushButton(tr("instances.mods.open_folder"))
-        self.mods_folder_button.setObjectName("secondaryButton")
-        self.mods_delete_button = QPushButton(tr("instances.mods.delete"))
-        self.mods_delete_button.setObjectName("dangerButton")
+        self.detail = InstanceDetail()
+        self.no_selection = QLabel(tr("instances.select.hint"))
+        self.no_selection.setObjectName("emptyState")
+        self.no_selection.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.no_selection.setWordWrap(True)
+        self.detail_stack = QStackedWidget()
+        self.detail_stack.addWidget(self.detail)
+        self.detail_stack.addWidget(self.no_selection)
 
+        # Legacy attribute names kept for callers (and tests) that predate the detail panel
+        self.open_folder_button = self.detail.open_folder_button
+        self.launch_button = self.detail.launch_button
+        self.crash_button = self.detail.crash_button
+        self.mods_table = self.detail.mods_table
+
+        left = QWidget()
+        left.setFixedWidth(LEFT_WIDTH)
+        left_layout = QVBoxLayout(left)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.setSpacing(6)
+        left_layout.addWidget(self.search_edit)
         sort_row = QHBoxLayout()
+        sort_row.setContentsMargins(0, 0, 0, 0)
+        sort_row.setSpacing(6)
         sort_row.addWidget(QLabel(tr("instances.sort.label")))
-        sort_row.addWidget(self.sort_combo)
-        sort_row.addStretch(1)
-        buttons = QHBoxLayout()
-        buttons.addWidget(self.create_button)
-        buttons.addWidget(self.open_folder_button)
-        buttons.addWidget(self.import_button)
-        buttons.addWidget(self.launch_button)
-        buttons.addWidget(self.delete_button)
-        buttons.addStretch(1)
+        sort_row.addWidget(self.sort_combo, 1)
+        left_layout.addLayout(sort_row)
+        left_layout.addWidget(self.list_stack, 1)
+        actions = QHBoxLayout()
+        actions.setContentsMargins(0, 0, 0, 0)
+        actions.setSpacing(6)
+        actions.addWidget(self.create_button)
+        actions.addWidget(self.import_button)
+        actions.addStretch(1)
+        left_layout.addLayout(actions)
 
-        mods_tools = QHBoxLayout()
-        mods_tools.addWidget(self.mods_search)
-        mods_tools.addWidget(self.mods_filter)
-        mods_tools.addWidget(self.mods_refresh_button)
-        mods_tools.addWidget(self.mods_folder_button)
-        mods_tools.addWidget(self.mods_delete_button)
-        mods_tools.addStretch(1)
+        body = QHBoxLayout()
+        body.setContentsMargins(0, 0, 0, 0)
+        body.setSpacing(12)
+        body.addWidget(left)
+        body.addWidget(self.detail_stack, 1)
 
         layout = QVBoxLayout(self)
         style_page_layout(layout)
         layout.addWidget(build_page_header(tr("nav.instances"), tr("page.instances.desc")))
-        layout.addLayout(sort_row)
-        layout.addWidget(self.list, 3)
-        self.empty_instances = EmptyState(tr("empty.instances"))
-        layout.addWidget(self.empty_instances)
-        layout.addLayout(buttons)
-        layout.addWidget(self.mods_title)
-        layout.addLayout(mods_tools)
-        layout.addWidget(self.mods_table, 2)
-        remember_column_widths(self.mods_table, "instance_mods")
+        layout.addLayout(body, 1)
 
         self.create_button.clicked.connect(self._create)
-        self.delete_button.clicked.connect(self._delete)
         self.import_button.clicked.connect(self._import)
-        self.open_folder_button.clicked.connect(self._open_folder)
-        self.launch_button.clicked.connect(self._launch)
         self.sort_combo.currentIndexChanged.connect(lambda _i: self.refresh())
-        self.list.itemDoubleClicked.connect(lambda _item: self._rename())
-        self.list.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.list.customContextMenuRequested.connect(self._context_menu)
-        self.list.itemSelectionChanged.connect(self._reload_mods)
-        self.mods_table.itemChanged.connect(self._on_mod_toggled)
-        # Debounce: refill only after 200ms of typing inactivity
-        self._mods_search_timer = QTimer(self)
-        self._mods_search_timer.setSingleShot(True)
-        self._mods_search_timer.timeout.connect(self._refill_mods)
-        self.mods_search.textChanged.connect(lambda _t: self._mods_search_timer.start(200))
-        self.mods_filter.currentIndexChanged.connect(lambda _i: self._refill_mods())
-        self.mods_refresh_button.clicked.connect(self._reload_mods)
-        self.mods_folder_button.clicked.connect(self._open_mods_folder)
-        self.mods_delete_button.clicked.connect(self._delete_selected_mods)
+        # Debounce: refilter only after 200ms of typing inactivity
+        self._search_timer = QTimer(self)
+        self._search_timer.setSingleShot(True)
+        self._search_timer.timeout.connect(self._on_search_changed)
+        self.search_edit.textChanged.connect(lambda _t: self._search_timer.start(200))
+        self.list.currentRowChanged.connect(self._on_selection_changed)
+        self.detail.changed.connect(self._on_detail_changed)
+        self.detail.deleted.connect(self._on_detail_deleted)
         self.refresh()
 
-    def refresh(self) -> None:
-        self.list.clear()
-        instances = list_instances()
-        if self.sort_combo.currentData() == "time":
-            ordered = sorted(instances.values(), key=lambda i: i.created_at, reverse=True)
-        else:
-            ordered = sorted(instances.values(), key=lambda i: i.name)
-        for inst in ordered:
-            text = inst.name  # display name (falls back to the folder name)
-            label = display_version_name(inst.id)
-            if label != inst.name:
-                text += "   [" + label + "]"
-            if inst.note:
-                text += "  — " + inst.note
-            item = QListWidgetItem(text)
-            item.setData(Qt.UserRole, inst.id)  # instance id in a data role to avoid parsing text
-            self.list.addItem(item)
-        self.empty_instances.update_for(self.list.count())
+    # ---------- list ----------
 
-    def _selected_instance(self):
-        name = self._current_name()
-        if not name:
-            return None
-        return list_instances().get(name)
-
-    def _reload_mods(self) -> None:
-        inst = self._selected_instance()
-        if inst is None:
-            self._mods_dir = None
-            self._mods = []
-            self._filling_mods = True
-            try:
-                self.mods_table.setRowCount(0)
-            finally:
-                self._filling_mods = False
-            set_app_status(self, tr("instances.mods.hint"))
-            return
+    def refresh(self, select: str | None = None) -> None:
+        """Rebuild the instance list; `select` forces a selection (None keeps the current one)."""
+        wanted = select if select is not None else self._current_name()
         cfg, _ = config.load()
         game_dir = cfg.game_dir or paths.default_game_dir()
+        instances = list_instances(game_dir)
+        self._instances = instances
+        ordered = sorted(instances.values(), key=self._sort_key)
+        needle = self.search_edit.text().strip().lower()
+        self.list.blockSignals(True)
         try:
-            from launcher.instances import resolve_instance
-
-            self._mods_dir = resolve_instance(inst.id, cfg, game_dir).mods_dir
-        except Exception as exc:  # noqa: BLE001 - handle dir resolution failure via the hint
-            self._mods_dir = None
-            set_app_status(self, tr("instances.mods.msg.load_fail", exc), "error")
-            return
-        set_app_status(self, tr("instances.mods.loading"))
-        mods_dir = self._mods_dir
-        run_in_background(
-            lambda: scan_mods(mods_dir),
-            on_result=self._fill_mods_table,
-            on_error=lambda m: set_app_status(
-                self, tr("instances.mods.msg.load_fail", m), "error"
-            ),
-        )
-
-    def _fill_mods_table(self, mods: list) -> None:
-        self._mods = mods
-        self._refill_mods()
-
-    def _refill_mods(self) -> None:
-        want = self.mods_filter.currentData()
-        needle = self.mods_search.text().strip().lower()
-        shown = []
-        for m in self._mods:
-            if want == "enabled" and not m.enabled:
-                continue
-            if want == "disabled" and m.enabled:
-                continue
-            if needle and needle not in (m.name + " " + m.mod_id + " " + m.file).lower():
-                continue
-            shown.append(m)
-        self._filling_mods = True
-        try:
-            self.mods_table.setSortingEnabled(False)
-            self.mods_table.setRowCount(0)
-            self.mods_table.setRowCount(len(shown))
-            for row, m in enumerate(shown):
-                check = QTableWidgetItem()
-                check.setFlags(
-                    Qt.ItemFlag.ItemIsUserCheckable
-                    | Qt.ItemFlag.ItemIsEnabled
-                    | Qt.ItemFlag.ItemIsSelectable
-                )
-                check.setCheckState(
-                    Qt.CheckState.Checked if m.enabled else Qt.CheckState.Unchecked
-                )
-                check.setData(Qt.UserRole, m.file)
-                self.mods_table.setItem(row, 0, check)
-                for col, text in enumerate(
-                    (m.name, m.mod_id, m.version, m.loader, m.file), start=1
-                ):
-                    self.mods_table.setItem(row, col, QTableWidgetItem(text))
-            self.mods_table.setSortingEnabled(True)
+            self.list.clear()
+            shown = 0
+            for inst in ordered:
+                if needle and needle not in self._haystack(inst):
+                    continue
+                item = QListWidgetItem(self._row_text(inst))
+                item.setData(Qt.UserRole, inst.id)  # instance id in a data role, never parsed
+                item.setToolTip(str(instance_dir(game_dir, inst.id)))
+                self.list.addItem(item)
+                shown += 1
         finally:
-            self._filling_mods = False
-        if not shown and self._mods:
-            set_app_status(self, tr("instances.mods.search.none"))
-        else:
-            set_app_status(self, tr("instances.mods.count", len(self._mods)))
+            self.list.blockSignals(False)
+        self._update_list_state(len(instances), self.list.count())
+        self._select(wanted)
 
-    def _on_mod_toggled(self, item: QTableWidgetItem) -> None:
-        if self._filling_mods or item.column() != 0:
-            return
-        mod = next((m for m in self._mods if m.file == item.data(Qt.UserRole)), None)
-        if mod is None:
-            return
-        want = item.checkState() == Qt.CheckState.Checked
-        if mod.enabled == want:
-            return
-        try:
-            set_mod_enabled(mod, want)
-        except OSError as exc:
-            set_app_status(self, tr("instances.mods.msg.toggle_fail", exc), "error")
-            self._filling_mods = True
-            try:
-                item.setCheckState(
-                    Qt.CheckState.Checked if mod.enabled else Qt.CheckState.Unchecked
-                )
-            finally:
-                self._filling_mods = False
+    def _sort_key(self, inst):
+        # Starred instances come first, then the chosen order
+        primary = 0 if inst.star else 1
+        if self.sort_combo.currentData() == "time":
+            return (primary, -float(inst.created_at or 0.0), inst.name.lower())
+        return (primary, inst.name.lower())
 
-    def _open_mods_folder(self) -> None:
-        if self._mods_dir is None:
-            set_app_status(self, tr("instances.mods.hint"))
-            return
-        QDesktopServices.openUrl(QUrl.fromLocalFile(str(self._mods_dir)))
+    def _row_text(self, inst) -> str:
+        text = inst.name  # display name (falls back to the folder name)
+        label = display_version_name(inst.id)
+        if label != inst.name:
+            text += "   [" + label + "]"
+        if inst.note:
+            text += "  — " + inst.note
+        return text
 
-    def _delete_selected_mods(self) -> None:
-        rows = sorted({i.row() for i in self.mods_table.selectedItems()}, reverse=True)
-        if not rows:
-            set_app_status(self, tr("instances.mods.msg.need_select"), "warning")
-            return
-        files = []
-        for row in rows:
-            item = self.mods_table.item(row, 5)
-            if item:
-                files.append(item.text())
-        answer = QMessageBox.question(
-            self,
-            tr("instances.mods.delete"),
-            tr("instances.mods.delete.confirm", len(files)),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
-        )
-        if answer != QMessageBox.StandardButton.Yes:
-            return
-        deleted = 0
-        for name in files:
-            mod = next((m for m in self._mods if m.file == name), None)
-            if mod is None:
-                continue
-            try:
-                mod.path.unlink()
-                deleted += 1
-            except OSError:
-                continue
-        set_app_status(self, tr("instances.mods.msg.deleted", deleted))
-        self._reload_mods()
+    def _haystack(self, inst) -> str:
+        """Search matches the display name, the instance id and the profile label."""
+        return " ".join(
+            (inst.name, inst.id, display_version_name(inst.id), inst.note)
+        ).lower()
 
-    def _install_dropped(self, jars: list[Path]) -> None:
-        if self._mods_dir is None:
-            set_app_status(self, tr("instances.mods.hint"))
+    def _update_list_state(self, total: int, shown: int) -> None:
+        if total == 0:
+            self.list_stack.setCurrentWidget(self.empty_instances)
+            self.empty_instances.update_for(0)
             return
-        errors = []
-        for src in jars:
-            try:
-                install_mod_file(src, self._mods_dir)
-            except OSError as exc:
-                errors.append(str(exc))
-        if errors:
-            set_app_status(self, tr("instances.mods.msg.import_fail", "; ".join(errors)), "error")
-        else:
-            set_app_status(
-                self, tr("instances.mods.msg.imported", ", ".join(j.name for j in jars))
-            )
-        self._reload_mods()
+        if shown == 0:
+            self.list_stack.setCurrentWidget(self.empty_search)
+            self.empty_search.update_for(0)
+            return
+        self.list_stack.setCurrentWidget(self.list)
+
+    def _select(self, instance_id: str | None) -> None:
+        """Select a row by instance id (no selection when it is gone)."""
+        row = -1
+        if instance_id:
+            for index in range(self.list.count()):
+                if self.list.item(index).data(Qt.UserRole) == instance_id:
+                    row = index
+                    break
+        self.list.setCurrentRow(row)  # -1 when the instance disappeared: shows the hint panel
+        self._on_selection_changed(row)
+
+    def select_instance(self, instance_id: str) -> bool:
+        """Show one instance (used by the versions page's 打开实例 button)."""
+        self.refresh(select=instance_id)
+        found = self._current_name() == instance_id
+        if not found:
+            set_app_status(self, tr("instances.msg.not_found", instance_id), "warning")
+        return found
 
     def _current_name(self) -> str | None:
-        row = self.list.currentRow()
-        if row < 0:
+        item = self.list.currentItem()
+        if item is None:
             return None
-        item = self.list.item(row)
-        name = item.data(Qt.UserRole)
-        return name if name else None
+        instance_id = item.data(Qt.UserRole)
+        return instance_id if instance_id else None
+
+    def _on_search_changed(self) -> None:
+        self.refresh()
+
+    def _on_selection_changed(self, _row: int) -> None:
+        instance_id = self._current_name()
+        if instance_id is None:
+            self.detail.set_instance(None)
+            self.detail_stack.setCurrentWidget(self.no_selection)
+            return
+        self.detail_stack.setCurrentWidget(self.detail)
+        self.detail.set_instance(instance_id)
+
+    def _on_detail_changed(self) -> None:
+        """Metadata changed in the detail: rebuild the list, keeping the shown instance."""
+        self.refresh(select=self.detail.instance_id or self._current_name())
+
+    def _on_detail_deleted(self, _instance_id: str) -> None:
+        self.refresh()
+
+    def _selected_instance(self):
+        instance_id = self._current_name()
+        if not instance_id:
+            return None
+        return self._instances.get(instance_id) if hasattr(self, "_instances") else None
+
+    # ---------- page-level actions (delegating to the detail) ----------
+
+    def _open_folder(self) -> None:
+        """Open the selected instance folder."""
+        if self._current_name() is None:
+            set_app_status(self, tr("instances.msg.need_select"), "warning")
+            return
+        self.detail.open_instance_folder()
+
+    def _rename(self) -> None:
+        if self._current_name() is None:
+            set_app_status(self, tr("instances.msg.need_select"), "warning")
+            return
+        self.detail.rename()
+
+    def _edit_note(self) -> None:
+        if self._current_name() is None:
+            set_app_status(self, tr("instances.msg.need_select"), "warning")
+            return
+        self.detail.edit_note()
+
+    def _export(self) -> None:
+        if self._current_name() is None:
+            set_app_status(self, tr("instances.msg.need_select"), "warning")
+            return
+        self.detail.export()
+
+    def _delete(self) -> None:
+        if self._current_name() is None:
+            set_app_status(self, tr("instances.msg.need_select"), "warning")
+            return
+        self.detail.delete()
+
+    def _launch(self) -> None:
+        if self._current_name() is None:
+            set_app_status(self, tr("instances.msg.need_select"), "warning")
+            return
+        self.detail.launch()
+
+    def _open_crash_viewer(self) -> None:
+        self.detail.open_crash_viewer()
+
+    def _install_dropped(self, jars: list[Path]) -> None:
+        self.detail.install_dropped(jars)
 
     def _create(self) -> None:
         dialog = _CreateDialog(self)
@@ -503,150 +393,22 @@ class InstancesPage(QWidget):
         disable_keeping_focus(self.create_button)
         run_in_background(
             do_create,
-            on_result=lambda _inst: (
-                self.refresh(),
-                set_app_status(self, tr("instances.msg.created", name)),
-            ),
-            on_error=lambda m: set_app_status(self, tr("instances.msg.create_fail", m), "error"),
-            on_finished=lambda: self.create_button.setEnabled(True),
+            on_result=self._on_created,
+            on_error=self._on_create_failed,
+            on_finished=self._on_create_finished,
         )
 
-    def _guard_base(self, name: str) -> bool:
-        """Every installed version is an instance now, so nothing is off limits here.
+    def _on_created(self, instance) -> None:
+        self.refresh(select=instance.id)
+        set_app_status(self, tr("instances.msg.created", instance.name))
 
-        Kept as a single hook so the (phase C) page rework has one place to add
-        per-instance safety checks; returns True when the action must stop.
-        """
-        return False
+    def _on_create_failed(self, message: str) -> None:
+        set_app_status(self, tr("instances.msg.create_fail", message), "error")
 
-    def _delete(self) -> None:
-        name = self._current_name()
-        if name is None:
-            set_app_status(self, tr("instances.msg.need_select"), "warning")
-            return
-        if self._guard_base(name):
-            return
-        from PySide6.QtWidgets import QMessageBox
-
-        answer = QMessageBox.question(
-            self,
-            tr("instances.delete.dialog"),
-            tr("instances.delete.msg", name),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
-        )
-        if answer != QMessageBox.StandardButton.Yes:
-            return
-        cfg, _ = config.load()
-        game_dir = cfg.game_dir or paths.default_game_dir()
-        try:
-            delete_instance(name, game_dir)
-        except InstancesError as exc:
-            set_app_status(self, tr("instances.msg.delete_fail", str(exc)), "error")
-            return
-        self.refresh()
-        set_app_status(self, tr("instances.msg.deleted", name))
-
-    def _context_menu(self, pos) -> None:
-        menu = QMenu(self)
-        rename_action = menu.addAction(tr("instances.rename"))
-        note_action = menu.addAction(tr("instances.note"))
-        folder_action = menu.addAction(tr("instances.open_folder"))
-        export_action = menu.addAction(tr("instances.export"))
-        launch_action = menu.addAction(tr("instances.launch"))
-        delete_action = menu.addAction(tr("instances.delete"))
-        chosen = menu.exec(self.list.mapToGlobal(pos))
-        if chosen == rename_action:
-            self._rename()
-        elif chosen == note_action:
-            self._edit_note()
-        elif chosen == folder_action:
-            self._open_folder()
-        elif chosen == export_action:
-            self._export()
-        elif chosen == launch_action:
-            self._launch()
-        elif chosen == delete_action:
-            self._delete()
-
-    def _rename(self) -> None:
-        name = self._current_name()
-        if name is None:
-            set_app_status(self, tr("instances.msg.need_select"), "warning")
-            return
-        new_name, ok = QInputDialog.getText(
-            self,
-            tr("instances.rename.dialog"),
-            tr("instances.rename.prompt"),
-            text=name,
-        )
-        new_name = new_name.strip()
-        if not ok or not new_name or new_name == name:
-            return
-        cfg, _ = config.load()
-        game_dir = cfg.game_dir or paths.default_game_dir()
-        try:
-            rename_instance(name, new_name, game_dir)
-        except InstancesError as exc:
-            set_app_status(self, tr("instances.msg.rename_fail", str(exc)), "error")
-            return
-        self.refresh()
-        # Keep the renamed instance selected
-        for row in range(self.list.count()):
-            if self.list.item(row).text().startswith(new_name + "   ["):
-                self.list.setCurrentRow(row)
-                break
-        set_app_status(self, tr("instances.msg.renamed", name, new_name))
-
-    def _edit_note(self) -> None:
-        name = self._current_name()
-        if name is None:
-            set_app_status(self, tr("instances.msg.need_select"), "warning")
-            return
-        inst = list_instances().get(name)
-        text, ok = QInputDialog.getMultiLineText(
-            self,
-            tr("instances.note"),
-            tr("instances.note.prompt"),
-            inst.note if inst else "",
-        )
-        if not ok:
-            return
-        try:
-            update_instance_note(name, text)
-        except InstancesError as exc:
-            set_app_status(self, tr("instances.msg.note_fail", str(exc)), "error")
-            return
-        self.refresh()
-        set_app_status(self, tr("instances.msg.note_saved", name))
-
-    def _export(self) -> None:
-        name = self._current_name()
-        if name is None:
-            set_app_status(self, tr("instances.msg.need_select"), "warning")
-            return
-        from PySide6.QtWidgets import QFileDialog
-
-        dest, _filter = QFileDialog.getSaveFileName(
-            self, tr("instances.export"), name + ".zip", "Zip (*.zip)"
-        )
-        if not dest:
-            return
-        cfg, _ = config.load()
-        game_dir = cfg.game_dir or paths.default_game_dir()
-
-        def do_export() -> object:
-            return export_instance(name, Path(dest), game_dir)
-
-        run_in_background(
-            do_export,
-            on_result=lambda p: set_app_status(self, tr("instances.msg.exported", str(p))),
-            on_error=lambda m: set_app_status(self, tr("instances.msg.export_fail", m), "error"),
-        )
+    def _on_create_finished(self) -> None:
+        self.create_button.setEnabled(True)
 
     def _import(self) -> None:
-        from PySide6.QtWidgets import QFileDialog
-
         zip_path, _filter = QFileDialog.getOpenFileName(
             self, tr("instances.import"), "", "Zip (*.zip)"
         )
@@ -655,160 +417,22 @@ class InstancesPage(QWidget):
         cfg, _ = config.load()
         game_dir = cfg.game_dir or paths.default_game_dir()
 
-        def do_import() -> object:
-            return import_instance(Path(zip_path), game_dir)
-
+        disable_keeping_focus(self.import_button)
         run_in_background(
-            do_import,
+            import_instance,
+            Path(zip_path),
+            game_dir,
             on_result=self._on_imported,
-            on_error=lambda m: set_app_status(self, tr("instances.msg.import_fail", m), "error"),
+            on_error=self._on_import_failed,
+            on_finished=self._on_import_finished,
         )
 
-    def _on_imported(self, inst) -> None:
-        self.refresh()
-        set_app_status(self, tr("instances.msg.imported", inst.name))
+    def _on_imported(self, instance) -> None:
+        self.refresh(select=instance.id)
+        set_app_status(self, tr("instances.msg.imported", instance.name))
 
-    def _open_folder(self) -> None:
-        """Open the instance folder (users can drop third-party mods/resource packs/shader packs directly)."""
-        name = self._current_name()
-        if name is None:
-            set_app_status(self, tr("instances.msg.need_select"), "warning")
-            return
-        cfg, _ = config.load()
-        game_dir = cfg.game_dir or paths.default_game_dir()
-        target = instance_dir(game_dir, name)  # the instance folder == the version folder
-        target.mkdir(parents=True, exist_ok=True)
-        QDesktopServices.openUrl(QUrl.fromLocalFile(str(target)))
-        set_app_status(self, tr("instances.msg.folder_opened", str(target)))
+    def _on_import_failed(self, message: str) -> None:
+        set_app_status(self, tr("instances.msg.import_fail", message), "error")
 
-    def _open_crash_viewer(self) -> None:
-        """Open the crash report viewer for the selected instance (or the global game dir)."""
-        from gui.crash_viewer import CrashViewerDialog
-
-        cfg, _ = config.load()
-        base = cfg.game_dir or paths.default_game_dir()
-        inst = self._selected_instance()
-        if inst is None:
-            game_dir = base
-        else:
-            from launcher.instances import resolve_instance
-
-            game_dir = resolve_instance(inst.id, cfg, base).launch_dir
-        CrashViewerDialog(game_dir, self).exec()
-
-    def _launch(self) -> None:
-        name = self._current_name()
-        if name is None:
-            set_app_status(self, tr("instances.msg.need_select"), "warning")
-            return
-        instances = list_instances()
-        inst = instances.get(name)
-        if inst is None:
-            set_app_status(self, tr("instances.msg.not_found", name), "warning")
-            return
-        cfg, _ = config.load()
-        game_dir = cfg.game_dir or paths.default_game_dir()
-        from launcher.instances import resolve_instance
-
-        resolved = resolve_instance(inst.id, cfg, game_dir)
-        # Offline-mode gate: launching an instance without a licensed account counts as an offline launch
-        if not cfg.selected_account:
-            from launcher.config import offline_mode_allowed
-
-            if not offline_mode_allowed():
-                set_app_status(self, tr("launch.msg.offline_locked"), "warning")
-                return
-        disable_keeping_focus(self.launch_button)
-        set_app_status(self, tr("instances.msg.preparing", name))
-
-        def do_prepare() -> object:
-            try:
-                account = resolve_launch_account(
-                    AccountStore(), cfg.selected_account, None
-                )
-                prepared = prepare_launch(
-                    inst.version_id,
-                    game_dir=game_dir,
-                    cache_dir=paths.launcher_dir() / "cache",
-                    account=account,
-                    memory_gb=resolved.memory_gb if resolved.memory_from_instance else cfg.memory_gb,
-                    language=cfg.game_language or None,
-                    launch_dir=resolved.launch_dir,
-                    java_path=resolved.java_path,
-                    jvm_args=resolved.jvm_args or None,
-                    game_args=resolved.game_args,
-                )
-                return ("ok", prepared)
-            except Exception as exc:  # noqa: BLE001
-                return ("error", str(exc))
-
-        run_in_background(
-            do_prepare,
-            on_result=self._on_prepared,
-            on_finished=lambda: self.launch_button.setEnabled(True),
-        )
-
-    def _on_prepared(self, result) -> None:
-        kind, payload = result
-        if kind == "error":
-            text = tr("instances.msg.launch_fail", str(payload))
-            set_app_status(self, text, "error")
-            show_fatal(self, text)  # fatal error dialog
-            return
-        prepared = payload
-        command = prepared.command
-        set_app_status(self, tr("instances.msg.running", prepared.version.id, str(command.cwd)))
-
-        # After-launch behavior (keep / hide / exit) via a signal bridge.
-        from gui.workers import ProgressBridge
-
-        cfg2, _ = config.load()
-        start_bridge = ProgressBridge()
-        if cfg2.after_launch_behavior != "keep":
-            start_bridge.progress.connect(self._on_game_started)
-
-        def do_run() -> object:
-            started = __import__("time").time()
-            code = run_process(
-                command.argv,
-                command.cwd,
-                on_started=start_bridge if cfg2.after_launch_behavior != "keep" else None,
-            )
-            crashes = find_new_crash_reports(command.cwd, started)
-            return code, crashes
-
-        run_in_background(
-            do_run,
-            on_result=self._on_exit,
-            on_error=lambda m: (
-                set_app_status(self, tr("instances.msg.run_error", m), "error"),
-                show_fatal(self, tr("instances.msg.run_error", m)),
-            ),
-        )
-
-    def _on_exit(self, result) -> None:
-        code, crashes = result
-        message = tr("launch.msg.exit", code)
-        if crashes:
-            message += tr("launch.msg.crash", len(crashes))
-        set_app_status(self, message)
-
-    def _on_game_started(self, _value=None) -> None:
-        from PySide6.QtCore import QTimer
-        from PySide6.QtWidgets import QApplication
-
-        cfg, _ = config.load()
-        if cfg.trim_memory_on_launch:
-            from launcher.launch.memory import trim_working_set
-
-            trim_working_set()
-        set_app_status(self, tr("launch.msg.auto_closing"))
-        if cfg.after_launch_behavior == "keep":
-            return
-        if cfg.after_launch_behavior == "hide":
-            # Hide the window but keep the launcher running in the background.
-            self.window().hide()
-            return
-        # Exit: hide first so no stale window remains while the app quits.
-        self.window().hide()
-        QTimer.singleShot(600, QApplication.instance().quit)
+    def _on_import_finished(self) -> None:
+        self.import_button.setEnabled(True)
