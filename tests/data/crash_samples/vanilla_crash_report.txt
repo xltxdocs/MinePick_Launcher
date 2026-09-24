@@ -1,0 +1,40 @@
+---- Minecraft Crash Report ----
+// Ouch. That hurt :(
+
+Time: 2026-09-25 21:14:11
+Description: Rendering overlay
+
+java.lang.NullPointerException: Cannot invoke "net.minecraft.client.renderer.texture.TextureAtlasSprite.getU0()" because "this.sprite" is null
+	at com.mojang.blaze3d.vertex.DefaultVertexFormat.upload(DefaultVertexFormat.java:214) ~[client-1.20.1-20230612.114412-srg.jar%23231!/:?] {re:classloading}
+	at net.minecraft.client.renderer.GameRenderer.render(GameRenderer.java:953) ~[client-1.20.1-20230612.114412-srg.jar%23231!/:?] {re:classloading}
+	at net.minecraft.client.Minecraft.runTick(Minecraft.java:1104) ~[client-1.20.1-20230612.114412-srg.jar%23231!/:?] {re:classloading}
+	at net.minecraft.client.main.Main.main(Main.java:218) ~[client-1.20.1-20230612.114412-srg.jar%23231!/:?] {}
+
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
+
+-- Head --
+Thread: Render thread
+Stacktrace:
+	at com.mojang.blaze3d.vertex.DefaultVertexFormat.upload(DefaultVertexFormat.java:214) ~[client-1.20.1-20230612.114412-srg.jar%23231!/:?] {re:classloading}
+
+-- System Details --
+Details:
+	Minecraft Version: 1.20.1
+	Minecraft Version ID: 1.20.1
+	Operating System: Windows 11 (amd64) version 10.0
+	Java Version: 17.0.9, Microsoft
+	Java VM Version: OpenJDK 64-Bit Server VM (mixed mode, sharing), Microsoft
+	Memory: 402653184 bytes (384 MiB) / 1107296256 bytes (1056 MiB) up to 4294967296 bytes (4096 MiB)
+	JVM Flags: 8 total; -XX:HeapDumpPath=MojangTricksIntelDriversForPerformance_javaw.exe_minecraft.exe.heapdump -Xmx4096m -XX:+UseG1GC -XX:-OmitStackTraceInFastThrow -Djava.library.path=C:\Users\Test\AppData\Roaming\.minecraft\versions\1.20.1\natives
+	Launched Version: 1.20.1
+	Backend library: LWJGL version 3.3.3 build 7
+	Backend API: Microsoft Basic Render Driver GL version 4.6.0
+	Window size: 854x480
+	GL Caps: Using framebuffer using OpenGL 3.2
+	Using VBOs: Yes
+	Is Modded: Probably not. Jar signature remains and client brand is untouched.
+	Type: Client (map_client.txt)
+	Resource Packs: vanilla
+	Current Language: en_us
+	CPU: 16x AMD Ryzen 7 5800X 8-Core Processor

@@ -1,0 +1,47 @@
+---- Minecraft Crash Report ----
+// Embeddium instance tainted by mods: [oculus, embeddium_extra]
+// Please do not reach out for Embeddium support without removing these mods first.
+
+Time: 2026-09-25 21:16:03
+Description: Rendering overlay
+
+java.lang.NullPointerException: Cannot invoke "io.github.itskillerluc.duclib.data.model.serializers.GeometryHolder.geometry()" because "holder" is null
+	at io.github.itskillerluc.duclib.client.model.BaseDucModel.generateLakeDefinition(BaseDucModel.java:43) ~[duclib-1.20-1.1.4.jar%23206!/:1.1.4] {re:classloading}
+	at io.github.itskillerluc.recrafted_creatures.client.ClientEvents.lambda$registerLayers$11(ClientEvents.java:64) ~[recrafted_creatures-1.4.6-1.20.1.jar%23225!/:?] {re:classloading}
+	at net.minecraftforge.client.ForgeHooksClient.loadLayerDefinitions(ForgeHooksClient.java:818) ~[forge-1.20.1-47.4.18-universal.jar%23236!/:?] {re:mixin,pl:mixin:A}
+	at net.minecraft.client.main.Main.main(Main.java:218) ~[client-1.20.1-20230612.114412-srg.jar%23231!/:?] {}
+
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
+
+-- Head --
+Thread: Render thread
+Suspected Mods:
+	Recrafted Creatures (recrafted_creatures), Version: 0.0NONE
+	at TRANSFORMER/recrafted_creatures@0.0NONE/io.github.itskillerluc.recrafted_creatures.client.ClientEvents.lambda$registerLayers$11(ClientEvents.java:64)
+
+	DucLib (duclib), Version: 1.1.4
+	at TRANSFORMER/duclib@1.1.4/io.github.itskillerluc.duclib.client.model.BaseDucModel.generateLakeDefinition(BaseDucModel.java:43)
+Stacktrace:
+	at io.github.itskillerluc.duclib.client.model.BaseDucModel.generateLakeDefinition(BaseDucModel.java:43) ~[duclib-1.20-1.1.4.jar%23206!/:1.1.4] {re:classloading}
+
+-- System Details --
+Details:
+	Minecraft Version: 1.20.1
+	Minecraft Version ID: 1.20.1
+	Operating System: Windows 11 (amd64) version 10.0
+	Java Version: 17.0.9, Microsoft
+	Java VM Version: OpenJDK 64-Bit Server VM (mixed mode, sharing), Microsoft
+	Memory: 535957160 bytes (511 MiB) / 1107296256 bytes (1056 MiB) up to 8925478912 bytes (8512 MiB)
+	JVM Flags: 12 total; -Xmx8499m -XX:+UseG1GC -XX:G1NewSizePercent=20
+	Launched Version: 1.20.1-forge-47.4.18
+	Backend library: LWJGL version 3.3.1 build 7
+	Backend API: NVIDIA GeForce RTX 4060/PCIe/SSE2 GL version 4.6.0 NVIDIA 552.22, NVIDIA Corporation
+	Is Modded: Definitely; Client brand changed to 'forge'
+	Type: Client (map_client.txt)
+	Mod List:
+		recrafted_creatures-1.4.6-1.20.1.jar |Recrafted Creatures |recrafted_creatures |0.0NONE |DONE |Manifest: NOSIGNATURE
+		duclib-1.20-1.1.4.jar |DucLib |duclib |1.1.4 |DONE |Manifest: NOSIGNATURE
+	Crash Report UUID: 8a5ac708-aa02-47af-97bd-960e64bf03a2
+	FML: 47.4
+	Forge: net.minecraftforge:47.4.18

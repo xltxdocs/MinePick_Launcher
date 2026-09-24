@@ -1,0 +1,14 @@
+[25Sep2026 21:08:11.402] [main/INFO] [FabricLoader/]: Loading 38 mods:
+	- fabric-api 0.92.2+1.20.1
+	- sodium-extra 0.5.4+mc1.20.1
+[25Sep2026 21:08:12.998] [main/ERROR] [FabricLoader/]: Uncaught exception in thread "main"
+net.fabricmc.loader.impl.FormattedException: Mod resolution encountered an incompatible mod set!
+A potential solution has been determined:
+	 - Install fabric-api, version 0.92.2+1.20.1 or later.
+	 - Replace mod 'Sodium Extra' (sodium-extra) 0.5.4 with any version that is compatible with the current game version.
+Unmet dependency listing:
+	 - Mod 'Sodium Extra' (sodium-extra) 0.5.4 requires any version of fabric-api, which is missing!
+	at net.fabricmc.loader.impl.FormattedException.ofLocalized(FormattedException.java:63) ~[fabric-loader-0.15.11.jar:?]
+	at net.fabricmc.loader.impl.FabricLoaderImpl.load(FabricLoaderImpl.java:194) ~[fabric-loader-0.15.11.jar:?]
+	at net.fabricmc.loader.impl.launch.knot.Knot.init(Knot.java:146) ~[fabric-loader-0.15.11.jar:?]
+	at net.fabricmc.loader.impl.launch.knot.KnotClient.main(KnotClient.java:28) ~[fabric-loader-0.15.11.jar:?]

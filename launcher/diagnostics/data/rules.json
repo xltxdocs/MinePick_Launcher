@@ -1,0 +1,279 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "code": "MPL-Launch-0002",
+      "phase": "launcher",
+      "source": "launcher",
+      "match": {
+        "any": [
+          "JavaMissingError",
+          "No suitable Java",
+          "no suitable java runtime",
+          "Failed to find a suitable Java",
+          "Failed to find a suitable java",
+          "需要 Java"
+        ]
+      },
+      "cause": "diagnosis.launch.java_missing.cause",
+      "advice": ["diagnosis.launch.java_missing.advice"],
+      "confidence": "high",
+      "stop": true
+    },
+    {
+      "code": "MPL-Launch-0003",
+      "phase": "launcher",
+      "source": "launcher",
+      "match": {
+        "any": [
+          "OfflineLockedError",
+          "offline.locked",
+          "Offline mode requires",
+          "requires signing in with a Microsoft account",
+          "离线模式需要先登录"
+        ]
+      },
+      "cause": "diagnosis.launch.offline_gate.cause",
+      "advice": ["diagnosis.launch.offline_gate.advice"],
+      "confidence": "high",
+      "stop": true
+    },
+    {
+      "code": "MPL-Launch-0004",
+      "phase": "launcher",
+      "source": "launcher",
+      "match": {
+        "any": [
+          "MetaError",
+          "meta.not_found",
+          "meta.json_invalid",
+          "meta.inherit_cycle",
+          "version JSON",
+          "版本 JSON",
+          { "regex": "Expecting value: line" }
+        ]
+      },
+      "cause": "diagnosis.launch.version_json.cause",
+      "advice": ["diagnosis.launch.version_json.advice"],
+      "confidence": "high",
+      "stop": true
+    },
+    {
+      "code": "MPL-Launch-0005",
+      "phase": "launcher",
+      "source": "launcher",
+      "match": {
+        "any": [
+          "DownloadError",
+          "download failed",
+          "Failed to download",
+          "net.connect",
+          "net.timeout",
+          "net.http_error",
+          "net.rate_limited",
+          "net.server_error",
+          "ConnectError",
+          "ReadTimeout",
+          "HTTPStatusError",
+          "下载失败",
+          "校验失败"
+        ]
+      },
+      "cause": "diagnosis.launch.download.cause",
+      "advice": ["diagnosis.launch.download.advice"],
+      "confidence": "low",
+      "stop": true
+    },
+    {
+      "code": "MPL-Launch-0006",
+      "phase": "launcher",
+      "source": "launcher",
+      "match": {
+        "any": [
+          "PermissionError",
+          "AccessDeniedException",
+          "Access is denied",
+          "being used by another process",
+          "Permission denied",
+          "拒绝访问",
+          "另一个程序正在使用此文件",
+          { "regex": "(?i)WinError (5|32)\\b" },
+          { "regex": "(?i)Errno 13\\b" }
+        ]
+      },
+      "cause": "diagnosis.launch.file_access.cause",
+      "advice": ["diagnosis.launch.file_access.advice"],
+      "confidence": "high",
+      "stop": true
+    },
+    {
+      "code": "MPL-Launch-0007",
+      "phase": "launcher",
+      "source": "launcher",
+      "match": {
+        "any": [
+          "No space left on device",
+          "not enough space on the disk",
+          "磁盘空间不足",
+          { "regex": "(?i)WinError 112\\b" },
+          { "regex": "(?i)Errno 28\\b" }
+        ]
+      },
+      "cause": "diagnosis.launch.disk_full.cause",
+      "advice": ["diagnosis.launch.disk_full.advice"],
+      "confidence": "high",
+      "stop": true
+    },
+    {
+      "code": "MPL-Launch-0008",
+      "phase": "launcher",
+      "source": "game",
+      "match": {
+        "all": ["Error occurred during initialization of VM"],
+        "any": [
+          "Could not reserve enough space for object heap",
+          "Invalid maximum heap size",
+          "exceeds the maximum representable size"
+        ]
+      },
+      "cause": "diagnosis.launch.heap_args.cause",
+      "advice": ["diagnosis.launch.heap_args.advice"],
+      "confidence": "high",
+      "stop": true
+    },
+    {
+      "code": "MPL-Crash-0101",
+      "phase": "fatal",
+      "source": "game",
+      "match": {
+        "all": ["OutOfMemoryError"],
+        "none": ["Could not reserve enough space for object heap"]
+      },
+      "cause": "diagnosis.crash.oom.cause",
+      "advice": ["diagnosis.crash.oom.advice", "{memory}"],
+      "confidence": "high",
+      "stop": true
+    },
+    {
+      "code": "MPL-Crash-0102",
+      "phase": "primary",
+      "source": "hs_err",
+      "match": {
+        "all": ["insufficient memory for the Java Runtime Environment"],
+        "any": ["32-Bit", "Client VM", "windows-x86", "x86_32"]
+      },
+      "cause": "diagnosis.crash.low_memory_32bit.cause",
+      "advice": ["diagnosis.crash.low_memory_32bit.advice", "{java}"],
+      "confidence": "high"
+    },
+    {
+      "code": "MPL-Crash-0103",
+      "phase": "fatal",
+      "source": "hs_err",
+      "match": {
+        "all": ["# A fatal error has been detected by the Java Runtime Environment"],
+        "any": [
+          "# C  [ig",
+          "# C  [igd",
+          "# C  [atio",
+          "# C  [amdvlk",
+          "# C  [amdxc",
+          "# C  [nvoglv",
+          "# C  [nvwgf"
+        ],
+        "none": ["insufficient memory for the Java Runtime Environment"]
+      },
+      "cause": "diagnosis.crash.gpu_driver.cause",
+      "advice": ["diagnosis.crash.gpu_driver.advice"],
+      "confidence": "high",
+      "stop": true
+    },
+    {
+      "code": "MPL-Crash-0104",
+      "phase": "fatal",
+      "source": "game",
+      "match": {
+        "any": [
+          "Missing or unsupported mandatory dependencies",
+          "MissingDependenciesException",
+          "Missing Mods:",
+          "Mod resolution encountered an incompatible mod set",
+          "Incompatible mod set!",
+          "requires any version of",
+          "Unmet dependency",
+          "which is missing"
+        ]
+      },
+      "cause": "diagnosis.crash.missing_dependency.cause",
+      "advice": ["diagnosis.crash.missing_dependency.advice"],
+      "confidence": "high",
+      "stop": true
+    },
+    {
+      "code": "MPL-Crash-0105",
+      "phase": "fatal",
+      "source": "game",
+      "match": {
+        "any": [
+          "DuplicateModsFoundException",
+          "Found duplicate mods",
+          "Duplicate mod id",
+          "Duplicate mod:",
+          { "regex": "(?i)duplicate mods? found" }
+        ]
+      },
+      "cause": "diagnosis.crash.duplicate_mods.cause",
+      "advice": ["diagnosis.crash.duplicate_mods.advice"],
+      "confidence": "high",
+      "stop": true
+    },
+    {
+      "code": "MPL-Crash-0106",
+      "phase": "primary",
+      "source": "game",
+      "match": {
+        "any": [
+          "MixinApplyError",
+          "MixinApplyException",
+          "MixinTransformerError",
+          "InvalidMixinException",
+          "Mixin apply failed",
+          "Critical injection failure",
+          "org.spongepowered.asm.mixin.throwables"
+        ]
+      },
+      "cause": "diagnosis.crash.mixin_failure.cause",
+      "advice": ["diagnosis.crash.mixin_failure.advice"],
+      "confidence": "high"
+    },
+    {
+      "code": "MPL-Crash-0107",
+      "phase": "primary",
+      "source": "game",
+      "match": {
+        "any": [
+          "UnsupportedClassVersionError",
+          "NoSuchMethodError",
+          "NoClassDefFoundError",
+          "AbstractMethodError",
+          "IncompatibleClassChangeError"
+        ],
+        "none": ["Missing or unsupported mandatory dependencies", "Unmet dependency"]
+      },
+      "cause": "diagnosis.crash.version_mismatch.cause",
+      "advice": ["diagnosis.crash.version_mismatch.advice", "{mc}"],
+      "confidence": "medium"
+    },
+    {
+      "code": "MPL-Crash-0108",
+      "phase": "secondary",
+      "source": "crash_report",
+      "match": {
+        "any": ["Suspected Mods:", "Suspected Mod:", "Mod Suspects", "Mod File:"]
+      },
+      "cause": "diagnosis.crash.suspected_mod.cause",
+      "advice": ["diagnosis.crash.suspected_mod.advice"],
+      "confidence": "medium"
+    }
+  ]
+}

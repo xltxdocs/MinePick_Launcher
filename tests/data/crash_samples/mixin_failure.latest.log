@@ -1,0 +1,11 @@
+[25Sep2026 21:09:58.221] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.8.5 Source=file:/C:/Users/Test/AppData/Roaming/.minecraft/libraries/org/spongepowered/mixin/0.8.5/mixin-0.8.5.jar
+[25Sep2026 21:10:01.884] [main/ERROR] [mixin/]: Mixin apply failed sodium.mixins.json:features.render.world.MixinLevelRenderer -> net.minecraft.client.renderer.LevelRenderer: org.spongepowered.asm.mixin.throwables.MixinApplyError: Mixin [sodium.mixins.json:features.render.world.MixinLevelRenderer] from phase [DEFAULT] in config [sodium.mixins.json] FAILED during APPLY
+org.spongepowered.asm.mixin.throwables.MixinApplyError: Mixin [sodium.mixins.json:features.render.world.MixinLevelRenderer] from phase [DEFAULT] in config [sodium.mixins.json] FAILED during APPLY
+	at org.spongepowered.asm.mixin.transformer.MixinProcessor.applyMixins(MixinProcessor.java:392) ~[mixin-0.8.5.jar:0.8.5+Jenkins-b310.git-155314e6e91465dad727e621a569906a410cd6f4]
+	at org.spongepowered.asm.mixin.transformer.MixinTransformer.transformClass(MixinTransformer.java:250) ~[mixin-0.8.5.jar:0.8.5+Jenkins-b310.git-155314e6e91465dad727e621a569906a410cd6f4]
+Caused by: org.spongepowered.asm.mixin.injection.throwables.InjectionError: Critical injection failure: Redirector redirectVertexFormat() in sodium.mixins.json:features.render.world.MixinLevelRenderer failed injection check, (0/1) succeeded. Scanned 1 target(s). Using refmap sodium-refmap.json
+	at org.spongepowered.asm.mixin.injection.struct.InjectionInfo.postInject(InjectionInfo.java:466) ~[mixin-0.8.5.jar:0.8.5+Jenkins-b310.git-155314e6e91465dad727e621a569906a410cd6f4]
+	at org.spongepowered.asm.mixin.transformer.MixinTargetContext.applyInjections(MixinTargetContext.java:1471) ~[mixin-0.8.5.jar:0.8.5+Jenkins-b310.git-155314e6e91465dad727e621a569906a410cd6f4]
+[25Sep2026 21:10:02.110] [main/ERROR] [FabricLoader/]: Uncaught exception in thread "main"
+java.lang.RuntimeException: Mixin transformation of net.minecraft.client.renderer.LevelRenderer failed
+	at net.fabricmc.loader.impl.launch.knot.KnotClassDelegate.doTransform(KnotClassDelegate.java:430) ~[fabric-loader-0.15.11.jar:?]

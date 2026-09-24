@@ -1,0 +1,7 @@
+[25Sep2026 21:07:44.010] [main/INFO] [LaunchServiceHandler/]: Launching with Java 8 (1.8.0_402)
+[25Sep2026 21:07:44.220] [main/WARN] [FabricLoader/]: Fabric Loader 0.15.11 requires Java 17 or later
+Exception in thread "main" java.lang.UnsupportedClassVersionError: net/fabricmc/loader/impl/launch/server/FabricServerLauncher has been compiled by a more recent version of the Java Runtime (class file version 61.0), this version of the Java Runtime only recognizes class file versions up to 52.0
+	at java.lang.ClassLoader.defineClass1(Native Method)
+	at java.lang.ClassLoader.defineClass(ClassLoader.java:756)
+	at java.security.SecureClassLoader.defineClass(SecureClassLoader.java:142)
+	at net.fabricmc.loader.impl.launch.server.FabricServerLauncher.main(FabricServerLauncher.java:61)

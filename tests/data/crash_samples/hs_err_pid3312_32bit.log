@@ -1,0 +1,40 @@
+# There is insufficient memory for the Java Runtime Environment to continue.
+# Native memory allocation (malloc) failed to allocate 1048576 bytes for Chunk::new
+# Possible reasons:
+#   The system is out of physical RAM or swap space
+#   The process is running with CompressedOops enabled, and the Java Heap may be blocking the growth of the native heap
+# Possible solutions:
+#   Reduce memory load on the system
+#   Increase physical memory or swap space
+#   Check if swap backing store is full
+#   Decrease Java heap size (-Xmx/-Xms)
+#   Decrease number of Java threads
+#   Decrease Java thread stack sizes (-Xss)
+#   Set larger code cache with -XX:ReservedCodeCacheSize=
+# This output file may be truncated or incomplete.
+#
+#  Out of Memory Error (os_windows.cpp:3475), pid=3312, tid=5884
+#
+# JRE version: Java(TM) SE Runtime Environment (8.0_202-b08) (build 1.8.0_202-b08)
+# Java VM: Java HotSpot(TM) Client VM (25.202-b08 mixed mode windows-x86 )
+# Failed to write core dump. Minidumps are not enabled by default on client versions of Windows
+#
+
+---------------  T H R E A D  ---------------
+
+Current thread (0x00a2b400):  JavaThread "Client thread" [_thread_in_native, id=5884, stack(0x00c00000,0x00d00000)]
+
+Stack: [0x00c00000,0x00d00000],  sp=0x00cffc48,  free space=1020k
+Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
+V  [jvm.dll+0x1a2c4d10]
+C  [KERNEL32.DLL+0x1c5a]
+C  [ntdll.dll+0x5e9b]
+
+VM Arguments:
+jvm_args: -Xmx2048m -Djava.library.path=C:\Users\Test\AppData\Roaming\.minecraft\versions\1.8.9\natives
+java_command: net.minecraft.launchwrapper.Launch
+
+---------------  S Y S T E M  ---------------
+
+OS: Windows 10.0 , 10.0, x86
+CPU: 4 total

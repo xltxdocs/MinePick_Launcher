@@ -42,6 +42,25 @@ def test_placeholder_counts_match_zh() -> None:
             assert value.count("{}") == zh[key].count("{}"), f"{code} {key}: {value}"
 
 
+def test_rule_keys_are_translated_in_every_language() -> None:
+    """Every key the crash knowledge base produces must exist in all nine tables.
+
+    The rules are data (``launcher/diagnostics/data/rules.json``) and carry keys
+    plus arguments only; a key missing from a table would silently fall back to
+    English, so the shipped rule file is checked against every language here.
+    """
+    from launcher.diagnostics import load_rules, referenced_keys
+
+    keys = referenced_keys(load_rules())
+    assert keys, "the shipped rule file references no i18n key"
+    codes = [code for code, _name in i18n.UI_LANGUAGES]
+    missing = {
+        code: [key for key in keys if key not in i18n.TRANSLATIONS[code]] for code in codes
+    }
+    problems = [f"{code}: {absent}" for code, absent in missing.items() if absent]
+    assert not problems, "rule keys missing from the language tables:\n" + "\n".join(problems)
+
+
 def test_detect_system_language_mapping() -> None:
     assert i18n.detect_system_language("zh_CN") == "zh_cn"
     assert i18n.detect_system_language("zh_TW") == "zh_tw"

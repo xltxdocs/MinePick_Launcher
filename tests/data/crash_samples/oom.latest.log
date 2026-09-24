@@ -1,0 +1,19 @@
+[25Sep2026 21:10:03.114] [main/INFO] [LaunchServiceHandler/]: Loading 42 mods
+[25Sep2026 21:10:03.240] [main/INFO] [FabricLoader/]: Loading 42 mods:
+	- fabric-api 0.92.2+1.20.1
+	- sodium 0.5.8+mc1.20.1
+[25Sep2026 21:10:04.001] [Render thread/INFO] [Minecraft/]: Setting user: Player
+[25Sep2026 21:10:05.512] [Render thread/INFO] [Minecraft/]: Backend library: LWJGL version 3.3.3+build 7
+[25Sep2026 21:11:22.540] [Render thread/INFO] [Minecraft/]: Preparing spawn area: 61%
+[25Sep2026 21:12:48.902] [Server thread/WARN] [Minecraft/]: Can't keep up! Is the server overloaded? Running 4412ms or 88 ticks behind
+[25Sep2026 21:13:57.318] [Render thread/WARN] [Minecraft/]: Ignoring chunk since it's not in the view range
+[25Sep2026 21:14:02.117] [Render thread/ERROR] [Minecraft/]: Exception ticking world
+java.lang.OutOfMemoryError: Java heap space
+	at java.base/java.util.Arrays.copyOf(Arrays.java:3537) ~[?:?]
+	at java.base/java.lang.AbstractStringBuilder.ensureCapacityInternal(AbstractStringBuilder.java:226) ~[?:?]
+	at java.base/java.lang.AbstractStringBuilder.append(AbstractStringBuilder.java:656) ~[?:?]
+	at net.minecraft.client.renderer.chunk.RenderChunk.compile(RenderChunk.java:301) ~[client-1.20.1.jar:?]
+	at net.minecraft.client.renderer.LevelRenderer.setupRender(LevelRenderer.java:1188) ~[client-1.20.1.jar:?]
+	at net.minecraft.client.Minecraft.runTick(Minecraft.java:1104) ~[client-1.20.1.jar:?]
+[25Sep2026 21:14:02.402] [Render thread/ERROR] [Minecraft/]: Failed to allocate a 1048576 byte allocation
+[25Sep2026 21:14:02.910] [Render thread/INFO] [STDERR/]: [java.lang.ThreadGroup:uncaughtException:1068]: java.lang.OutOfMemoryError: Java heap space

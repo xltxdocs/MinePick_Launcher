@@ -15,6 +15,8 @@ a = Analysis(
     datas=[
         ("gui/resources", "gui/resources"),
         ("launcher/mods/data", "launcher/mods/data"),
+        # 崩溃/启动失败知识库（launcher/diagnostics/rules.py 经 resource_path() 读取）
+        ("launcher/diagnostics/data", "launcher/diagnostics/data"),
         # 第三方许可声明随包携带（关于页展示的同一份清单，仓库里由工具生成）
         ("THIRD_PARTY_NOTICES.md", "."),
         # CurseForge 内置 Key：来自 gitignored 的 build/cf_key.txt，不进入源码仓库

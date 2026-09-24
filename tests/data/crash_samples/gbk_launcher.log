@@ -1,0 +1,9 @@
+2026-09-25 21:05:12 INFO    launcher.launch.runner: 启动游戏: versions/1.20.1
+2026-09-25 21:05:12 INFO    launcher.launch.orchestrate: 使用 Java 17
+2026-09-25 21:05:13 ERROR   launcher.install: 安装文件失败
+Traceback (most recent call last):
+  File "launcher\install.py", line 118, in ensure_version_files
+    shutil.copyfile(source, target)
+  File "shutil.py", line 254, in copyfile
+OSError: [WinError 32] 另一个程序正在使用此文件，进程无法访问。: 'C:\\Users\\Test\\AppData\\Roaming\\.minecraft\\versions\\1.20.1\\1.20.1.jar'
+2026-09-25 21:05:13 ERROR   launcher.install: 请关闭占用该文件的程序后重试

@@ -1,0 +1,8 @@
+[25Sep2026 21:06:31.220] [main/ERROR] [ne.ne.fm.loading.ModSorter/]: Found duplicate mods:
+	mods/embeddium-0.3.31+mc1.20.1.jar
+	mods/rubidium-0.7.1.jar
+java.lang.RuntimeException: Duplicate mods found!
+	at net.neoforged.fml.loading.ModSorter.lambda$buildList$4(ModSorter.java:180) ~[fmlloader-1.21.1-21.1.72.jar:?]
+	at net.neoforged.fml.loading.ModSorter.buildUniqueList(ModSorter.java:99) ~[fmlloader-1.21.1-21.1.72.jar:?]
+	at net.neoforged.fml.loading.ModSorter.buildList(ModSorter.java:76) ~[fmlloader-1.21.1-21.1.72.jar:?]
+	at net.neoforged.fml.loading.moddiscovery.ModDiscoverer.discoverMods(ModDiscoverer.java:73) ~[fmlloader-1.21.1-21.1.72.jar:?]

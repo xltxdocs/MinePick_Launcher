@@ -1,0 +1,46 @@
+# A fatal error has been detected by the Java Runtime Environment:
+#
+#  EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x00007ffb1a2c4d10, pid=4820, tid=14208
+#
+# JRE version: OpenJDK Runtime Environment (17.0.9+9) (build 17.0.9+9)
+# Java VM: OpenJDK 64-Bit Server VM (17.0.9+9, mixed mode, sharing, tiered, compressed oops, g1 gc, windows-amd64)
+# Problematic frame:
+# C  [nvoglv64.dll+0x9d4d10]
+#
+# Failed to write core dump. Minidumps are not enabled by default on client versions of Windows
+#
+# If you would like to submit a bug report, please visit:
+#   https://bugreport.java.com/bugreport/crash.jsp
+# The crash happened outside the Java Virtual Machine in native code.
+# See problematic frame for where to report the bug.
+#
+
+---------------  T H R E A D  ---------------
+
+Current thread (0x0000021c9d4c3800):  JavaThread "Render thread" [_thread_in_native, id=14208, stack(0x000000c3a8d00000,0x000000c3a8e00000)]
+
+Stack: [0x000000c3a8d00000,0x000000c3a8e00000],  sp=0x000000c3a8dfe8b0,  free space=1017k
+Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
+C  [nvoglv64.dll+0x9d4d10]
+C  [nvoglv64.dll+0x9d5a02]
+C  [lwjgl_opengl.dll+0x1a4c]
+J 2513 c2 org.lwjgl.opengl.GL11C.nglDrawElements(JIJJ)J (0 bytes) @ 0x0000021c7d0a4b58 [0x0000021c7d0a4ae0+0x00078]
+
+Java frames: (J=compiled Java code, j=interpreted, Vv=VM code)
+J 2513 c2 org.lwjgl.opengl.GL11C.nglDrawElements(JIJJ)J (0 bytes) @ 0x0000021c7d0a4b58 [0x0000021c7d0a4ae0+0x00078]
+J 2512 c1 net.minecraft.client.renderer.LevelRenderer.renderLevel(Lcom/mojang/blaze3d/vertex/PoseStack;)V (1024 bytes)
+
+---------------  P R O C E S S  ---------------
+
+Java Threads: ( => current thread )
+  0x0000021c9d4c3800 JavaThread "Render thread" [_thread_in_native, id=14208]
+
+VM Arguments:
+jvm_args: -Xmx4096m -XX:+UseG1GC -Djava.library.path=C:\Users\Test\AppData\Roaming\.minecraft\versions\1.20.1\natives
+java_command: net.fabricmc.loader.impl.launch.knot.KnotClient
+java_class_path (initial): C:\Users\Test\AppData\Roaming\.minecraft\libraries\net\fabricmc\intermediary\1.20.1\intermediary-1.20.1.jar
+
+---------------  S Y S T E M  ---------------
+
+OS: Windows 11 , 10.0, amd64
+CPU: 16 total
