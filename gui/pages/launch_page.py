@@ -112,9 +112,14 @@ class LaunchPage(QWidget):
         instance_actions = QHBoxLayout()
         instance_actions.setContentsMargins(0, 0, 0, 0)
         instance_actions.setSpacing(6)
+        instance_actions.addStretch(1)
         instance_actions.addWidget(self.select_instance_button)
         instance_actions.addWidget(self.instance_settings_button)
         instance_actions.addStretch(1)
+        # A little wider than the natural size: the two actions sit under the full-width launch
+        # button and read better when they are not cramped against their labels.
+        for button in (self.select_instance_button, self.instance_settings_button):
+            button.setMinimumWidth(button.sizeHint().width() + 10)
 
         layout = QVBoxLayout(self)
         style_page_layout(layout)
