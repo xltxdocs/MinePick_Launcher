@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
-# MinePick Launcher（UI 分支）PyInstaller 打包：只产出 GUI 版
+# MinePick Launcher PyInstaller 打包：只产出 GUI 版
 #   MinePick_Launcher.exe —— GUI（无控制台窗口，双击启动）
-# 本分支不提供 CLI 版，因此不构建 MinePick_Launcher_cli.exe
+# 本仓库不提供 CLI 版，因此不构建 MinePick_Launcher_cli.exe
 # 用法: pyinstaller build_exe.spec
 # 前置: pip install .[gui] pyinstaller
 
@@ -15,6 +15,8 @@ a = Analysis(
     datas=[
         ("gui/resources", "gui/resources"),
         ("launcher/mods/data", "launcher/mods/data"),
+        # 第三方许可声明随包携带（关于页展示的同一份清单，仓库里由工具生成）
+        ("THIRD_PARTY_NOTICES.md", "."),
         # CurseForge 内置 Key：来自 gitignored 的 build/cf_key.txt，不进入源码仓库
         ("build/cf_key.txt", "launcher/mods/data"),
     ],

@@ -33,6 +33,7 @@ INCLUDE_FILES = (
     "README.md",
     "README_zh.md",
     "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
     ".gitignore",
     "requirements.txt",
     "requirements-dev.txt",
