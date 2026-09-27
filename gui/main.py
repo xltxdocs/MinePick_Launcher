@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 
 from PySide6.QtGui import QIcon
@@ -116,6 +117,12 @@ def create_app(argv: list[str] | None = None) -> QApplication:
 
 def main() -> int:
     configure_logging(log_file=paths.launcher_dir() / "logs" / "launcher.log")
+    # A single-file build unpacks into a fresh _MEI folder on every start; a hard-killed run leaves
+    # its folder behind (measured: 22 leftovers, 0.70 GB, in one temp directory). Sweep the stale
+    # ones once, before any window exists.
+    removed = paths.cleanup_stale_extraction_dirs()
+    if removed:
+        logging.getLogger(__name__).info("removed %d stale extraction folder(s)", removed)
     app = create_app()
 
     # First-run wizard: language / game directory / default memory

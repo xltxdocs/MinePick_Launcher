@@ -32,7 +32,9 @@ Launcher data directory decision order:
 from __future__ import annotations
 
 import os
+import shutil
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -54,6 +56,48 @@ def launcher_dir() -> Path:
         # Portable mode: config folder next to the EXE, shared by both build variants
         return Path(sys.executable).resolve().parent / PORTABLE_DIRNAME
     return Path(user_data_dir(APP_NAME, APP_NAME))
+
+
+def extraction_root() -> Path | None:
+    """Where the onefile bootloader unpacked this run (None when not running frozen).
+
+    PyInstaller extracts a single-file EXE into a fresh `_MEIxxxxxx` folder on every start and
+    removes it on a clean exit - a killed process leaves it behind (measured: 22 leftovers,
+    0.70 GB, in the user's temp directory). The *parent* of this run's folder is therefore the
+    place to look for stale ones.
+    """
+    meipass = getattr(sys, "_MEIPASS", None)
+    if not meipass:
+        return None
+    return Path(meipass).parent
+
+
+def cleanup_stale_extraction_dirs(max_age_seconds: float = 86400.0) -> int:
+    """Delete leftover onefile extraction folders older than `max_age_seconds`.
+
+    Only the current extraction root is scanned, only names starting with `_MEI`, and only folders
+    older than the limit - so a second instance that is running right now is never touched. Returns
+    how many folders were removed; never raises.
+    """
+    root = extraction_root()
+    if root is None:
+        return 0
+    try:
+        entries = list(root.glob("_MEI*"))
+    except OSError:
+        return 0
+    deadline = time.time() - float(max_age_seconds)
+    removed = 0
+    for entry in entries:
+        try:
+            if not entry.is_dir() or entry.stat().st_mtime >= deadline:
+                continue
+            shutil.rmtree(entry, ignore_errors=True)
+            if not entry.exists():
+                removed += 1
+        except OSError:
+            continue  # a folder another instance still uses: leave it alone
+    return removed
 
 
 def resource_path(relative: str | Path) -> Path:
