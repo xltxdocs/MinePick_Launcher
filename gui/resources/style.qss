@@ -56,6 +56,9 @@ QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
 }
 QLineEdit:hover, QComboBox:hover, QSpinBox:hover, QDoubleSpinBox:hover { border-color: #33404f; }
 QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus { border: 1px solid __ACCENT__; }
+/* Containers that can hold focus need a visible focus state of their own (UI guideline 5.1). They
+   keep a 1px transparent border even at rest, so colouring it cannot shift the layout (3.3). */
+QTextEdit:focus, QTableWidget:focus, QTableView:focus, QScrollArea:focus { border: 1px solid __ACCENT__; }
 QLineEdit:disabled, QComboBox:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled {
     color: #6b7c92;
     background: #131a23;
@@ -336,7 +339,7 @@ QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
 
 /* ---------- scroll area keeps the page background ---------- */
 
-QScrollArea { background: transparent; border: none; }
+QScrollArea { background: transparent; border: 1px solid transparent; }
 QScrollArea > QWidget > QWidget { background: transparent; }
 
 /* ---------- grouped form sections ---------- */
