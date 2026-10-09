@@ -77,8 +77,6 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.stack, 1)
 
         # Frameless window: the frame is ours, so it follows the theme instead of the OS
-        from PySide6.QtWidgets import QSizeGrip
-
         from gui.title_bar import TitleBar
 
         self.setWindowFlag(Qt.WindowType.FramelessWindowHint, True)
@@ -96,8 +94,6 @@ class MainWindow(QMainWindow):
         self.status_label = StatusLabel("")
         self.status_label.setObjectName("hint")
         self.statusBar().addWidget(self.status_label)
-        # a frameless window loses the native resize border: keep a grip in the corner
-        self.statusBar().addPermanentWidget(QSizeGrip(self))
 
         self.sidebar.currentRowChanged.connect(self.stack.setCurrentIndex)
         self.sidebar.currentRowChanged.connect(self._on_nav_changed)

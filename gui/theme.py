@@ -233,6 +233,27 @@ def radius_scale(radius: str | None) -> tuple[int, int, int]:
     return RADIUS_SCALES.get(radius or DEFAULT_RADIUS, RADIUS_SCALES[DEFAULT_RADIUS])
 
 
+def device_scale(app: QApplication) -> int:
+    """The screen's device pixel ratio, clamped to the asset multiples we ship (1x/2x/3x)."""
+    screen = app.primaryScreen()
+    ratio = float(screen.devicePixelRatio()) if screen is not None else 1.0
+    return max(1, min(3, round(ratio)))
+
+
+def glyph_path(name: str, scale: int) -> str:
+    """Absolute path of the crispest glyph for this screen.
+
+    The small geometric glyphs (combo arrow, spin arrows, checkbox tick) ship as @2x/@3x bitmaps that
+    tools/gen_ui_assets.py *draws* at that size. The stylesheet keeps the logical box, so on a 200%
+    screen the @2x bitmap maps 1:1 onto the device grid instead of a 10x6 bitmap being stretched.
+    """
+    if scale > 1:
+        candidate = paths.resource_path(f"gui/resources/{name}@{scale}x.png")
+        if candidate.exists():
+            return candidate.as_posix()
+    return paths.resource_path(f"gui/resources/{name}.png").as_posix()
+
+
 def apply_theme(
     theme: str,
     accent: str | None = None,
@@ -249,15 +270,14 @@ def apply_theme(
     if not path.exists():
         return
     text = path.read_text(encoding="utf-8")
-    # url() in QSS cannot reliably resolve relative paths: replace with the image's absolute path when loading
-    arrow = "down_arrow_light.png" if theme == "light" else "down_arrow.png"
-    arrow_path = paths.resource_path("gui/resources/" + arrow)
-    text = text.replace("__DOWN_ARROW__", arrow_path.as_posix())
+    # url() in QSS cannot reliably resolve relative paths: replace with the image's absolute path when
+    # loading, choosing the bitmap that matches this screen's scaling (see glyph_path).
+    scale = device_scale(app)
     suffix = "_light" if theme == "light" else ""
-    for placeholder, name in (("__SPIN_UP__", f"spin_up{suffix}.png"), ("__SPIN_DOWN__", f"spin_down{suffix}.png")):
-        text = text.replace(placeholder, paths.resource_path(f"gui/resources/{name}").as_posix())
-    check_path = paths.resource_path("gui/resources/check.png")
-    text = text.replace("__CHECK__", check_path.as_posix())
+    text = text.replace("__DOWN_ARROW__", glyph_path(f"down_arrow{suffix}", scale))
+    text = text.replace("__SPIN_UP__", glyph_path(f"spin_up{suffix}", scale))
+    text = text.replace("__SPIN_DOWN__", glyph_path(f"spin_down{suffix}", scale))
+    text = text.replace("__CHECK__", glyph_path("check", scale))
     text = text.replace("__FONT__", font_stack(font))
     palette = theme_palette(theme, accent)
     # longest placeholders first so __ACCENT__ never eats the prefixed variants
