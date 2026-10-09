@@ -112,3 +112,33 @@ def test_every_focus_stop_changes_pixels(walkthrough_report):
         "these focus stops produce no visible change (or their exemption is stale):\n  "
         + "\n  ".join(offenders)
     )
+
+
+def _weak_name_stops(report: str) -> list[str]:
+    """Stops whose accessible name is missing, or comes only from a placeholder/tooltip."""
+    weak: list[str] = []
+    for line in report.splitlines():
+        if "可读名称缺失或过弱" not in line:
+            continue
+        _, _, rest = line.partition(":")
+        weak.extend(part.strip() for part in rest.split(",") if part.strip())
+    return weak
+
+
+@pytest.mark.xfail(
+    strict=False,
+    reason=(
+        "0.4.0 has given explicit accessible names to the account button and the three search fields; "
+        "the remaining stops are lists, tables, scroll areas and the mods search field, which need new "
+        "i18n keys. Tracked by the WCAG conformance table, section four."
+    ),
+)
+def test_every_control_has_a_usable_accessible_name(walkthrough_report):
+    """WCAG 4.1.2: a focusable control must expose a name a screen reader can announce.
+
+    A placeholder disappears as soon as the field has content, and a tooltip phrased as an instruction
+    ("switch account") is read out as an order - which is why C4 asks for a noun instead. Both are
+    counted as weak here.
+    """
+    offenders = _weak_name_stops(walkthrough_report)
+    assert not offenders, "controls without a usable accessible name:\n  " + "\n  ".join(offenders)

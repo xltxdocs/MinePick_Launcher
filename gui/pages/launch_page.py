@@ -74,6 +74,8 @@ class LaunchPage(QWidget):
         self.account_label.setObjectName("hint")
         self.account_button = QPushButton()
         self.account_button.setObjectName("iconButton")
+        # A noun, not the tooltip's verb phrase: a screen reader must not read a command (C4).
+        self.account_button.setAccessibleName(tr("nav.account"))
         self.account_button.setIcon(icons.icon("switch"))
         self.account_button.setToolTip(tr("launch.account.switch"))
         self.account_button.setFixedWidth(46)

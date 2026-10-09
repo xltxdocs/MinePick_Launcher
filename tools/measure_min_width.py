@@ -31,12 +31,71 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from collections.abc import Iterable
+from dataclasses import dataclass, field
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 WORK = Path(os.environ.get("MCLAUNCHER_MEASURE_DIR", r"D:\dsh-workspace\tmp\measure_preview"))
 LANGUAGES = ("en_us", "zh_cn", "zh_tw", "ja_jp", "ko_kr", "ru_ru", "fr_fr", "es_es", "de_de")
 FONTS = ("C:/Windows/Fonts/msyh.ttc", "C:/Windows/Fonts/seguiemj.ttf", "C:/Windows/Fonts/consola.ttf")
+# The A3 target: the window must fit the longest language without the user resizing anything.
+MAX_ACCEPTED_WIDTH = 1180
+
+
+@dataclass
+class Measurement:
+    """One language's floor: the window's minimum width and which page forces it."""
+
+    language: str
+    window_min: int
+    widest_page: str
+    per_page: list[tuple[int, str]] = field(default_factory=list)
+
+
+def measure_languages(languages: Iterable[str] = LANGUAGES) -> list[Measurement]:
+    """Measure every language in one QApplication (the caller must not have created one yet)."""
+    app = _prepare()
+    return _measure_with_app(app, languages)
+
+
+def _measure_with_app(app, languages: Iterable[str]) -> list[Measurement]:
+    from gui import i18n
+    from gui.main_window import NAV_KEYS, MainWindow
+    from launcher import config
+
+    results: list[Measurement] = []
+    for language in languages:
+        cfg, cfg_path = config.load()
+        cfg.ui_language = language
+        config.save(cfg, cfg_path)
+        i18n.set_language(language)
+
+        window = MainWindow()
+        window.apply_window_mode()
+        app.processEvents()
+        per_page = []
+        for key in NAV_KEYS:
+            page = window.pages.get(key)
+            if page is not None:
+                per_page.append((page.minimumSizeHint().width(), key))
+        per_page.sort(reverse=True)
+        results.append(
+            Measurement(
+                language=language,
+                window_min=window.minimumSizeHint().width(),
+                widest_page=per_page[0][1] if per_page else "-",
+                per_page=per_page,
+            )
+        )
+        window.close()
+        window.deleteLater()
+        app.processEvents()
+    return results
+
+
+def worst(measurements: Iterable[Measurement]) -> Measurement | None:
+    return max(measurements, key=lambda item: item.window_min, default=None)
 
 
 def _prepare():
@@ -90,56 +149,39 @@ def main() -> int:
     parser.add_argument("--languages", default=",".join(LANGUAGES), help="comma-separated language codes")
     parser.add_argument("--children", action="store_true", help="also list the widest widgets per page")
     parser.add_argument("--limit", type=int, default=12, help="rows in the children listing")
+    parser.add_argument(
+        "--max-width",
+        type=int,
+        default=MAX_ACCEPTED_WIDTH,
+        help="fail when the widest language exceeds this (0 disables the check)",
+    )
     args = parser.parse_args()
 
-    app = _prepare()
-    from pathlib import Path as _Path
-
-    from PySide6.QtWidgets import QWidget
-
-    from gui import i18n
-    from gui.main_window import NAV_KEYS, MainWindow
-    from launcher import config
-
     languages = [code.strip() for code in args.languages.split(",") if code.strip()]
-    print(f"{'language':10} {'window':>8} {'widest page':>12}   top pages")
-    worst = ("", 0, "")
-    worst_window = None
-    for language in languages:
-        cfg, cfg_path = config.load()
-        cfg.ui_language = language
-        config.save(cfg, cfg_path)
-        i18n.set_language(language)
+    app = _prepare()
+    results = _measure_with_app(app, languages)
 
+    print(f"{'language':10} {'window':>8} {'widest page':>12}   top pages")
+    for item in results:
+        print(
+            f"{item.language:10} {item.window_min:>8} {item.widest_page:>12}   "
+            + ", ".join(f"{key}={value}" for value, key in item.per_page[:3])
+        )
+    worst_item = worst(results)
+    if worst_item is not None:
+        print(f"\nworst: {worst_item.language} -> {worst_item.window_min}px, driven by page '{worst_item.widest_page}'")
+
+    if args.children and worst_item is not None:
+        from PySide6.QtWidgets import QWidget
+
+        from gui import i18n
+        from gui.main_window import MainWindow
+
+        i18n.set_language(worst_item.language)
         window = MainWindow()
         window.apply_window_mode()
         app.processEvents()
-        window_min = window.minimumSizeHint().width()
-
-        per_page = []
-        for key in NAV_KEYS:
-            page = window.pages.get(key)
-            if page is not None:
-                per_page.append((page.minimumSizeHint().width(), key))
-        per_page.sort(reverse=True)
-        widest = per_page[0] if per_page else (0, "-")
-        print(
-            f"{language:10} {window_min:>8} {widest[1]:>12}   "
-            + ", ".join(f"{key}={value}" for value, key in per_page[:3])
-        )
-        if window_min > worst[1]:
-            worst = (language, window_min, widest[1])
-            worst_window = window
-        else:
-            window.close()
-            window.deleteLater()
-        app.processEvents()
-
-    print(f"\nworst: {worst[0]} -> {worst[1]}px, driven by page '{worst[2]}'")
-
-    if args.children and worst_window is not None:
-        i18n.set_language(worst[0])
-        page = worst_window.pages.get(worst[2])
+        page = window.pages.get(worst_item.widest_page)
         if page is not None:
             rows = []
             for child in [page, *page.findChildren(QWidget)]:
@@ -153,11 +195,17 @@ def main() -> int:
                     )
                 )
             rows.sort(reverse=True)
-            print(f"\nwidest children of '{worst[2]}' ({worst[0]}):")
+            print(f"\nwidest children of '{worst_item.widest_page}' ({worst_item.language}):")
             for minimum, hint, kind, name, text in rows[: args.limit]:
                 print(f"  min={minimum:>5} hint={hint:>5}  {kind:22} {name:16} {text}")
 
-    _ = _Path  # kept for readers of the imports above
+    if args.max_width and worst_item is not None and worst_item.window_min > args.max_width:
+        print(
+            f"\nFAIL: {worst_item.language} needs {worst_item.window_min}px, above the {args.max_width}px budget"
+        )
+        return 1
+    if args.max_width:
+        print(f"\nOK: every language fits inside {args.max_width}px")
     return 0
 
 

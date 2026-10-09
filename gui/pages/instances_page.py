@@ -139,6 +139,7 @@ class InstancesPage(QWidget):
         self.search_edit = QLineEdit()
         add_search_icon(self.search_edit)
         self.search_edit.setPlaceholderText(tr("instances.search.placeholder"))
+        self.search_edit.setAccessibleName(tr("instances.search.placeholder"))  # WCAG 4.1.2
         self.search_edit.setClearButtonEnabled(True)
 
         self.list = QListWidget()

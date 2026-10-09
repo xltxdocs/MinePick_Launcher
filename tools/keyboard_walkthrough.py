@@ -72,6 +72,34 @@ def _readable(widget) -> str:
     return ""
 
 
+def _name_source(widget) -> str:
+    """Where would a screen reader get this control's name from? (WCAG 4.1.2)
+
+    `accessible` - an explicit setAccessibleName, which is the only source that always reaches UIA.
+    `text`       - the control's own visible text.
+    `placeholder`/`tooltip` - weak: a placeholder disappears once the field has content, and a tooltip
+                   written as an instruction ("switch account") is read out as an order (C4), so both
+                   are reported as names that still need an explicit one.
+    `none`       - nothing at all.
+    """
+    if (widget.accessibleName() or "").strip():
+        return "accessible"
+    for getter in ("text", "currentText", "title"):
+        attr = getattr(widget, getter, None)
+        try:
+            value = attr() if callable(attr) else None
+        except Exception:  # noqa: BLE001
+            value = None
+        if isinstance(value, str) and value.strip():
+            return "text"
+    placeholder = getattr(widget, "placeholderText", None)
+    if callable(placeholder) and (placeholder() or "").strip():
+        return "placeholder"
+    if (widget.toolTip() or "").strip():
+        return "tooltip"
+    return "none"
+
+
 def _describe(widget) -> tuple[str, str, str, str]:
     return (
         type(widget).__name__,
@@ -171,7 +199,7 @@ def _walk(
         widget = app.focusWidget()
         if widget is None:
             break
-        step = (*_describe(widget), _has_focus_rule(widget, selectors))
+        step = (*_describe(widget), _has_focus_rule(widget, selectors), _name_source(widget))
         if step in path:
             break  # wrapped around: the focus chain for this page is closed
         path.append(step)
@@ -406,24 +434,39 @@ def main() -> int:
 
                 point = widget.mapTo(window, QPoint(0, 0))
                 rect = f"{point.x()},{point.y()} {widget.width()}x{widget.height()}"
-                kind, name, label, _policy, _has_rule = path[len(visuals) - 1]
+                kind, name, label, _policy, _has_rule, _source = path[len(visuals) - 1]
                 invisible.append((key, kind, name, label, rect))
         without_rule = [
-            f"`{kind}` `{name}`" for kind, name, _label, _policy, has_rule in path if not has_rule
+            f"`{kind}` `{name}`"
+            for kind, name, _label, _policy, has_rule, _source in path
+            if not has_rule
+        ]
+        weak_names = [
+            f"`{kind}` `{name}`({source})"
+            for kind, name, _label, _policy, _rule, source in path
+            if source in ("none", "placeholder", "tooltip")
         ]
         detail.append(f"### {key}({len(path)} 个落点)")
         detail.append("")
         if without_rule:
             detail.append(f"- ⚠️ 未在样式表里找到 `:focus` 规则:{', '.join(without_rule)}")
             detail.append("")
-        detail.append("| # | 控件 | objectName | 可读名称 | 焦点策略 | 焦点样式 | 焦点可见 |")
-        detail.append("|---|---|---|---|---|---|---|")
-        for step_index, (kind, name, label, policy, has_rule) in enumerate(path):
+        if weak_names:
+            # Deliberately not the ⚠️ marker: that one means "no :focus rule", and an existing test
+            # asserts it never appears. This is a different, weaker finding.
+            detail.append(
+                f"- ❗ 可读名称缺失或过弱({len(weak_names)} 个,WCAG 4.1.2):{', '.join(weak_names)}"
+            )
+            detail.append("")
+        detail.append("| # | 控件 | objectName | 可读名称 | 名称来源 | 焦点策略 | 焦点样式 | 焦点可见 |")
+        detail.append("|---|---|---|---|---|---|---|---|")
+        for step_index, (kind, name, label, policy, has_rule, source) in enumerate(path):
             mark = "✅" if has_rule else "⚠️"
             visual = visuals[step_index] if step_index < len(visuals) else "—"
             visual_mark = {"yes": "✅", "no": "❌", "unknown": "❓", "flaky": "〰️"}.get(visual, "—")
+            source_mark = {"accessible": "✅ accessible", "text": "✅ text"}.get(source, f"❗ {source}")
             detail.append(
-                f"| {step_index + 1} | `{kind}` | `{name}` | {label or '—'} | {policy} "
+                f"| {step_index + 1} | `{kind}` | `{name}` | {label or '—'} | {source_mark} | {policy} "
                 f"| {mark} | {visual_mark} {visual} |"
             )
         detail.append("")

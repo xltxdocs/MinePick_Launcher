@@ -383,6 +383,7 @@ class InstanceDetail(QWidget):
         self.mods_search = QLineEdit()
         add_search_icon(self.mods_search)
         self.mods_search.setPlaceholderText(tr("instances.mods.search.placeholder"))
+        self.mods_search.setAccessibleName(tr("instances.mods.search.placeholder"))  # WCAG 4.1.2
         self.mods_search.setClearButtonEnabled(True)
         self.mods_filter = QComboBox()
         self.mods_filter.addItem(tr("instances.mods.filter.all"), "all")

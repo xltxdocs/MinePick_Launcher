@@ -147,6 +147,7 @@ class VersionsPage(QWidget):
         self.search_edit = QLineEdit()
         add_search_icon(self.search_edit)
         self.search_edit.setPlaceholderText(tr("versions.search.placeholder"))
+        self.search_edit.setAccessibleName(tr("versions.search.placeholder"))  # WCAG 4.1.2
         self.search_edit.setClearButtonEnabled(True)
         self.refresh_button = QPushButton(tr("versions.refresh"))
         self.refresh_button.setObjectName("secondaryButton")
