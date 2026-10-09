@@ -24,7 +24,7 @@ QWidget {
 
 QLabel#hint { color: __FG_HINT__; }
 QLabel#warning { color: __DANGER_FG__; }
-QLabel#title { font-size: 17px; font-weight: 700; }
+QLabel#title { font-size: 18px; font-weight: 700; }
 
 /* ---------- panels: lists, tables, log views ---------- */
 
@@ -41,9 +41,9 @@ QListWidget, QTableWidget, QTableView, QPlainTextEdit, QTextEdit {
 QPlainTextEdit {
     font-family: "Cascadia Mono", Consolas, "Microsoft YaHei UI", monospace;
     font-size: 12px;
-    padding: 8px 10px;
+    padding: 8px 8px;
 }
-QTextEdit { padding: 6px 8px; }
+QTextEdit { padding: 4px 8px; }
 
 /* ---------- inputs ---------- */
 
@@ -51,7 +51,7 @@ QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
     background: __BG_LIST__;
     border: 1px solid __BORDER_LIST__;
     border-radius: __RADIUS_SM__;
-    padding: 6px 11px;
+    padding: 4px 12px;
     min-height: 24px;
     selection-background-color: __ACCENT_SEL__;
     selection-color: __FG_SELECTED__;
@@ -83,7 +83,7 @@ QHeaderView::section {
 QHeaderView { background: __BG_SECTION__; }
 QTableCornerButton::section { background: __BG_SECTION__; border: none; }
 
-QTableWidget::item, QTableView::item { padding: 7px 9px; border: none; }
+QTableWidget::item, QTableView::item { padding: 8px 8px; border: none; }
 QTableWidget::item:hover, QTableView::item:hover { background: __BG_HOVER__; }
 QTableWidget::item:selected, QTableView::item:selected {
     background: __ACCENT_SEL__;
@@ -99,7 +99,7 @@ QPushButton {
     color: __FG_SELECTED__;
     border: none;
     border-radius: __RADIUS_SM__;
-    padding: 8px 18px;
+    padding: 8px 16px;
     font-weight: 600;
 }
 QPushButton:hover { background: __ACCENT_BUTTON_HOVER__; }
@@ -152,7 +152,7 @@ QLabel#accentSwatch { border: 1px solid __BORDER_SWATCH__; border-radius: 5px; }
 
 /* ---------- list items (generic) ---------- */
 
-QListWidget::item { padding: 9px 12px; border-radius: __RADIUS_SM__; margin: 2px 0; }
+QListWidget::item { padding: 8px 12px; border-radius: __RADIUS_SM__; margin: 0 0; }
 QListWidget::item:hover { background: __BG_HOVER__; }
 QListWidget::item:selected,
 QListWidget::item:selected:focus,
@@ -163,13 +163,13 @@ QListWidget::item:selected:!focus { background: __ACCENT_SEL__; color: __FG_SELE
 QListWidget#sidebar {
     background: transparent;
     border: none;
-    padding: 6px 4px;
+    padding: 4px 4px;
     outline: none;
 }
 QListWidget#sidebar::item {
     color: __FG_HINT__;
-    padding: 10px 12px;
-    margin: 3px 6px;
+    padding: 8px 12px;
+    margin: 4px 4px;
     border-radius: __RADIUS_LG__;
     border-left: 3px solid transparent;
     font-weight: 500;
@@ -232,7 +232,7 @@ QTabBar { background: transparent; }
 QTabBar::tab {
     background: transparent;
     color: __FG_HINT__;
-    padding: 9px 20px;
+    padding: 8px 16px;
     border: none;
     border-bottom: 2px solid transparent;
 }
@@ -256,7 +256,7 @@ QComboBox::down-arrow {
     image: url(__DOWN_ARROW__);
     width: 10px;
     height: 6px;
-    margin-right: 9px;
+    margin-right: 8px;
 }
 QComboBox QAbstractItemView {
     background: __BG_LIST_2__;
@@ -269,7 +269,7 @@ QComboBox QAbstractItemView {
     outline: none;
 }
 QComboBox QAbstractItemView::item {
-    padding: 9px 14px;
+    padding: 8px 12px;
     min-height: 26px;
     border-radius: __RADIUS_SM__;
 }
@@ -281,17 +281,17 @@ QMenu {
     color: __FG_TEXT__;
     border: 1px solid __BORDER_LIST__;
     border-radius: __RADIUS_LG__;
-    padding: 6px;
+    padding: 4px;
 }
-QMenu::item { padding: 9px 28px; border-radius: __RADIUS_SM__; }
+QMenu::item { padding: 8px 24px; border-radius: __RADIUS_SM__; }
 QMenu::item:selected { background: __ACCENT_SEL__; color: __FG_SELECTED__; }
-QMenu::separator { height: 1px; background: __BG_SEPARATOR__; margin: 5px 8px; }
+QMenu::separator { height: 1px; background: __BG_SEPARATOR__; margin: 4px 8px; }
 QToolTip {
     background: __BG_LIST_2__;
     color: __FG_TEXT__;
     border: 1px solid __BORDER_HOVER__;
     border-radius: __RADIUS_SM__;
-    padding: 5px 8px;
+    padding: 4px 8px;
 }
 
 /* ---------- spin box buttons: flat ---------- */
@@ -349,15 +349,15 @@ QScrollArea > QWidget > QWidget { background: transparent; }
 QGroupBox {
     border: 1px solid __BORDER_LIST__;
     border-radius: __RADIUS_LG__;
-    margin-top: 14px;
-    padding: 14px 12px 12px 12px;
+    margin-top: 12px;
+    padding: 12px 12px 12px 12px;
 }
 QGroupBox::title {
     subcontrol-origin: margin;
     left: 12px;
-    padding: 0 6px;
+    padding: 0 4px;
     color: __FG_HINT__;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 /* ---------- versions page: category chips + latest cards ---------- */
@@ -367,7 +367,7 @@ QPushButton#categoryTab {
     color: __FG_HINT__;
     border: 1px solid transparent;
     border-radius: 15px;
-    padding: 7px 17px;
+    padding: 8px 16px;
     font-weight: 500;
 }
 QPushButton#categoryTab:hover { color: __FG_TEXT__; background: __BG_SIDEBAR__; }
@@ -411,7 +411,7 @@ QLabel#overlayCode {
     background: __BG_OVERLAY_CODE__;
     border: 1px solid __BORDER_OVERLAY_CODE__;
     border-radius: __RADIUS_SM__;
-    padding: 2px 8px;
+    padding: 0 8px;
     font-weight: 700;
 }
 QLabel#overlayBody { color: __FG_OVERLAY_BODY__; }
@@ -431,7 +431,7 @@ QLabel#pageSubtitle { color: __FG_HINT__; font-size: 11px; }
 QLabel#emptyState {
     color: __FG_EMPTY_STATE__;
     font-size: 12px;
-    padding: 16px 10px;
+    padding: 16px 8px;
     background: transparent;
 }
 
@@ -490,7 +490,7 @@ QLabel#wizardDot[current="true"] { background: __ACCENT__; }
 /* ---------- wizard: rail, action bar, bigger buttons ---------- */
 
 QWidget#wizardRail { background: __BG_WINDOW__; border-right: 1px solid __BORDER_LIST__; }
-QLabel#wizardRailItem { color: __FG_RAIL_ITEM__; font-size: 13px; padding: 9px 6px; }
+QLabel#wizardRailItem { color: __FG_RAIL_ITEM__; font-size: 13px; padding: 8px 4px; }
 QLabel#wizardRailItem[state="current"] { color: __FG_PAGE_TITLE__; font-weight: 700; }
 QLabel#wizardRailItem[state="done"] { color: __FG_HINT__; }
 QWidget#wizardContent { background: __BG_WINDOW__; }
@@ -506,7 +506,7 @@ QPushButton#wizardOption, QPushButton#wizardBrowse {
     border: 1px solid __BORDER_LIST__;
     border-radius: __RADIUS_SM__;
     color: __FG_OPTION__;
-    padding: 10px 12px;
+    padding: 8px 12px;
     font-weight: 500;
     min-height: 22px;
 }
