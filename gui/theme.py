@@ -140,6 +140,69 @@ def accent_palette(theme: str, accent: str | None = None) -> dict[str, str]:
     }
 
 
+
+# Neutral / semantic palette: one entry per role, one value per theme. Together with
+# accent_palette() these are the only colours the QSS files may reference, through __TOKEN__
+# placeholders; both sheets are checked to hold no colour literals by tests/test_qss_tokens.py.
+NEUTRAL_TOKENS: dict[str, dict[str, str]] = {
+    "BG_BUTTON_ICON": {"dark": "#1c2531", "light": "#eef2f7"},
+    "BG_BUTTON_ICON_2": {"dark": "#161d27", "light": "#e3e9f1"},
+    "BG_BUTTON_SECONDARY": {"dark": "#1c2531", "light": "#f1f6f3"},
+    "BG_BUTTON_SECONDARY_2": {"dark": "#161d27", "light": "#e9eff5"},
+    "BG_DISABLED": {"dark": "#131a23", "light": "#f4f6f9"},
+    "BG_DISABLED_2": {"dark": "#232c39", "light": "#e2e8ef"},
+    "BG_HOVER": {"dark": "#1c2531", "light": "#1c2531"},
+    "BG_LIST": {"dark": "#161d27", "light": "#ffffff"},
+    "BG_LIST_2": {"dark": "#1c2531", "light": "#ffffff"},
+    "BG_OPTION": {"dark": "#161d27", "light": "#f7f9fc"},
+    "BG_OVERLAY_CODE": {"dark": "#2a1a1e", "light": "#fdecea"},
+    "BG_RAIL_DOT": {"dark": "#33404f", "light": "#c3ccd6"},
+    "BG_SCROLLBAR": {"dark": "#3d4b5e", "light": "#b9c5d2"},
+    "BG_SECTION": {"dark": "#1c2531", "light": "#f7f9fc"},
+    "BG_SEPARATOR": {"dark": "#27303d", "light": "#e6ebf1"},
+    "BG_SIDEBAR": {"dark": "#1c2531", "light": "#e9eff5"},
+    "BG_TITLEBAR_CLOSE": {"dark": "#d64545", "light": "#d64545"},
+    "BG_TITLEBAR_MINIMIZE": {"dark": "#1c2531", "light": "#dfe6ee"},
+    "BG_WINDOW": {"dark": "#0f141b", "light": "#f2f5f8"},
+    "BORDER_BUTTON_ICON": {"dark": "#27303d", "light": "#d5dde8"},
+    "BORDER_BUTTON_SECONDARY": {"dark": "#33404f", "light": "#c3ccd6"},
+    "BORDER_BUTTON_SECONDARY_2": {"dark": "#232c39", "light": "#e2e8ef"},
+    "BORDER_HOVER": {"dark": "#33404f", "light": "#b9c5d2"},
+    "BORDER_LIST": {"dark": "#27303d", "light": "#d5dde6"},
+    "BORDER_OVERLAY_CODE": {"dark": "#e5787f", "light": "#e5787f"},
+    "BORDER_SWATCH": {"dark": "#3a4757", "light": "#c3ccd6"},
+    "BORDER_TABLE": {"dark": "#212a36", "light": "#e6ebf1"},
+    "DANGER_BG": {"dark": "#2a1a1e", "light": "#fbeceb"},
+    "DANGER_BG_2": {"dark": "#221317", "light": "#f5ddda"},
+    "DANGER_BORDER": {"dark": "#6d3a40", "light": "#e0b3ad"},
+    "DANGER_BORDER_2": {"dark": "#e5787f", "light": "#b03a2e"},
+    "DANGER_BORDER_3": {"dark": "#3a2a2d", "light": "#eddad7"},
+    "DANGER_FG": {"dark": "#e5787f", "light": "#b03a2e"},
+    "DANGER_FG_2": {"dark": "#7a5a5e", "light": "#c39a95"},
+    "FG_BUTTON_SECONDARY": {"dark": "#b9c6d6", "light": "#33475c"},
+    "FG_CARD_LATEST": {"dark": "#ffffff", "light": "#1f2a36"},
+    "FG_DISABLED": {"dark": "#6b7c92", "light": "#9aa5b1"},
+    "FG_DISABLED_2": {"dark": "#6b7c92", "light": "#78838f"},
+    "FG_EMPTY_STATE": {"dark": "#7b8ca3", "light": "#677585"},
+    "FG_HINT": {"dark": "#8fa2b8", "light": "#64748b"},
+    "FG_OPTION": {"dark": "#d8dee9", "light": "#26313d"},
+    "FG_OPTION_2": {"dark": "#ffffff", "light": "#14503a"},
+    "FG_OVERLAY_BODY": {"dark": "#d7e0ec", "light": "#1f2a36"},
+    "FG_OVERLAY_CODE": {"dark": "#ffffff", "light": "#8c1d18"},
+    "FG_PAGE_TITLE": {"dark": "#eef3fa", "light": "#16202b"},
+    "FG_RAIL_ITEM": {"dark": "#7b8ca3", "light": "#8394a6"},
+    "FG_SELECTED": {"dark": "#ffffff", "light": "#ffffff"},
+    "FG_STATUS_WARNING": {"dark": "#e5c07b", "light": "#8a6d1f"},
+    "FG_TEXT": {"dark": "#e6ecf5", "light": "#1f2a36"},
+}
+
+
+def theme_palette(theme: str, accent: str | None = None) -> dict[str, str]:
+    """Every __TOKEN__ value for one theme: the neutral table plus the accent family."""
+    palette = {name: values.get(theme, values["dark"]) for name, values in NEUTRAL_TOKENS.items()}
+    palette.update(accent_palette(theme, accent))
+    return palette
+
 def font_stack(family: str | None = None) -> str:
     """Font-family value for the QSS: the chosen family first, then safe fallbacks."""
     name = (family or "").strip() or DEFAULT_FONT
@@ -196,7 +259,7 @@ def apply_theme(
     check_path = paths.resource_path("gui/resources/check.png")
     text = text.replace("__CHECK__", check_path.as_posix())
     text = text.replace("__FONT__", font_stack(font))
-    palette = accent_palette(theme, accent)
+    palette = theme_palette(theme, accent)
     # longest placeholders first so __ACCENT__ never eats the prefixed variants
     for key in sorted(palette, key=len, reverse=True):
         text = text.replace(f"__{key}__", palette[key])
