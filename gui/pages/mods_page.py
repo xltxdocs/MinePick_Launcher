@@ -88,6 +88,7 @@ class _VersionPickerDialog(QDialog):
         self.setWindowTitle(tr("mods.picker.title"))
         self.setMinimumSize(560, 380)
         self.table = QTableWidget(0, 3)
+        self.table.setAccessibleName(tr("mods.picker.title"))  # WCAG 4.1.2
         self.table.setHorizontalHeaderLabels(
             [
                 tr("mods.picker.col.version"),
@@ -178,10 +179,13 @@ class _ContentTab(QWidget):
         for name in ("fabric", "forge", "neoforge", "quilt"):
             self.loader_combo.addItem(display_loader_name(name), name)
         self.game_version_edit = QLineEdit("1.20.1")
+        self.game_version_edit.setAccessibleName(tr("mods.picker.col.game_versions"))  # WCAG 4.1.2
         self.slug_edit = QLineEdit()
+        self.slug_edit.setAccessibleName(tr("mods.picker.col.loaders"))  # WCAG 4.1.2
         self.slug_edit.setPlaceholderText(tr("mods.slug.placeholder"))
         self.query_button = QPushButton(tr("mods.query"))
         self.search_edit = QLineEdit()
+        self.search_edit.setAccessibleName(tr("mods.query"))  # WCAG 4.1.2
         add_search_icon(self.search_edit)
         placeholder_key = {
             "resourcepack": "mods.search.placeholder.rp",
@@ -198,6 +202,7 @@ class _ContentTab(QWidget):
         self.open_folder_button = QPushButton(tr("mods.open_folder"))
         self.open_folder_button.setObjectName("secondaryButton")
         self.list = QListWidget()
+        self.list.setAccessibleName(tr("nav.mods"))  # WCAG 4.1.2
         apply_no_focus_outline(self.list)
         self.title_label = QLabel(tr("mods.select"))
         self.title_label.setObjectName("title")

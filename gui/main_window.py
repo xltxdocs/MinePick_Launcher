@@ -60,6 +60,7 @@ class MainWindow(QMainWindow):
         from gui.widgets import StatusLabel, apply_no_focus_outline
 
         self.sidebar = QListWidget()
+        self.sidebar.setAccessibleName(tr("a11y.nav"))  # WCAG 4.1.2
         self.sidebar.setObjectName("sidebar")
         apply_no_focus_outline(self.sidebar)  # remove focus outline from the selected item's text
 

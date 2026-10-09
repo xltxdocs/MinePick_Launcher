@@ -48,11 +48,26 @@ def test_accent_palette_uses_the_custom_base() -> None:
     palette = theme.accent_palette("dark", "#3b82f6")
     assert palette["ACCENT"] == "#3b82f6"
     assert palette["ACCENT_SEL_TEXT"] == "#ffffff"
-    # derived steps must differ from the base and stay valid hex colors
-    for key in ("ACCENT_HOVER", "ACCENT_PRESS", "ACCENT_SEL", "ACCENT_SOFT"):
+    # derived steps must differ from the base and stay valid hex colors.
+    # ACCENT_PRESS used to be listed here; 4-B1 deleted it because no rule in either sheet referenced
+    # it - the pressed fill is ACCENT_BUTTON_PRESS - so it was a colour nothing could draw.
+    for key in ("ACCENT_HOVER", "ACCENT_SEL", "ACCENT_SOFT"):
         value = palette[key]
         assert value != palette["ACCENT"]
         assert theme.normalize_hex(value) == value
+
+
+def test_focus_ring_clears_non_text_contrast() -> None:
+    """WCAG 1.4.11 wants 3:1 for the focus indicator.
+
+    A bright accent against a light surface reads 1.96:1, so the light theme draws its ring with the
+    same darkened fill its buttons use; the dark theme keeps the raw accent, which already passes.
+    """
+    light = theme.accent_palette("light", "#35a06a")
+    dark = theme.accent_palette("dark", "#35a06a")
+    assert light["FOCUS_RING"] == light["ACCENT_BUTTON"]
+    assert light["FOCUS_RING"] != light["ACCENT"]
+    assert dark["FOCUS_RING"] == dark["ACCENT"]
 
 
 def test_accent_palette_falls_back_to_theme_default() -> None:

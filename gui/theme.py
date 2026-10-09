@@ -118,12 +118,12 @@ def accent_palette(theme: str, accent: str | None = None) -> dict[str, str]:
             "ACCENT_BUTTON": button,
             "ACCENT_BUTTON_HOVER": _lighten(button, 0.10),
             "ACCENT_BUTTON_PRESS": _darken(button, 0.12),
-            "ACCENT_HOVER": _lighten(base, 0.10),
-            "ACCENT_PRESS": _darken(base, 0.12),
+            "ACCENT_HOVER": _darken(button, 0.10),
             "ACCENT_SEL": _lighten(base, 0.80),
-            "ACCENT_SEL_TEXT": _darken(base, 0.62),
+            "ACCENT_SEL_TEXT": _darken(base, 0.72),
             "ACCENT_SOFT": _lighten(base, 0.82),
             "ACCENT_TINT": _lighten(base, 0.90),
+            "FOCUS_RING": button,
         }
     button = readable_fill(base)
     return {
@@ -131,12 +131,12 @@ def accent_palette(theme: str, accent: str | None = None) -> dict[str, str]:
         "ACCENT_BUTTON": button,
         "ACCENT_BUTTON_HOVER": _lighten(button, 0.10),
         "ACCENT_BUTTON_PRESS": _darken(button, 0.12),
-        "ACCENT_HOVER": _lighten(base, 0.14),
-        "ACCENT_PRESS": _darken(base, 0.16),
+        "ACCENT_HOVER": _darken(button, 0.10),
         "ACCENT_SEL": _darken(base, 0.20),
         "ACCENT_SEL_TEXT": "#ffffff",
         "ACCENT_SOFT": _darken(base, 0.68),
         "ACCENT_TINT": _darken(base, 0.80),
+        "FOCUS_RING": base,
     }
 
 
@@ -151,17 +151,19 @@ NEUTRAL_TOKENS: dict[str, dict[str, str]] = {
     "BG_BUTTON_SECONDARY_2": {"dark": "#161d27", "light": "#e9eff5"},
     "BG_DISABLED": {"dark": "#131a23", "light": "#f4f6f9"},
     "BG_DISABLED_2": {"dark": "#232c39", "light": "#e2e8ef"},
-    "BG_HOVER": {"dark": "#1c2531", "light": "#1c2531"},
+    # dark rows hover with this; the light sheet uses ACCENT_TINT instead, so the light value
+    # was a copy of the dark one that no rule could reach (FG_TEXT on it read 1.06:1).
+    "BG_HOVER": {"dark": "#1c2531", "light": "#e8eef4"},
     "BG_LIST": {"dark": "#161d27", "light": "#ffffff"},
     "BG_LIST_2": {"dark": "#1c2531", "light": "#ffffff"},
     "BG_OPTION": {"dark": "#161d27", "light": "#f7f9fc"},
     "BG_OVERLAY_CODE": {"dark": "#2a1a1e", "light": "#fdecea"},
     "BG_RAIL_DOT": {"dark": "#33404f", "light": "#c3ccd6"},
-    "BG_SCROLLBAR": {"dark": "#3d4b5e", "light": "#b9c5d2"},
+    "BG_SCROLLBAR": {"dark": "#6d7f95", "light": "#8a96a3"},
     "BG_SECTION": {"dark": "#1c2531", "light": "#f7f9fc"},
     "BG_SEPARATOR": {"dark": "#27303d", "light": "#e6ebf1"},
     "BG_SIDEBAR": {"dark": "#1c2531", "light": "#e9eff5"},
-    "BG_TITLEBAR_CLOSE": {"dark": "#d64545", "light": "#d64545"},
+    "BG_TITLEBAR_CLOSE": {"dark": "#cf3f3f", "light": "#cf3f3f"},
     "BG_TITLEBAR_MINIMIZE": {"dark": "#1c2531", "light": "#dfe6ee"},
     "BG_WINDOW": {"dark": "#0f141b", "light": "#f2f5f8"},
     "BORDER_BUTTON_ICON": {"dark": "#27303d", "light": "#d5dde8"},
@@ -184,15 +186,15 @@ NEUTRAL_TOKENS: dict[str, dict[str, str]] = {
     "FG_DISABLED": {"dark": "#6b7c92", "light": "#9aa5b1"},
     "FG_DISABLED_2": {"dark": "#6b7c92", "light": "#78838f"},
     "FG_EMPTY_STATE": {"dark": "#7b8ca3", "light": "#677585"},
-    "FG_HINT": {"dark": "#8fa2b8", "light": "#64748b"},
+    "FG_HINT": {"dark": "#8fa2b8", "light": "#54667c"},
     "FG_OPTION": {"dark": "#d8dee9", "light": "#26313d"},
     "FG_OPTION_2": {"dark": "#ffffff", "light": "#14503a"},
     "FG_OVERLAY_BODY": {"dark": "#d7e0ec", "light": "#1f2a36"},
     "FG_OVERLAY_CODE": {"dark": "#ffffff", "light": "#8c1d18"},
     "FG_PAGE_TITLE": {"dark": "#eef3fa", "light": "#16202b"},
-    "FG_RAIL_ITEM": {"dark": "#7b8ca3", "light": "#8394a6"},
+    "FG_RAIL_ITEM": {"dark": "#7b8ca3", "light": "#637486"},
     "FG_SELECTED": {"dark": "#ffffff", "light": "#ffffff"},
-    "FG_STATUS_WARNING": {"dark": "#e5c07b", "light": "#8a6d1f"},
+    "FG_STATUS_WARNING": {"dark": "#e5c07b", "light": "#87691b"},
     "FG_TEXT": {"dark": "#e6ecf5", "light": "#1f2a36"},
 }
 

@@ -77,6 +77,7 @@ class JavaPage(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self.managed_table = QTableWidget(0, 3)
+        self.managed_table.setAccessibleName(tr("a11y.java_list"))  # WCAG 4.1.2
         apply_no_focus_outline(self.managed_table)
         self.managed_table.setHorizontalHeaderLabels(
             [tr("java.col.major"), tr("java.col.path"), tr("java.col.size")]
@@ -89,6 +90,7 @@ class JavaPage(QWidget):
         self.managed_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.managed_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.detected_table = QTableWidget(0, 3)
+        self.detected_table.setAccessibleName(tr("a11y.java_list"))  # WCAG 4.1.2
         apply_no_focus_outline(self.detected_table)
         self.detected_table.setHorizontalHeaderLabels(
             [tr("java.col.major"), tr("java.col.provider"), tr("java.col.path")]

@@ -88,6 +88,7 @@ class AboutPage(QWidget):
         layout.addStretch(1)
 
         scroll = QScrollArea()
+        scroll.setAccessibleName(tr("nav.about"))  # WCAG 4.1.2
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setWidget(inner)

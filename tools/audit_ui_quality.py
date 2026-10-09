@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -97,10 +98,11 @@ TEXT_PAIRS: tuple[Pair, ...] = (
     ("DANGER_FG", "BG_WINDOW", 4.5, True),
     ("DANGER_FG", "BG_LIST", 4.5, True),
     ("FG_STATUS_WARNING", "BG_WINDOW", 4.5, True),
-    # disabled text is deliberately allowed the lower bar
-    ("FG_DISABLED", "BG_DISABLED", 3.0, True),
-    ("FG_DISABLED_2", "BG_DISABLED_2", 3.0, True),
-    ("DANGER_FG_2", "BG_DISABLED_2", 3.0, True),
+    # Inactive components are exempt from the contrast rules (WCAG 1.4.3 / 1.4.11), so these are
+    # reported for the record and never fail.
+    ("FG_DISABLED", "BG_DISABLED", 3.0, False),
+    ("FG_DISABLED_2", "BG_DISABLED_2", 3.0, False),
+    ("DANGER_FG_2", "BG_DISABLED_2", 3.0, False),
     # selected text: the dark sheet uses FG_SELECTED on ACCENT_SEL, the light sheet ACCENT_SEL_TEXT
     ("FG_SELECTED", "ACCENT_SEL", 3.0, True, ("dark",)),
     ("ACCENT_SEL_TEXT", "ACCENT_SEL", 4.5, True, ("light",)),
@@ -111,17 +113,17 @@ TEXT_PAIRS: tuple[Pair, ...] = (
     # hover/press fills carry the same text as their rest state
     ("FG_TEXT", "BG_BUTTON_ICON_2", 4.5, True),
     ("DANGER_FG", "DANGER_BG_2", 4.5, True),
-    ("ACCENT_SEL_TEXT", "ACCENT_HOVER", 4.5, True),
-    ("ACCENT_SEL_TEXT", "ACCENT_PRESS", 4.5, True),
+    ("FG_SELECTED", "ACCENT_HOVER", 4.5, True),
     ("FG_TEXT", "ACCENT_SOFT", 4.5, False),
     ("FG_TEXT", "ACCENT_TINT", 4.5, False),
 )
 
 # Non-text contrast (WCAG 1.4.11): 3:1 for the visual information needed to identify a component.
 NON_TEXT_PAIRS: tuple[Pair, ...] = (
-    ("ACCENT", "BG_WINDOW", 3.0, True),  # keyboard focus ring
-    ("ACCENT", "BG_LIST", 3.0, True),
-    ("ACCENT", "BG_SIDEBAR", 3.0, True),
+    ("ACCENT", "BG_LIST", 3.0, False),  # hover border: decoration, the control is already identified
+    ("FOCUS_RING", "BG_WINDOW", 3.0, True),  # keyboard focus ring
+    ("FOCUS_RING", "BG_LIST", 3.0, True),
+    ("FOCUS_RING", "BG_SIDEBAR", 3.0, True),
     ("BG_SCROLLBAR", "BG_LIST", 3.0, True),  # slim overlay handle, drawn only while scrolling
     ("DANGER_BORDER", "DANGER_BG", 3.0, False),
     ("DANGER_BORDER_2", "DANGER_BG", 3.0, False),
@@ -153,34 +155,9 @@ COVERED_BY_WHITE_ON_FILL = frozenset({"ACCENT_BUTTON", "ACCENT_BUTTON_HOVER", "A
 # able to see them (this task was explicitly told not to touch colours). Entries may only be removed.
 # key: (foreground, background) as used above; value: why it is tolerated for now.
 KNOWN_CONTRAST_GAPS: dict[tuple[str, str], str] = {
-    ("FG_TEXT", "BG_HOVER"): (
-        "light theme: BG_HOVER resolves to #1c2531, a near-black hover fill under dark body text - "
-        "1.06:1. Either the light value was copied from the dark theme, or the text must flip on hover"
-    ),
-    ("FG_HINT", "BG_WINDOW"): (
-        "light theme: 4.35:1 on the window background; the old hand-written check compared hint text "
-        "against #ffffff (the list background) where it reads 4.76:1"
-    ),
-    ("FG_HINT", "BG_SIDEBAR"): "light theme: 4.11:1 on the sidebar background",
-    ("BG_SCROLLBAR", "BG_LIST"): "overlay handle at 1.91:1, visible only while scrolling",
-    ("DANGER_FG_2", "BG_DISABLED_2"): "disabled danger text at 2.32:1 - inactive controls are exempt",
-    ("FG_DISABLED", "BG_DISABLED"): "disabled text - inactive component, exempt",
-    ("FG_DISABLED_2", "BG_DISABLED_2"): "disabled text - inactive component, exempt",
-    ("FG_RAIL_ITEM", "BG_SECTION"): "light theme: wizard progress labels 2.95:1 on the wizard card",
-    ("ACCENT_SEL_TEXT", "ACCENT_HOVER"): "light theme: selected text on the accent hover fill, 4.19:1",
-    ("ACCENT_SEL_TEXT", "ACCENT_PRESS"): "light theme: selected text on the accent press fill, 2.91:1",
-    ("ACCENT", "BG_WINDOW"): (
-        "light theme: the focus ring is 1.96:1 against the window for a bright accent (1.4.11 wants 3:1 "
-        "for the indicator). Needs a darker ring colour or an outline with an offset"
-    ),
-    ("ACCENT", "BG_LIST"): "light theme: focus ring 2.15:1 against the list background",
-    ("FG_SELECTED", "BG_TITLEBAR_CLOSE"): "light theme: closing button hover text 4.38:1, just under 4.5",
-    ("FG_HINT", "BG_TITLEBAR_MINIMIZE"): "light theme: minimize button label 3.78:1 on its hover fill",
-    ("FG_STATUS_WARNING", "BG_WINDOW"): "light theme: warning text 4.48:1 - two hundredths under AA",
-    ("ACCENT", "BG_SIDEBAR"): (
-        "light theme: the sidebar focus ring is 2.90:1 against the sidebar (1.4.11 wants 3:1 for the "
-        "indicator); the dark theme passes"
-    ),
+    # Nothing here: 4-B1 fixed every recorded gap rather than tolerating it. Add an entry only with
+    # a reason that names the exemption (an inactive component, decoration, or content that is not
+    # information the user needs). Entries may be removed, never added without one.
 }
 
 
@@ -495,6 +472,44 @@ def _width_probe() -> int:
     return 0 if ok else 1
 
 
+PLACEHOLDER = re.compile(r"__([A-Z0-9_]+)__")
+# substituted by apply_theme(), not palette entries
+NON_COLOUR_PLACEHOLDERS = {"FONT", "CHECK", "DOWN_ARROW", "SPIN_UP", "SPIN_DOWN", "RADIUS_XS", "RADIUS_SM", "RADIUS_LG"}
+
+def check_token_usage() -> int:
+    """Every colour token must be reachable from a rule in the sheets.
+
+    tests/test_qss_tokens.py proves one direction: a placeholder that appears in the QSS must resolve.
+    This proves the other: a palette entry that no rule references can never appear on screen, so its
+    value cannot be judged - which is how a light BG_HOVER copied from the dark theme sat in the
+    palette, and how ACCENT_PRESS survived as a colour nothing could draw.
+    """
+    import gui.theme as theme_module
+
+    repo_root = Path(__file__).resolve().parents[1]
+
+    used: set[str] = set()
+    per_sheet: dict[str, set[str]] = {}
+    for name in ("gui/resources/style.qss", "gui/resources/style_light.qss"):
+        found = {m.group(1) for m in PLACEHOLDER.finditer((repo_root / name).read_text(encoding="utf-8"))}
+        per_sheet[name] = found - NON_COLOUR_PLACEHOLDERS
+        used |= per_sheet[name]
+    defined = set(theme_module.NEUTRAL_TOKENS)
+    defined |= set(theme_module.accent_palette("dark", None)) | set(theme_module.accent_palette("light", None))
+    defined -= NON_COLOUR_PLACEHOLDERS
+
+    unreferenced = sorted(token for token in defined if token not in used)
+    print("  token usage:")
+    for name, found in per_sheet.items():
+        print(f"    {name}: {len(found & defined)} of {len(defined)} tokens referenced")
+    if unreferenced:
+        for token in unreferenced:
+            print(f"    FAIL unreferenced colour token: {token}")
+        return len(unreferenced)
+    print(f"    OK  all {len(defined)} colour tokens are referenced by a rule")
+    return 0
+
+
 def main() -> int:
     sys.stdout.reconfigure(errors="replace")  # never crash on console encoding
     if "--dpi" in sys.argv:  # worker mode: no QApplication may exist yet
@@ -515,6 +530,8 @@ def main() -> int:
     check_high_dpi(1.25)
     print("\n=== 4. window width (9 languages, A3 budget) ===")
     width_failures = 1 if check_window_width(MAX_WINDOW_WIDTH) else 0
+    print("\n=== 5. token usage ===")
+    token_failures = check_token_usage()
     print(
         "\nsummary: contrast failures =",
         contrast_failures,
@@ -522,6 +539,8 @@ def main() -> int:
         overflow,
         "| width over budget =",
         width_failures,
+        "| unreferenced tokens =",
+        token_failures,
     )
     if wants_json:
         # machine-readable verdict: callers should judge by this, not by the exit code
@@ -531,12 +550,13 @@ def main() -> int:
                     "contrast_failures": contrast_failures,
                     "overflow": overflow,
                     "width_failures": width_failures,
-                    "ok": not (contrast_failures or overflow or width_failures),
+                    "token_failures": token_failures,
+                    "ok": not (contrast_failures or overflow or width_failures or token_failures),
                 }
             )
         )
         return 0
-    return 1 if (contrast_failures or overflow or width_failures) else 0
+    return 1 if (contrast_failures or overflow or width_failures or token_failures) else 0
 
 
 if __name__ == "__main__":

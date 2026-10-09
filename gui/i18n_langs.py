@@ -17,6 +17,10 @@
 
 EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
     'zh_tw': {
+        "a11y.nav": "主導覽",
+        "a11y.java_list": "Java 執行環境清單",
+        "a11y.device_code": "裝置代碼",
+        "a11y.offline_name": "離線使用者名稱",
         # 崩潰診斷（核心層只產生 key 與參數，文案全部放在語言表）
         'diagnosis.title': "崩潰診斷",
         'diagnosis.code': "錯誤碼：{}",
@@ -656,6 +660,10 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
         'wizard.skip': "略過",
     },
     'ja_jp': {
+        "a11y.nav": "メインナビゲーション",
+        "a11y.java_list": "Java ランタイム一覧",
+        "a11y.device_code": "デバイスコード",
+        "a11y.offline_name": "オフラインユーザー名",
         # クラッシュ診断（コア層は key と引数のみを生成し、文言は言語表に置く）
         'diagnosis.title': "クラッシュ診断",
         'diagnosis.code': "エラーコード：{}",
@@ -1295,6 +1303,10 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
         'wizard.skip': "スキップ",
     },
     'ko_kr': {
+        "a11y.nav": "주 내비게이션",
+        "a11y.java_list": "Java 런타임 목록",
+        "a11y.device_code": "장치 코드",
+        "a11y.offline_name": "오프라인 사용자 이름",
         # 충돌 진단(코어 계층은 key와 인자만 만들고 문구는 언어 표에 둡니다)
         'diagnosis.title': "충돌 진단",
         'diagnosis.code': "오류 코드: {}",
@@ -1934,6 +1946,10 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
         'wizard.skip': "건너뛰기",
     },
     'ru_ru': {
+        "a11y.nav": "Основная навигация",
+        "a11y.java_list": "Список сред Java",
+        "a11y.device_code": "Код устройства",
+        "a11y.offline_name": "Имя пользователя офлайн",
         # Диагностика сбоев (ядро формирует только ключи и аргументы, текст — в таблицах языка)
         'diagnosis.title': "Диагностика сбоя",
         'diagnosis.code': "Код ошибки: {}",
@@ -2573,6 +2589,10 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
         'wizard.skip': "Пропустить",
     },
     'fr_fr': {
+        "a11y.nav": "Navigation principale",
+        "a11y.java_list": "Liste des environnements Java",
+        "a11y.device_code": "Code d'appareil",
+        "a11y.offline_name": "Nom d'utilisateur hors ligne",
         # Diagnostic de plantage (le cœur ne produit que des clés et des arguments)
         'diagnosis.title': "Diagnostic de plantage",
         'diagnosis.code': "Code d'erreur : {}",
@@ -3212,6 +3232,10 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
         'wizard.skip': "Ignorer",
     },
     'es_es': {
+        "a11y.nav": "Navegación principal",
+        "a11y.java_list": "Lista de entornos Java",
+        "a11y.device_code": "Código de dispositivo",
+        "a11y.offline_name": "Nombre de usuario sin conexión",
         # Diagnóstico de fallos (el núcleo solo produce claves y argumentos)
         'diagnosis.title': "Diagnóstico de fallos",
         'diagnosis.code': "Código de error: {}",
@@ -3851,6 +3875,10 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
         'wizard.skip': "Omitir",
     },
     'de_de': {
+        "a11y.nav": "Hauptnavigation",
+        "a11y.java_list": "Java-Laufzeitliste",
+        "a11y.device_code": "Gerätecode",
+        "a11y.offline_name": "Offline-Benutzername",
         # Absturzdiagnose (der Kern erzeugt nur Schlüssel und Argumente)
         'diagnosis.title': "Absturzdiagnose",
         'diagnosis.code': "Fehlercode: {}",

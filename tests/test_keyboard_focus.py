@@ -125,14 +125,6 @@ def _weak_name_stops(report: str) -> list[str]:
     return weak
 
 
-@pytest.mark.xfail(
-    strict=False,
-    reason=(
-        "0.4.0 has given explicit accessible names to the account button and the three search fields; "
-        "the remaining stops are lists, tables, scroll areas and the mods search field, which need new "
-        "i18n keys. Tracked by the WCAG conformance table, section four."
-    ),
-)
 def test_every_control_has_a_usable_accessible_name(walkthrough_report):
     """WCAG 4.1.2: a focusable control must expose a name a screen reader can announce.
 

@@ -94,15 +94,18 @@ class LoginPage(QWidget):
         self.avatar_label.setFixedSize(AVATAR_SIZE, AVATAR_SIZE)
         self.account_label = QLabel()
         self.accounts_list = QListWidget()
+        self.accounts_list.setAccessibleName(tr("account.list.label"))  # WCAG 4.1.2
         apply_no_focus_outline(self.accounts_list)
         self.switch_button = QPushButton(tr("account.switch"))
         self.switch_button.setObjectName("secondaryButton")
         self.device_code = QTextEdit()
+        self.device_code.setAccessibleName(tr("a11y.device_code"))  # WCAG 4.1.2
         self.device_code.setMinimumHeight(40)
         self.device_code.setReadOnly(True)
         self.device_code.setFixedHeight(110)
         self.ms_button = QPushButton(tr("login.ms.button"))
         self.offline_edit = QLineEdit()
+        self.offline_edit.setAccessibleName(tr("a11y.offline_name"))  # WCAG 4.1.2
         self.offline_edit.setPlaceholderText(tr("login.offline.placeholder"))
         self.offline_button = QPushButton(tr("login.offline.button"))
         self.offline_button.setObjectName("secondaryButton")

@@ -84,6 +84,7 @@ class LaunchPage(QWidget):
         self.memory_spin.setSingleStep(0.5)
         self.memory_spin.setSuffix(" " + tr("unit.gb"))
         self.server_edit = QLineEdit()
+        self.server_edit.setAccessibleName(tr("launch.server"))  # WCAG 4.1.2
         self.server_edit.setPlaceholderText(tr("launch.server.placeholder"))
         self.launch_button = QPushButton(tr("launch.button"))
         self.select_instance_button = QPushButton(tr("launch.instances.select"))

@@ -78,6 +78,7 @@ class SettingsPage(QWidget):
         self.browse_game = QPushButton(tr("settings.browse"))
         self.browse_game.setObjectName("secondaryButton")
         self.java_path_edit = QLineEdit()
+        self.java_path_edit.setAccessibleName(tr("settings.java"))  # WCAG 4.1.2
         self.browse_java = QPushButton(tr("settings.browse"))
         self.browse_java.setObjectName("secondaryButton")
         self.memory_spin = NoWheelDoubleSpinBox()
@@ -249,6 +250,7 @@ class SettingsPage(QWidget):
 
         # Wrap the form in a scroll area so the main window can stay compact
         scroll = QScrollArea()
+        scroll.setAccessibleName(tr("nav.settings"))  # WCAG 4.1.2
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setWidget(inner)

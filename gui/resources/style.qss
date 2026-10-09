@@ -57,10 +57,10 @@ QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
     selection-color: __FG_SELECTED__;
 }
 QLineEdit:hover, QComboBox:hover, QSpinBox:hover, QDoubleSpinBox:hover { border-color: __BORDER_HOVER__; }
-QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus { border: 1px solid __ACCENT__; }
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus { border: 1px solid __FOCUS_RING__; }
 /* Containers that can hold focus need a visible focus state of their own (UI guideline 5.1). They
    keep a 1px transparent border even at rest, so colouring it cannot shift the layout (3.3). */
-QTextEdit:focus, QTableWidget:focus, QTableView:focus, QScrollArea:focus { border: 1px solid __ACCENT__; }
+QTextEdit:focus, QTableWidget:focus, QTableView:focus, QScrollArea:focus { border: 1px solid __FOCUS_RING__; }
 QLineEdit:disabled, QComboBox:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled {
     color: __FG_DISABLED_2__;
     background: __BG_DISABLED__;
@@ -169,7 +169,7 @@ QListWidget#sidebar {
 /* The rail itself carries the keyboard focus cue: Qt repaints a view's own border on focus, while the
    selected item's pseudo-state `:focus` proved unreliable for list items. */
 QListWidget#sidebar:focus {
-    border-color: __ACCENT__;
+    border-color: __FOCUS_RING__;
 }
 QListWidget#sidebar::item {
     color: __FG_HINT__;
@@ -387,7 +387,7 @@ QPushButton#categoryTab:checked {
    The base rule already has `border: 1px solid transparent`, so colouring it shifts no layout, and
    this rule stays distinguishable from the checked state (which fills the pill). */
 QPushButton#categoryTab:focus {
-    border-color: __ACCENT__;
+    border-color: __FOCUS_RING__;
     color: __FG_TEXT__;
 }
 
@@ -413,7 +413,7 @@ QPushButton#iconButton:hover { background: __BG_BUTTON_ICON__; border-color: __A
 QPushButton#iconButton:pressed { background: __BG_BUTTON_ICON_2__; }
 /* The button is borderless at rest, so the generic QPushButton:focus rule cannot show through: an
    id-scoped rule wins. The 1px border already exists at rest, so focusing shifts nothing. */
-QPushButton#iconButton:focus { border: 1px solid __ACCENT__; }
+QPushButton#iconButton:focus { border: 1px solid __FOCUS_RING__; }
 
 /* ---------- in-window overlay dialogs (crash diagnosis) ---------- */
 

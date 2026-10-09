@@ -143,6 +143,7 @@ class InstancesPage(QWidget):
         self.search_edit.setClearButtonEnabled(True)
 
         self.list = QListWidget()
+        self.list.setAccessibleName(tr("nav.instances"))  # WCAG 4.1.2
         apply_no_focus_outline(self.list)
         # Long rows (profile labels, notes) must elide with an ellipsis, not clip mid-glyph
         self.list.setTextElideMode(Qt.TextElideMode.ElideRight)
