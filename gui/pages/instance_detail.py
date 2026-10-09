@@ -395,6 +395,10 @@ class InstanceDetail(QWidget):
         self.mods_folder_button.setObjectName("secondaryButton")
         self.mods_delete_button = QPushButton(tr("instances.mods.delete"))
         self.mods_delete_button.setObjectName("dangerButton")
+        # Dragging jars onto the table is a pointer gesture with no keyboard equivalent, which fails
+        # WCAG 2.5.1 and 2.5.7. This button is that equivalent: it opens a file picker and feeds the
+        # very same install path the drop handler uses, so both routes behave identically.
+        self.mods_install_button = QPushButton(tr("instances.mods.install"))
         tools = QHBoxLayout()
         tools.setContentsMargins(0, 0, 0, 0)
         tools.setSpacing(6)
@@ -404,6 +408,14 @@ class InstanceDetail(QWidget):
         tools.addWidget(self.mods_folder_button)
         tools.addWidget(self.mods_delete_button)
         layout.addLayout(tools)
+        # Its own row on purpose: inside the tools row this button raised the window's own minimum
+        # width by up to 173px depending on the language (measured), because every fixed widget in a
+        # row adds to that row's minimum. Alone in a row it costs height, which the layout can spare.
+        install_row = QHBoxLayout()
+        install_row.setContentsMargins(0, 0, 0, 0)
+        install_row.addWidget(self.mods_install_button)
+        install_row.addStretch(1)
+        layout.addLayout(install_row)
         layout.addWidget(self.mods_table, 1)
         remember_column_widths(self.mods_table, "instance_mods")
 
@@ -417,6 +429,7 @@ class InstanceDetail(QWidget):
         self.mods_refresh_button.clicked.connect(self._reload_mods)
         self.mods_folder_button.clicked.connect(self.open_mods_folder)
         self.mods_delete_button.clicked.connect(self.delete_selected_mods)
+        self.mods_install_button.clicked.connect(self.choose_mod_files)
         return page
 
     def _build_resources(self) -> QWidget:
@@ -1291,6 +1304,22 @@ class InstanceDetail(QWidget):
                 continue
         set_app_status(self, tr("instances.mods.msg.deleted", deleted))
         self._reload_mods()
+
+    def choose_mod_files(self) -> None:
+        """Install mods picked in a file dialog - the keyboard route to what dropping a jar does.
+
+        WCAG 2.5.1 / 2.5.7: dragging must never be the only way to do something. This hands the
+        chosen files to :meth:`install_dropped`, so both routes share one implementation, one set of
+        status messages and one failure behaviour.
+        """
+        if self.resolved is None:
+            set_app_status(self, tr("instances.mods.hint"))
+            return
+        chosen, _filter = QFileDialog.getOpenFileNames(
+            self, tr("instances.mods.install"), "", "Jar (*.jar)"
+        )
+        if chosen:
+            self.install_dropped([Path(path) for path in chosen])
 
     def install_dropped(self, jars: list[Path]) -> None:
         if self.resolved is None:

@@ -112,6 +112,11 @@ def create_app(argv: list[str] | None = None) -> QApplication:
     # Keyboard users get a visible focus indicator; mouse clicks stay flat
     app._focus_tracker = KeyboardFocusTracker(app)
     app.installEventFilter(app._focus_tracker)
+    # Tooltips the pointer can travel into, that stay until dismissed (WCAG 1.4.13)
+    from gui.tooltip import TooltipController
+
+    app._tooltip_controller = TooltipController(app)
+    app.installEventFilter(app._tooltip_controller)
     return app
 
 

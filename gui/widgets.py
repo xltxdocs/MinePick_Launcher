@@ -155,25 +155,51 @@ class StatusLabel(QLabel):
     ``setText`` always returns to the neutral look, so a red error message never
     sticks: the next ordinary message (progress, "done") is muted again. This keeps
     every existing ``setText`` call site unchanged and only marks the failures.
+
+    Every visible change is also announced to assistive technology (WCAG 4.1.3). Qt has no live
+    region, so a screen reader would otherwise never learn that the status line changed - it only
+    reads the label when the user navigates to it. The event is sent once per distinct text: the
+    worker pool sets progress messages repeatedly, and repeating an identical announcement would
+    only talk over the reader. Severity travels in the message wording itself ("import failed: ..."),
+    which is why the announcement does not need a separate channel.
     """
 
     _level = "info"  # severity of the text on display, updated by every setter
+    _announced = ""  # last text announced to assistive technology
 
     def setText(self, text: str) -> None:  # Qt's slot name, kept camelCase on purpose
         self._apply_level("info")
         super().setText(text)
+        self._announce(text)
 
     def set_error(self, text: str) -> None:
         self._apply_level("error")
         super().setText(text)
+        self._announce(text)
 
     def set_warning(self, text: str) -> None:
         self._apply_level("warning")
         super().setText(text)
+        self._announce(text)
 
     def current_level(self) -> str:
         """Severity of the message on display: "info", "warning" or "error"."""
         return self._level
+
+    def _announce(self, text: str) -> None:
+        """Tell assistive technology the status line changed - once per distinct message."""
+        text = text or ""
+        if text == self._announced:
+            return
+        self._announced = text
+        if not text:
+            return
+        try:
+            from PySide6.QtGui import QAccessible, QAccessibleEvent
+
+            QAccessible.updateAccessibility(QAccessibleEvent(self, QAccessible.Event.Alert))
+        except Exception:  # noqa: BLE001 - accessibility is optional: never break a status update
+            return
 
     def _apply_level(self, level: str) -> None:
         self._level = level

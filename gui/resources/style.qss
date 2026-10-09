@@ -298,6 +298,14 @@ QToolTip {
     border-radius: __RADIUS_SM__;
     padding: 4px 8px;
 }
+/* Our own tooltip bubble (WCAG 1.4.13): a tool window that accepts the pointer, so it has to look
+   exactly like the native bubble it replaces. Its spacing lives in the layout, not here. */
+QWidget#tooltipLayer {
+    background: __BG_LIST_2__;
+    color: __FG_TEXT__;
+    border: 1px solid __BORDER_HOVER__;
+    border-radius: __RADIUS_SM__;
+}
 
 /* ---------- spin box buttons: flat ---------- */
 
