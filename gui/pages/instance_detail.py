@@ -632,7 +632,11 @@ class InstanceDetail(QWidget):
         self.isolation_combo.addItem(tr("instances.detail.settings.isolation.on"), ISOLATION_ON)
         self.isolation_combo.addItem(tr("instances.detail.settings.isolation.off"), ISOLATION_OFF)
 
-        self.java_follow_check = QCheckBox(tr("instances.detail.settings.java.follow"))
+        # A checkbox label doubles as its click target, so it must stay readable rather than elide: the
+        # visible text is a short noun phrase and the full sentence moves to the tooltip. Spanish made
+        # this checkbox 354px wide, which was the floor under the whole window's minimum width.
+        self.java_follow_check = QCheckBox(tr("instances.detail.settings.java.follow.short"))
+        self.java_follow_check.setToolTip(tr("instances.detail.settings.java.follow"))
         self.java_edit = QLineEdit()
         self.java_edit.setPlaceholderText(tr("instances.detail.java.follow_auto"))
         self.java_browse_button = QPushButton(tr("settings.browse"))
@@ -649,7 +653,8 @@ class InstanceDetail(QWidget):
         java_layout.addWidget(self.java_follow_check)
         java_layout.addLayout(java_row)
 
-        self.memory_follow_check = QCheckBox(tr("instances.detail.settings.follow_global"))
+        self.memory_follow_check = QCheckBox(tr("instances.detail.settings.follow_global.short"))
+        self.memory_follow_check.setToolTip(tr("instances.detail.settings.follow_global"))
         self.memory_spin = NoWheelDoubleSpinBox()
         self.memory_spin.setRange(1.0, 64.0)
         self.memory_spin.setSingleStep(0.5)
@@ -669,8 +674,17 @@ class InstanceDetail(QWidget):
         form.addRow(tr("instances.detail.row.isolation"), self.isolation_combo)
         form.addRow(tr("instances.detail.row.java"), java_box)
         form.addRow(tr("instances.detail.row.memory"), memory_box)
-        form.addRow(tr("instances.detail.settings.jvm_args"), self.jvm_args_edit)
-        form.addRow(tr("instances.detail.settings.game_args"), self.game_args_edit)
+        # Form row labels are plain labels, so these two elide with a tooltip: theirs are the longest
+        # strings in the form ("JVM arguments (empty = follow global)") and they set a hard floor on
+        # the detail panel's minimum width.
+        form.addRow(
+            ElidedLabel(tr("instances.detail.settings.jvm_args")),
+            self.jvm_args_edit,
+        )
+        form.addRow(
+            ElidedLabel(tr("instances.detail.settings.game_args")),
+            self.game_args_edit,
+        )
         layout.addLayout(form)
 
         self.settings_save_button = QPushButton(tr("instances.detail.settings.save"))

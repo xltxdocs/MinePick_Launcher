@@ -71,7 +71,8 @@ from launcher.instances import (
 
 tr = i18n.tr
 
-LEFT_WIDTH = 320  # the list column keeps a fixed width so the detail panel gets the rest
+LEFT_WIDTH = 270  # A3-a: the list column is fixed so the detail panel gets the rest, but 320 was what
+# forced a 1224px window in Spanish. The measured cost is exactly -1px of window per -1px here.
 
 
 class _CreateDialog(QDialog):
@@ -187,12 +188,14 @@ class InstancesPage(QWidget):
         sort_row.addWidget(self.sort_combo, 1)
         left_layout.addLayout(sort_row)
         left_layout.addWidget(self.list_stack, 1)
-        actions = QHBoxLayout()
+        # Stacked, not side by side: at LEFT_WIDTH the row left each button ~132px, and Japanese and
+        # Russian labels need 165-204px. Stacking gives both buttons the full column width, so every
+        # language fits without abbreviating the copy (the audit checks all nine).
+        actions = QVBoxLayout()
         actions.setContentsMargins(0, 0, 0, 0)
         actions.setSpacing(6)
         actions.addWidget(self.create_button)
         actions.addWidget(self.import_button)
-        actions.addStretch(1)
         left_layout.addLayout(actions)
 
         body = QHBoxLayout()
