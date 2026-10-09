@@ -32,6 +32,7 @@ from gui.dialogs.crash_dialog import (
     context_for_launch,
     diagnose_after_exit,
 )
+from gui.overlay import EXIT_MS
 
 SAMPLES = Path(__file__).parent / "data" / "crash_samples"
 
@@ -94,6 +95,9 @@ def test_failing_exit_shows_the_diagnosis(app, ws_tmp):
         labels = {b.text() for b in dialog.overlay.findChildren(QPushButton)}
         assert len(labels) == 4  # dismiss / open log / export / copy
         QTest.keyClick(dialog.overlay, Qt.Key.Key_Escape)
+        # The overlay fades out before it hides (S3), so wait for the exit animation to finish.
+        QTest.qWait(EXIT_MS + 80)
+        app.processEvents()
         assert not dialog.overlay.isVisible()
     finally:
         if dialog is not None:

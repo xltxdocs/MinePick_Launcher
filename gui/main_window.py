@@ -47,6 +47,8 @@ from gui.pages.versions_page import VersionsPage
 from gui.wizard_overlay import BulletList, OptionGrid, WizardOverlay, WizardStep
 
 NAV_KEYS = ["launch", "instances", "versions", "java", "account", "mods", "settings", "about"]
+PAGE_FADE_MS = 150  # interactive, so it stays under the 200ms ceiling (guideline §2.3)
+ENTRY_START_OPACITY = 0.9  # R-QT-6
 
 
 class MainWindow(QMainWindow):
@@ -180,15 +182,21 @@ class MainWindow(QMainWindow):
         self._fade_in_current_page()
 
     def _fade_in_current_page(self) -> None:
-        """Short fade when switching pages: cheap, and it hides the layout jump."""
+        """Short fade when switching pages: cheap, and it hides the layout jump.
+
+        Reduced motion keeps this fade on purpose (guideline §5.2: transparency helps read a state
+        change; it is movement and scaling that cause discomfort), so only the timing and the entry
+        opacity differ from the overlay's fancier entrance.
+        """
         page = self.stack.currentWidget()
         if page is None:
             return
         effect = QGraphicsOpacityEffect(page)
         page.setGraphicsEffect(effect)
         animation = QPropertyAnimation(effect, b"opacity", page)
-        animation.setDuration(150)
-        animation.setStartValue(0.45)
+        animation.setDuration(PAGE_FADE_MS)
+        # R-QT-6: a page fades in from near-opaque, not from nothing.
+        animation.setStartValue(ENTRY_START_OPACITY)
         animation.setEndValue(1.0)
         animation.setEasingCurve(QEasingCurve.Type.OutCubic)
         # drop the effect once done, otherwise every child repaint goes through it

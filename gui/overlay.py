@@ -38,8 +38,13 @@ from PySide6.QtGui import QColor, QKeyEvent, QPainter, QPixmap
 from PySide6.QtWidgets import QGraphicsOpacityEffect, QVBoxLayout, QWidget
 
 BLUR_DOWNSCALE = 8  # 1/8 scale + smooth upscale reads as a wide Gaussian blur
-FADE_MS = 120
-SLIDE_MS = 300
+FADE_MS = 200
+SLIDE_MS = 160
+EXIT_MS = 120
+# R-QT-5: the movement lands first and the fade runs a little longer. The reverse (opacity finishing
+# early) is what reads as "already solid but still drifting". 160 + 200 keeps both under the 200ms
+# ceiling the guideline sets for interactive animation.
+ENERGY_START_OPACITY = 0.9  # R-QT-6: nothing in the world appears out of nothing
 SLIDE_PX = 40
 CARD_RADIUS = 12
 CARD_MARGIN = 25  # keep the card clear of the window edges
@@ -84,6 +89,7 @@ class BlurOverlay(QWidget):
         self._content.setContentsMargins(28, 24, 28, 24)
         self._content.setSpacing(14)
         self._animations: list[QPropertyAnimation] = []
+        self._exit_animation: QPropertyAnimation | None = None
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.hide()
 
@@ -113,9 +119,16 @@ class BlurOverlay(QWidget):
         self._animate_in()
 
     def hide_overlay(self) -> None:
+        """Fade the card out quickly, then hide. Exits are faster than entrances."""
         parent = self.parentWidget()
         if parent is not None:
             parent.removeEventFilter(self)
+        self._animate_out()
+
+    def _finish_hide(self) -> None:
+        self._exit_animation = None
+        self._animations = []
+        self._card.setGraphicsEffect(None)  # R-QT-1: never leave an effect attached
         self.hide()
 
     def rebuild_snapshot(self) -> None:
@@ -192,24 +205,54 @@ class BlurOverlay(QWidget):
         event.accept()
 
     def _animate_in(self) -> None:
-        """Fade and slide the card in; the backdrop stays static (fading it is laggy)."""
+        """Fade and (when motion is allowed) slide the card in.
+
+        The backdrop stays static: fading it means compositing the whole window every frame.
+        With reduced motion the card is placed straight at its target and only fades, so the feedback
+        survives while the movement does not (guideline §5.2).
+        """
+        from gui import motion
+
+        animate_position = motion.animations_enabled()
         effect = QGraphicsOpacityEffect(self._card)
         self._card.setGraphicsEffect(effect)
         fade = QPropertyAnimation(effect, b"opacity", self._card)
         fade.setDuration(FADE_MS)
-        fade.setStartValue(0.0)
+        fade.setStartValue(ENERGY_START_OPACITY)
         fade.setEndValue(1.0)
         fade.setEasingCurve(QEasingCurve.Type.OutCubic)
         fade.finished.connect(lambda: self._card.setGraphicsEffect(None))
 
         target = self._card_rect()
-        self._card.move(target.x(), target.y() - SLIDE_PX)
-        slide = QPropertyAnimation(self._card, b"pos", self._card)
-        slide.setDuration(SLIDE_MS)
-        slide.setStartValue(self._card.pos())
-        slide.setEndValue(target.topLeft())
-        slide.setEasingCurve(QEasingCurve.Type.OutCubic)
+        animations: list[QPropertyAnimation] = [fade]
+        if animate_position:
+            self._card.move(target.x(), target.y() - SLIDE_PX)
+            slide = QPropertyAnimation(self._card, b"pos", self._card)
+            slide.setDuration(SLIDE_MS)
+            slide.setStartValue(self._card.pos())
+            slide.setEndValue(target.topLeft())
+            slide.setEasingCurve(QEasingCurve.Type.OutCubic)
+            animations.append(slide)
+        else:
+            self._card.move(target.topLeft())
 
-        for animation in (fade, slide):
+        for animation in animations:
             animation.start(QPropertyAnimation.DeletionPolicy.KeepWhenStopped)
-        self._animations = [fade, slide]  # keep references: a GC'd animation never finishes
+        self._animations = animations  # keep references: a GC'd animation never finishes
+
+    def _animate_out(self) -> None:
+        """Quick fade out, then hide. A second call while fading simply finishes the job."""
+        if self._exit_animation is not None:
+            return
+        effect = self._card.graphicsEffect()
+        if not isinstance(effect, QGraphicsOpacityEffect):
+            self._finish_hide()
+            return
+        fade = QPropertyAnimation(effect, b"opacity", self._card)
+        fade.setDuration(EXIT_MS)
+        fade.setStartValue(effect.opacity())
+        fade.setEndValue(0.0)
+        fade.setEasingCurve(QEasingCurve.Type.OutCubic)
+        fade.finished.connect(self._finish_hide)
+        self._exit_animation = fade
+        fade.start(QPropertyAnimation.DeletionPolicy.KeepWhenStopped)

@@ -41,6 +41,7 @@ from PySide6.QtWidgets import (
 )
 
 FADE_MS = 90  # step content only: cheap, one small subtree
+ENTRY_START_OPACITY = 0.9  # R-QT-6: nothing in the world appears out of nothing
 LIFT_PX = 8
 
 
@@ -271,7 +272,8 @@ class WizardOverlay(QWidget):
         page.setGraphicsEffect(effect)
         animation = QPropertyAnimation(effect, b"opacity", page)
         animation.setDuration(FADE_MS)
-        animation.setStartValue(0.0)
+        # R-QT-6: start near-opaque rather than from nothing - a step should settle in, not appear.
+        animation.setStartValue(ENTRY_START_OPACITY)
         animation.setEndValue(1.0)
         animation.setEasingCurve(QEasingCurve.Type.OutCubic)
         animation.finished.connect(lambda: page.setGraphicsEffect(None))

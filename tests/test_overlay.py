@@ -24,7 +24,7 @@ from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLabel, QWidget
 
-from gui.overlay import BLUR_DOWNSCALE, BlurOverlay
+from gui.overlay import BLUR_DOWNSCALE, EXIT_MS, BlurOverlay
 
 
 @pytest.fixture(scope="module")
@@ -52,6 +52,10 @@ def test_overlay_covers_the_window_and_esc_closes(app):
         assert overlay.isVisible()
         assert overlay.geometry() == parent.rect()  # covers the whole window, card included
         QTest.keyClick(overlay, Qt.Key.Key_Escape)
+        # Esc starts the exit fade; the overlay disappears when it finishes (S3 added the exit
+        # animation, so visibility is no longer synchronous with the key press).
+        QTest.qWait(EXIT_MS + 80)
+        app.processEvents()
         assert not overlay.isVisible()
     finally:
         if overlay is not None:
