@@ -30,7 +30,9 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-COPYRIGHT_LINE = "SPDX-FileCopyrightText:"
+# Exact lines, not prefixes: a one-letter slip in the copyright holder passed a prefix-only check
+# while this file was being written, which is precisely the kind of quiet wrongness the guard is for.
+COPYRIGHT_LINE = "SPDX-FileCopyrightText: 2026 WDNDXLTX"
 LICENCE_LINE = "SPDX-License-Identifier: GPL-3.0-only"
 HEAD_LINES = 8  # the header goes at the very top, before the module docstring
 
