@@ -39,21 +39,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SHEETS = ("gui/resources/style.qss", "gui/resources/style_light.qss")
 TIERS = (4, 8, 12, 16, 24)
-SPACING_PROP = re.compile(r"^\s*(padding|margin)(-[a-z]+)?\s*:\s*([^;]+);", re.I)
-FONT_PROP = re.compile(r"^\s*font-size\s*:\s*([^;]+);", re.I)
+COMMENT_BLOCK = re.compile(r"/\*.*?\*/", re.DOTALL)
+# Every declaration, wherever it sits: selectors often carry one inline
+# (`QLabel#title { font-size: 17px; }`), which a line-anchored pattern misses.
+DECLARATION = re.compile(r"([a-zA-Z-]+)\s*:\s*([^;{}]+);")
 PX = re.compile(r"(-?\d+(?:\.\d+)?)px")
-COMMENT_BLOCK = re.compile(r"/\*.*?\*/", re.S)
+SPACING = re.compile(r"^(padding|margin)(-[a-z]+)?$")
 
 
 def declarations(path: Path):
-    """Yield (line number, property, value) for declarations outside comments."""
-    text = COMMENT_BLOCK.sub(lambda m: "\n" * m.group(0).count("\n"), path.read_text(encoding="utf-8"))
-    for number, line in enumerate(text.splitlines(), 1):
-        code = line.split("/*", 1)[0]
-        for match in SPACING_PROP.finditer(code):
-            yield number, (match.group(1) + (match.group(2) or "")).lower(), match.group(3).strip()
-        for match in FONT_PROP.finditer(code):
-            yield number, "font-size", match.group(1).strip()
+    """Yield (line number, property, value) for every declaration outside comments."""
+    text = COMMENT_BLOCK.sub(lambda match: "\n" * match.group(0).count("\n"), path.read_text(encoding="utf-8"))
+    for match in DECLARATION.finditer(text):
+        line = text.count("\n", 0, match.start()) + 1
+        yield line, match.group(1).lower(), match.group(2).strip()
 
 
 def main() -> int:
@@ -73,6 +72,8 @@ def main() -> int:
         for number, prop, value in declarations(path):
             if prop == "font-size":
                 font_sizes[value] += 1
+                continue
+            if not SPACING.match(prop):
                 continue
             numbers = [float(px) for px in PX.findall(value)]
             off = [int(px) for px in numbers if px != 0 and int(px) not in TIERS]
