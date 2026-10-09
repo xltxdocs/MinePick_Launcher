@@ -305,13 +305,11 @@ def apply_theme(
     text = text.replace("__RADIUS_XS__", f"{extra_small}px")
     text = text.replace("__RADIUS_SM__", f"{small}px")
     text = text.replace("__RADIUS_LG__", f"{large}px")
-    # Replacing the *application* stylesheet gets more expensive the more often it happens: measured on
-    # the real window (1457 widgets) consecutive switches cost 0.83s, 2.60s, 5.82s and then stayed at
-    # ~5.8s - by which point even a one-rule sheet cost 3.5s. Clearing the application stylesheet first
-    # puts Qt back on the cheap path: a switch then costs 0.17-0.22s early in a session (measured
-    # 0.197, 0.183, 0.169, 0.158, 0.169, 0.190, 0.192, 0.165) and 0.2-1.3s once a dozen have happened,
-    # instead of 5.8s for every switch from the third onwards. Both calls run in one stack, so Qt never
-    # repaints in between and no unstyled frame is shown.
-    app.setStyleSheet("")
+    # NOTE: do not "clear first" here. `setStyleSheet("")` + `setStyleSheet(text)` is much faster (it puts
+    # Qt back on a cheap path: about 0.2s per theme switch instead of ~5.8s once the cost has accumulated),
+    # but the 0.4.0 build shipped unstyled widgets because of it: dropdown arrows and several page
+    # backgrounds came out wrong and the first-run wizard was see-through. The offscreen renderer applies
+    # the theme once and never reproduced it, so it reached the user before anyone saw it here.
+    # The identical-apply guard below is safe and stays; clearing the application style is not.
     app.setStyleSheet(text)
     _last_applied = key

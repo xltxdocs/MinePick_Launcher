@@ -69,8 +69,8 @@ single portable EXE.
 - **Not done**: a manual screen-reader walkthrough (NVDA / Narrator). Two details still need a check on
   real hardware: how the tooltip behaves under a real window manager, and whether a screen reader
   actually speaks the status messages.
-- Known issue: closing the program while a download or update is still running can crash it. See the
-  release notes.
+- Known issues: switching the theme mid-session freezes a large window for several seconds, and closing
+  the program while a download or update is still running can crash it. See the release notes.
 
 ## Launcher features
 

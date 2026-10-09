@@ -166,9 +166,12 @@ QListWidget#sidebar {
     padding: 4px 4px;
     outline: none;
 }
-/* The rail itself carries the keyboard focus cue: Qt repaints a view's own border on focus, while the
+/* Gated on keyboardFocus (set by gui.widgets.KeyboardFocusTracker) so the ring appears when the
+   user is navigating by keyboard, not merely because this widget happens to hold focus - the rail
+   is first in the tab order and therefore focused on startup, which painted a ring nobody asked
+   for. The rail itself carries the keyboard focus cue: Qt repaints a view's own border on focus, while the
    selected item's pseudo-state `:focus` proved unreliable for list items. */
-QListWidget#sidebar:focus {
+QListWidget#sidebar[keyboardFocus="true"]:focus {
     border-color: __FOCUS_RING__;
 }
 QListWidget#sidebar::item {
@@ -394,7 +397,7 @@ QPushButton#categoryTab:checked {
 /* Keyboard focus must survive the id rule: `QPushButton:focus` loses to `QPushButton#categoryTab`.
    The base rule already has `border: 1px solid transparent`, so colouring it shifts no layout, and
    this rule stays distinguishable from the checked state (which fills the pill). */
-QPushButton#categoryTab:focus {
+QPushButton#categoryTab[keyboardFocus="true"]:focus {
     border-color: __FOCUS_RING__;
     color: __FG_TEXT__;
 }
@@ -421,7 +424,7 @@ QPushButton#iconButton:hover { background: __BG_BUTTON_ICON__; border-color: __A
 QPushButton#iconButton:pressed { background: __BG_BUTTON_ICON_2__; }
 /* The button is borderless at rest, so the generic QPushButton:focus rule cannot show through: an
    id-scoped rule wins. The 1px border already exists at rest, so focusing shifts nothing. */
-QPushButton#iconButton:focus { border: 1px solid __FOCUS_RING__; }
+QPushButton#iconButton[keyboardFocus="true"]:focus { border: 1px solid __FOCUS_RING__; }
 
 /* ---------- in-window overlay dialogs (crash diagnosis) ---------- */
 

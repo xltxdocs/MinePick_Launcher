@@ -63,30 +63,29 @@ def test_repeated_identical_apply_does_not_touch_the_stylesheet(app, monkeypatch
     assert len(calls) == after_first, "an unchanged theme re-polished the whole application"
 
 
-def test_a_real_change_clears_the_application_stylesheet_first(app, monkeypatch):
-    """Clearing first is what keeps a theme switch fast.
+def test_a_real_change_installs_the_new_sheet_once(app, monkeypatch):
+    """A real change installs the new sheet, and only the new sheet.
 
-    Qt gets steadily slower when the *application* stylesheet is replaced: on the real window (1457
-    widgets) consecutive installs cost 0.83s, 2.60s and then ~5.8s each, by which point even a
-    one-rule sheet cost 3.5s. Emptying the application stylesheet first puts Qt back on the cheap
-    path, where every switch costs ~0.2-1.3s and the cost stops growing with the switch count. So the
-    empty install has to come first - and the real sheet must still end up in force.
+    Clearing the application stylesheet first (``setStyleSheet("")``) made switches fast - it put Qt
+    back on a cheap path - but the 0.4.0 build shipped with unstyled widgets because of it: wrong
+    dropdown arrows, wrong page backgrounds, a see-through first-run wizard. It is reverted, and this
+    test now pins the safe behaviour instead: one install per genuine change, no empty install.
     """
     calls = _record_setstylesheet(monkeypatch)
     monkeypatch.setattr(theme, "_last_applied", None)
 
     theme.apply_theme("dark", "", None, "default")
-    assert len(calls) == 2, calls
-    assert calls[0] == "", "a real change did not clear the application stylesheet first"
-    assert "QWidget" in calls[1]
-    assert "__ACCENT__" not in calls[1], "placeholders survived into the stylesheet"
+    assert len(calls) == 1, calls
+    assert calls[0] != "", "the application stylesheet must never be cleared"
+    assert "QWidget" in calls[0]
+    assert "__ACCENT__" not in calls[0], "placeholders survived into the stylesheet"
 
     calls.clear()
     theme.apply_theme("light", "", None, "default")
     theme.apply_theme("dark", "#35a06a", None, "default")  # an accent change is a change too
-    assert len(calls) == 4, calls
-    assert calls[0] == "" and calls[2] == "", "a later change did not clear the stylesheet first"
-    assert "QWidget" in calls[1] and "QWidget" in calls[3]
+    assert len(calls) == 2, calls
+    assert all(sheet for sheet in calls), "an empty stylesheet was installed"
+    assert calls[0] != calls[1]
 
 
 def test_the_sheet_on_the_application_matches_the_last_apply(app, monkeypatch):
