@@ -38,42 +38,55 @@ def app():
     yield application
 
 
-def _counting_setstylesheet(monkeypatch) -> dict[str, int]:
-    counter = {"calls": 0}
+def _record_setstylesheet(monkeypatch) -> list[str]:
+    """Every sheet handed to ``QApplication.setStyleSheet``, in order."""
+    calls: list[str] = []
     original = QApplication.setStyleSheet
 
-    def counting(self, sheet):  # type: ignore[no-untyped-def]
-        counter["calls"] += 1
+    def recording(self, sheet):  # type: ignore[no-untyped-def]
+        calls.append(sheet)
         return original(self, sheet)
 
-    monkeypatch.setattr(QApplication, "setStyleSheet", counting)
-    return counter
+    monkeypatch.setattr(QApplication, "setStyleSheet", recording)
+    return calls
 
 
-def test_repeated_identical_apply_touches_the_stylesheet_once(app, monkeypatch):
-    counter = _counting_setstylesheet(monkeypatch)
+def test_repeated_identical_apply_does_not_touch_the_stylesheet(app, monkeypatch):
+    calls = _record_setstylesheet(monkeypatch)
     monkeypatch.setattr(theme, "_last_applied", None)
 
     theme.apply_theme("dark", "", None, "default")
-    assert counter["calls"] == 1
+    after_first = len(calls)
 
     for _ in range(4):
         theme.apply_theme("dark", "", None, "default")
-    assert counter["calls"] == 1, "an unchanged theme re-polished the whole application"
+    assert len(calls) == after_first, "an unchanged theme re-polished the whole application"
 
 
-def test_a_real_change_still_applies(app, monkeypatch):
-    counter = _counting_setstylesheet(monkeypatch)
+def test_a_real_change_clears_the_application_stylesheet_first(app, monkeypatch):
+    """Clearing first is what keeps a theme switch fast.
+
+    Qt gets steadily slower when the *application* stylesheet is replaced: on the real window (1457
+    widgets) consecutive installs cost 0.83s, 2.60s and then ~5.8s each, by which point even a
+    one-rule sheet cost 3.5s. Emptying the application stylesheet first puts Qt back on the cheap
+    path, where every switch costs ~0.2-1.3s and the cost stops growing with the switch count. So the
+    empty install has to come first - and the real sheet must still end up in force.
+    """
+    calls = _record_setstylesheet(monkeypatch)
     monkeypatch.setattr(theme, "_last_applied", None)
 
     theme.apply_theme("dark", "", None, "default")
-    theme.apply_theme("light", "", None, "default")
-    theme.apply_theme("dark", "", None, "default")
-    assert counter["calls"] == 3
+    assert len(calls) == 2, calls
+    assert calls[0] == "", "a real change did not clear the application stylesheet first"
+    assert "QWidget" in calls[1]
+    assert "__ACCENT__" not in calls[1], "placeholders survived into the stylesheet"
 
-    # and an accent change is a change too
-    theme.apply_theme("dark", "#35a06a", None, "default")
-    assert counter["calls"] == 4
+    calls.clear()
+    theme.apply_theme("light", "", None, "default")
+    theme.apply_theme("dark", "#35a06a", None, "default")  # an accent change is a change too
+    assert len(calls) == 4, calls
+    assert calls[0] == "" and calls[2] == "", "a later change did not clear the stylesheet first"
+    assert "QWidget" in calls[1] and "QWidget" in calls[3]
 
 
 def test_the_sheet_on_the_application_matches_the_last_apply(app, monkeypatch):
