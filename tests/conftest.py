@@ -21,10 +21,17 @@ Note: this development sandbox locks writes inside mkdtemp-style (random-suffix)
 so it provides an ordinary mkdir directory via ws_tmp instead of pytest's built-in tmp_path.
 """
 
+import os
 import shutil
 from pathlib import Path
 
 import pytest
+
+# Force the offscreen platform for the whole suite, before anything imports Qt. Six test files used to
+# create windows on the real platform - visible on screen while the suite ran - because only a few
+# modules set this themselves. `setdefault` keeps a deliberate override working
+# (`QT_QPA_PLATFORM=windows pytest ...` when someone actually wants to watch the windows).
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 WORK_DIR = Path(__file__).resolve().parent / ".work"
 _counter = 0
