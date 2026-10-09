@@ -32,7 +32,6 @@ from __future__ import annotations
 
 import argparse
 import subprocess
-import sys
 import zipfile
 from pathlib import Path
 
