@@ -17,22 +17,42 @@
 
 """Keyboard-only reachability guard (UI guideline 5.1).
 
-Requires that every page can be walked with Tab alone and that every stop along the way has a focus
-state defined in the stylesheets. The walkthrough tool does the walking; this test keeps it honest,
-so a new control without a focus style fails the suite instead of quietly shipping.
+Two levels, because the weaker one passed while users still could not see the focus:
+
+1. every page can be walked with Tab alone, and every stop has a focus state defined in the
+   stylesheets;
+2. focusing a stop actually **changes pixels** around it. A rule can exist and still lose to an
+   id-scoped rule - which is what the real-machine walkthrough (T-0001/T-0002) found on the icon
+   button and the sidebar while this file reported a clean sheet.
 """
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parent.parent
+ROW = re.compile(r"^\|\s*([a-z_]+)\s*\|\s*`([^`]+)`\s*\|\s*`([^`]*)`\s*\|\s*([^|]*)\|\s*([^|]*)\|")
+
+# Focus stops whose focus state is deliberately invisible. Every entry needs a reason: an entry here
+# claims a user can still tell where focus is (usually because a child shows it instead).
+FOCUS_VISUAL_WHITELIST: dict[tuple[str, str], str] = {}
 
 
-def test_keyboard_walkthrough_finds_no_gaps(ws_tmp):
-    report = ws_tmp / "keyboard_walkthrough.md"
+@pytest.fixture(scope="module")
+def walkthrough_report() -> str:
+    """Run the walkthrough once and hand its Markdown to every test in this module.
+
+    The workspace temp folder is used rather than pytest's tmp_path: that one is unusable here (see
+    the project's testing note), and the report has to land somewhere writable.
+    """
+    out_dir = ROOT.parent / "tmp" / "kb_guard"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    report = out_dir / "keyboard_walkthrough.md"
     proc = subprocess.run(
         [
             sys.executable,
@@ -45,13 +65,50 @@ def test_keyboard_walkthrough_finds_no_gaps(ws_tmp):
         cwd=str(ROOT),
         capture_output=True,
         text=True,
-        timeout=600,
+        timeout=900,
         check=False,
     )
     assert proc.returncode == 0, f"{proc.stdout}\n{proc.stderr}"
+    return report.read_text(encoding="utf-8")
 
-    text = report.read_text(encoding="utf-8")
-    assert "硬失败:`0`" in text, text
-    assert "⚠️" not in text, "some focus stop has no :focus rule in the stylesheets:\n" + text
+
+def _invisible_stops(report: str) -> list[tuple[str, str, str, str, str]]:
+    """Rows of the 'no visible focus effect' section: page, class, object name, label, rect."""
+    marker = "## 无可辨焦点效果的控件"
+    if marker not in report:
+        return []
+    section = report.split(marker, 1)[1].split("\n## ", 1)[0]
+    rows = []
+    for line in section.splitlines():
+        match = ROW.match(line.strip())
+        if match and match.group(2) not in ("控件", "---"):
+            page, kind, name, label, rect = match.groups()
+            rows.append((page, kind, name, label.strip(), rect.strip()))
+    return rows
+
+
+def test_keyboard_walkthrough_finds_no_gaps(walkthrough_report):
+    assert "硬失败:`0`" in walkthrough_report, walkthrough_report
+    assert "⚠️" not in walkthrough_report, (
+        "some focus stop has no :focus rule in the stylesheets:\n" + walkthrough_report
+    )
     # a page with no focus stop at all would mean the page cannot be used with a keyboard
-    assert "Tab 完全不动" not in text, text
+    assert "Tab 完全不动" not in walkthrough_report, walkthrough_report
+
+
+def test_every_focus_stop_changes_pixels(walkthrough_report):
+    """Keyboard focus must be *visible*, not merely styled.
+
+    This is a hard assertion as of the 0.4.0 focus convergence: the check compares the pixels around a
+    stop focused versus unfocused, so a rule that exists but never wins (or never repaints) fails here.
+    The whitelist stays empty - an entry would claim the user can still tell where focus is.
+    """
+    offenders = [
+        f"{page}: {kind} {name or '-'} {label or '-'} @ {rect}"
+        for page, kind, name, label, rect in _invisible_stops(walkthrough_report)
+        if (kind, name) not in FOCUS_VISUAL_WHITELIST
+    ]
+    assert not offenders, (
+        "these focus stops produce no visible change (or their exemption is stale):\n  "
+        + "\n  ".join(offenders)
+    )

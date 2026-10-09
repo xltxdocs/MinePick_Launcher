@@ -146,11 +146,15 @@ def _find_non_focusable(page) -> list[tuple[str, str, str]]:
     return out
 
 
-def _walk(app, page, max_steps: int, selectors: list[str]) -> list[tuple[str, str, str, str, bool]]:
+def _walk(
+    app, page, max_steps: int, selectors: list[str]
+) -> tuple[list[tuple[str, str, str, str, bool]], list]:
     """Press Tab until focus returns to where it started (or the step budget runs out).
 
     The focus-rule flag is decided here, while the widget itself is at hand: a rule naming a *base*
     class still applies (Qt matches subclasses), which cannot be told from a recorded class name.
+    The live widgets are returned alongside the recorded rows so the visual pass can reuse the exact
+    traversal the report describes.
     """
     from PySide6.QtCore import Qt
     from PySide6.QtTest import QTest
@@ -159,6 +163,7 @@ def _walk(app, page, max_steps: int, selectors: list[str]) -> list[tuple[str, st
     app.processEvents()
 
     path: list[tuple[str, str, str, str, bool]] = []
+    widgets: list = []
     target = app.focusWidget() or page
     for _ in range(max_steps):
         QTest.keyClick(target, Qt.Key.Key_Tab)
@@ -170,8 +175,83 @@ def _walk(app, page, max_steps: int, selectors: list[str]) -> list[tuple[str, st
         if step in path:
             break  # wrapped around: the focus chain for this page is closed
         path.append(step)
+        widgets.append(widget)
         target = widget
-    return path
+    return path, widgets
+
+
+GRAB_PAD = 4  # pixels of margin around the widget, so a ring drawn outside its rect is visible
+
+
+NEUTRAL_RETRIES = 3  # how many times the neutral frame may be re-taken before calling it unstable
+
+
+def _repolish(app, *widgets) -> None:
+    """Force a fresh stylesheet evaluation after a focus change.
+
+    Changing focus alone can leave Qt re-using the style it already computed, which made two grabs of
+    supposedly different states byte-identical - and made this whole check report "no visible focus"
+    for controls whose appearance does change.
+    """
+    for widget in widgets:
+        style = widget.style()
+        style.unpolish(widget)
+        style.polish(widget)
+        widget.update()
+    app.processEvents()
+
+
+def _focus_visual(app, window, widget, neutral) -> str:
+    """Does focusing this widget change the pixels around it?
+
+    Returns `yes`, `no`, `unknown:moved` (the widget shifted between the grabs, e.g. focus scrolling it
+    into view) or `unknown:unstable` (the neutral frame never settled - async status text is the usual
+    culprit). `unknown` is never treated as a defect.
+    """
+    from PySide6.QtCore import QPoint, QRect, Qt
+
+    top_left = widget.mapTo(window, QPoint(0, 0))
+    rect = QRect(top_left, widget.size()).adjusted(-GRAB_PAD, -GRAB_PAD, GRAB_PAD, GRAB_PAD)
+    rect = rect.intersected(window.rect())
+    if rect.isEmpty():
+        return "unknown:moved"
+
+    widget.setFocus(Qt.FocusReason.OtherFocusReason)
+    _repolish(app, widget, neutral)
+    if widget.mapTo(window, QPoint(0, 0)) != top_left:
+        return "unknown:moved"
+    # The grab must stay alive while its buffer is read: `window.grab(rect).toImage().constBits()`
+    # in one expression hands back a view into an already-destroyed image (access violation).
+    focused_image = window.grab(rect).toImage()
+    focused = bytes(focused_image.constBits())
+
+    for _attempt in range(NEUTRAL_RETRIES):
+        neutral.setFocus(Qt.FocusReason.OtherFocusReason)
+        _repolish(app, neutral, widget)
+        if widget.mapTo(window, QPoint(0, 0)) != top_left:
+            return "unknown:moved"
+        baseline_image = window.grab(rect).toImage()
+        baseline = bytes(baseline_image.constBits())
+        app.processEvents()
+        repeat_image = window.grab(rect).toImage()
+        repeat = bytes(repeat_image.constBits())
+        if baseline == repeat:
+            return "yes" if focused != baseline else "no"
+    return "unknown:unstable"
+
+
+def _focus_visual_confirmed(app, window, widget, neutral) -> str:
+    """`no` and `unknown` are re-tested once: an async repaint must not be reported as a defect."""
+    first = _focus_visual(app, window, widget, neutral)
+    if first == "yes":
+        return "yes"
+    second = _focus_visual(app, window, widget, neutral)
+    if first == second:
+        return first
+    for verdict in (second, first):
+        if verdict.startswith("unknown"):
+            return verdict
+    return "flaky"
 
 
 def _has_focus_rule_name(kind: str, object_name: str, selectors: list[str]) -> bool:
@@ -287,6 +367,10 @@ def main() -> int:
     lines: list[str] = []
     failures: list[str] = []
     total = 0
+    invisible: list[tuple[str, str, str, str, str]] = []  # page, class, objectName, label, rect
+    visual_tally: dict[str, int] = {"yes": 0, "no": 0, "unknown": 0, "flaky": 0}
+    unknown_causes: dict[str, int] = {}
+    neutral = window.stack  # a container with no :focus rule, used to park focus for the comparison
 
     lines.append("# MinePick 键盘走查记录")
     lines.append("")
@@ -304,10 +388,26 @@ def main() -> int:
             continue
         window.stack.setCurrentIndex(index)
         app.processEvents()
-        path = _walk(app, page, args.max_steps, selectors)
+        path, widgets = _walk(app, page, args.max_steps, selectors)
         total += len(path)
         if not path:
             failures.append(f"页面 `{key}`:Tab 完全不动(没有任何可获得焦点的控件)")
+        visuals: list[str] = []
+        for widget in widgets:
+            verdict = _focus_visual_confirmed(app, window, widget, neutral)
+            visuals.append(verdict)
+            bucket = "unknown" if verdict.startswith("unknown") else verdict
+            visual_tally[bucket] = visual_tally.get(bucket, 0) + 1
+            if verdict.startswith("unknown:"):
+                cause = verdict.split(":", 1)[1]
+                unknown_causes[cause] = unknown_causes.get(cause, 0) + 1
+            if verdict == "no":
+                from PySide6.QtCore import QPoint
+
+                point = widget.mapTo(window, QPoint(0, 0))
+                rect = f"{point.x()},{point.y()} {widget.width()}x{widget.height()}"
+                kind, name, label, _policy, _has_rule = path[len(visuals) - 1]
+                invisible.append((key, kind, name, label, rect))
         without_rule = [
             f"`{kind}` `{name}`" for kind, name, _label, _policy, has_rule in path if not has_rule
         ]
@@ -316,12 +416,15 @@ def main() -> int:
         if without_rule:
             detail.append(f"- ⚠️ 未在样式表里找到 `:focus` 规则:{', '.join(without_rule)}")
             detail.append("")
-        detail.append("| # | 控件 | objectName | 可读名称 | 焦点策略 | 焦点样式 |")
-        detail.append("|---|---|---|---|---|---|")
-        for step_index, (kind, name, label, policy, has_rule) in enumerate(path, 1):
+        detail.append("| # | 控件 | objectName | 可读名称 | 焦点策略 | 焦点样式 | 焦点可见 |")
+        detail.append("|---|---|---|---|---|---|---|")
+        for step_index, (kind, name, label, policy, has_rule) in enumerate(path):
             mark = "✅" if has_rule else "⚠️"
+            visual = visuals[step_index] if step_index < len(visuals) else "—"
+            visual_mark = {"yes": "✅", "no": "❌", "unknown": "❓", "flaky": "〰️"}.get(visual, "—")
             detail.append(
-                f"| {step_index} | `{kind}` | `{name}` | {label or '—'} | {policy} | {mark} |"
+                f"| {step_index + 1} | `{kind}` | `{name}` | {label or '—'} | {policy} "
+                f"| {mark} | {visual_mark} {visual} |"
             )
         detail.append("")
 
@@ -338,6 +441,26 @@ def main() -> int:
     lines.append(f"- 硬失败:`{len(failures)}`")
     for failure in failures:
         lines.append(f"  - ❌ {failure}")
+    unknown_detail = ", ".join(f"{name} `{count}`" for name, count in sorted(unknown_causes.items()))
+    lines.append(
+        f"- 焦点可见性实测:可见 `{visual_tally.get('yes', 0)}` /"
+        f" **不可见 `{visual_tally.get('no', 0)}`** / 无法判定 `{visual_tally.get('unknown', 0)}`"
+        + (f"({unknown_detail})" if unknown_detail else "")
+        + f" / 不稳定 `{visual_tally.get('flaky', 0)}`"
+    )
+    lines.append("")
+    lines.append(f"## 无可辨焦点效果的控件({len(invisible)} 个)")
+    lines.append("")
+    lines.append("> 判据:把焦点放到该控件与把焦点移开后,**窗口同一区域(控件矩形外扩 4px)的像素完全相同**")
+    lines.append("> ⇒ 用户看不出焦点在哪。两个 `no` 才算数;`unknown`(控件被滚动移动 / 中性帧不稳定)不算缺陷。")
+    lines.append("")
+    if invisible:
+        lines.append("| 页面 | 控件 | objectName | 可读名称 | 矩形(窗口坐标) |")
+        lines.append("|---|---|---|---|---|")
+        for page_key, kind, name, label, rect in invisible:
+            lines.append(f"| {page_key} | `{kind}` | `{name}` | {label or '—'} | {rect} |")
+    else:
+        lines.append("(无)")
     lines.append("")
     lines.append(f"## 样式表中的 `:focus` 选择器({len(selectors)} 条)")
     lines.append("")
@@ -352,6 +475,13 @@ def main() -> int:
     out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"report: {out_path}")
     print(f"focus stops: {total}; pages: {len(NAV_KEYS)}; hard failures: {len(failures)}")
+    print(
+        "focus visual: "
+        + ", ".join(f"{name}={count}" for name, count in sorted(visual_tally.items()) if count)
+    )
+    print(f"no visible focus effect: {len(invisible)}")
+    for page_key, kind, name, label, rect in invisible:
+        print(f"  INVISIBLE {page_key}: {kind} {name or '-'} {label or '-'} @ {rect}")
     for failure in failures:
         print(f"  FAIL {failure}")
     return 1 if failures else 0

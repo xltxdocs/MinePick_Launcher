@@ -162,9 +162,14 @@ QListWidget::item:selected:!focus { background: __ACCENT_SEL__; color: __FG_SELE
 
 QListWidget#sidebar {
     background: transparent;
-    border: none;
+    border: 1px solid transparent;
     padding: 4px 4px;
     outline: none;
+}
+/* The rail itself carries the keyboard focus cue: Qt repaints a view's own border on focus, while the
+   selected item's pseudo-state `:focus` proved unreliable for list items. */
+QListWidget#sidebar:focus {
+    border-color: __ACCENT__;
 }
 QListWidget#sidebar::item {
     color: __FG_HINT__;
@@ -182,14 +187,6 @@ QListWidget#sidebar::item:selected {
     border-left: 3px solid __ACCENT__;
     border-radius: __RADIUS_LG__;
     font-weight: 700;
-}
-/* Keyboard focus keeps the pill but strengthens it, so "the selected row" and "the row I am on" are
-   distinguishable. The 3px left border already exists at rest: focusing shifts no layout. */
-QListWidget#sidebar::item:selected:focus {
-    background: __ACCENT_SEL__;
-    color: __FG_SELECTED__;
-    border-left: 3px solid __ACCENT__;
-    border-radius: __RADIUS_LG__;
 }
 
 /* ---------- progress ---------- */
@@ -384,6 +381,14 @@ QPushButton#categoryTab:checked {
     color: __FG_SELECTED__;
     border-color: __ACCENT_BUTTON__;
     font-weight: 700;
+}
+
+/* Keyboard focus must survive the id rule: `QPushButton:focus` loses to `QPushButton#categoryTab`.
+   The base rule already has `border: 1px solid transparent`, so colouring it shifts no layout, and
+   this rule stays distinguishable from the checked state (which fills the pill). */
+QPushButton#categoryTab:focus {
+    border-color: __ACCENT__;
+    color: __FG_TEXT__;
 }
 
 /* Uniform border width on purpose: a thicker left border pokes out of the rounded
