@@ -233,12 +233,17 @@ def _focus_visual(app, window, widget, neutral) -> str:
     """Does focusing this widget change the pixels around it?
 
     Returns `yes`, `no`, `unknown:moved` (the widget shifted between the grabs, e.g. focus scrolling it
-    into view) or `unknown:unstable` (the neutral frame never settled - async status text is the usual
-    culprit). `unknown` is never treated as a defect.
+    into view), `unknown:out_of_view` (the widget is clipped by the window, so part of it - possibly the
+    part carrying the focus cue - is not rendered at all) or `unknown:unstable` (the neutral frame never
+    settled - async status text is the usual culprit). `unknown` is never treated as a defect.
     """
     from PySide6.QtCore import QPoint, QRect, Qt
 
     top_left = widget.mapTo(window, QPoint(0, 0))
+    # A partially visible widget cannot be judged: grabbing only the visible strip made a button that
+    # had merely scrolled out of view look like "no visible focus". Any clipping means unknown.
+    if not window.rect().contains(QRect(top_left, widget.size())):
+        return "unknown:out_of_view"
     rect = QRect(top_left, widget.size()).adjusted(-GRAB_PAD, -GRAB_PAD, GRAB_PAD, GRAB_PAD)
     rect = rect.intersected(window.rect())
     if rect.isEmpty():
@@ -495,7 +500,7 @@ def main() -> int:
     lines.append(f"## 无可辨焦点效果的控件({len(invisible)} 个)")
     lines.append("")
     lines.append("> 判据:把焦点放到该控件与把焦点移开后,**窗口同一区域(控件矩形外扩 4px)的像素完全相同**")
-    lines.append("> ⇒ 用户看不出焦点在哪。两个 `no` 才算数;`unknown`(控件被滚动移动 / 中性帧不稳定)不算缺陷。")
+    lines.append("> ⇒ 用户看不出焦点在哪。两个 `no` 才算数;`unknown`(控件被滚动移出可视区 / 中性帧不稳定)不算缺陷。")
     lines.append("")
     if invisible:
         lines.append("| 页面 | 控件 | objectName | 可读名称 | 矩形(窗口坐标) |")

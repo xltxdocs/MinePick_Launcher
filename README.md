@@ -6,7 +6,7 @@ A portable Minecraft launcher built with Python + PySide6: Microsoft/offline acc
 Modrinth & CurseForge resources, Fabric/Forge/NeoForge/Quilt loaders, isolated instances — packaged as a
 single portable EXE.
 
-**Current release: 0.3.1** — a GUI build only: this repository ships no command-line executable.
+**Current release: 0.4.0** — a GUI build only: this repository ships no command-line executable.
 
 ## Screenshots
 
@@ -53,8 +53,24 @@ single portable EXE.
   headers are click-to-sort
 - **Readable states** — buttons are ranked (primary / secondary / outlined danger), status messages are
   coloured by severity, empty lists explain what to do next
-- **Accessible by default** — every text/background pair meets WCAG AA contrast (white-on-accent fills are
-  darkened automatically), and the interface is available in 9 languages
+- **Accessible by default** — contrast is checked by enumerating the colour tokens (both themes × eight
+  accent presets: body text ≥4.5:1, non-text ≥3:1), every interactive control carries a readable name,
+  keyboard focus is always visible, and status messages are announced to assistive technology
+
+## Accessibility
+
+- We do **not** claim "WCAG 2.2 AA conformance" — WCAG is written for web content and this is a desktop
+  application. What we claim is the subset of its A/AA criteria that applies to a desktop program.
+- Checked automatically on every change: text/background pairs enumerated from the colour tokens
+  (both themes × eight accent presets; body text ≥4.5:1, non-text ≥3:1), click targets ≥24×24 px
+  (76 controls in a real desktop run, all passing), full keyboard reach with a visible focus indicator
+  at every one of the 58 focus stops, a readable name on every interactive control, tooltips that can be
+  hovered and never expire on their own, and status messages announced to assistive technology.
+- **Not done**: a manual screen-reader walkthrough (NVDA / Narrator). Two details still need a check on
+  real hardware: how the tooltip behaves under a real window manager, and whether a screen reader
+  actually speaks the status messages.
+- Known issues: switching the theme mid-session freezes a large window for several seconds, and closing
+  the program while a download or update is still running can crash it. See the release notes.
 
 ## Launcher features
 
