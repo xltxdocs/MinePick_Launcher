@@ -62,6 +62,14 @@ class TitleBar(QWidget):
         button.setFixedSize(36, 26)
         button.setCursor(Qt.CursorShape.PointingHandCursor)
         button.setFocusPolicy(Qt.FocusPolicy.NoFocus)  # the bar is mouse-only
+        # Flat, and never a default button. On the real Windows platform these two were the only controls
+        # that came out as solid accent-green squares: the platform style drew them as push buttons even
+        # though the stylesheet asks for a transparent background (offscreen never reproduced it, because
+        # a different style is in charge there). Flat removes the frame the native style paints, which is
+        # what we wanted all along, and the stylesheet still supplies the hover fills.
+        button.setFlat(True)
+        button.setAutoDefault(False)
+        button.setDefault(False)
         button.clicked.connect(slot)
         return button
 
