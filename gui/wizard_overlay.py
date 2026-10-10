@@ -28,6 +28,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from PySide6.QtCore import QEasingCurve, QEvent, QPropertyAnimation, Qt, Signal
+from PySide6.QtGui import QPalette
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
     QGridLayout,
@@ -167,6 +168,13 @@ class WizardOverlay(QWidget):
         super().__init__(parent)
         self.setObjectName("wizardOverlay")
         _styled(self)
+        # Belt and braces: on the real Windows platform Qt does not adopt the
+        # QWidget#wizardOverlay rule (it works offscreen), which left this overlay see-through and
+        # the page readable underneath. Auto-filling from the themed palette does not depend on
+        # stylesheet matching, and apply_theme() sets the Window role to the BG_WINDOW token, so
+        # this follows the theme like everything else.
+        self.setAutoFillBackground(True)
+        self.setBackgroundRole(QPalette.ColorRole.Window)
         self._steps = steps
         self._labels = labels
         self._index = 0

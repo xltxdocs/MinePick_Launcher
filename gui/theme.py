@@ -306,6 +306,16 @@ def radius_scale(radius: str | None) -> tuple[int, int, int]:
 # The (application, theme, accent, font, radius, device scale) last handed to setStyleSheet.
 _last_applied: tuple[int, str, str, str, str, int] | None = None
 
+# The token table (role -> colour) behind the stylesheet currently in force. Widgets that must
+# style themselves - because the application stylesheet is not adopted for them on every
+# platform - read their colours from here, so colour still has exactly one source of truth.
+_last_tokens: dict[str, str] = {}
+
+
+def current_tokens() -> dict[str, str]:
+    """The token values last applied; empty before the first apply_theme call."""
+    return dict(_last_tokens)
+
 
 def device_scale(app: QApplication) -> int:
     """The screen's device pixel ratio, clamped to the asset multiples we ship (1x/2x/3x)."""
@@ -343,7 +353,7 @@ def apply_theme(
     so without this guard a session that touches a few settings pays seconds per change - and the test
     suite, which drives those saves, spends minutes in it.
     """
-    global _last_applied
+    global _last_applied, _last_tokens
     app = QApplication.instance()
     if app is None:
         return
@@ -384,5 +394,7 @@ def apply_theme(
     # The palette covers the surfaces Qt draws itself (native popup frames, menu shadows, platform-drawn
     # viewports, disabled text); the stylesheet covers the widgets we wrote. Both come from the same tokens.
     app.setPalette(theme_qpalette(theme, accent))
+    # Publish the tokens before the sheet: a widget that reacts to StyleChange reads them there.
+    _last_tokens = dict(palette)
     app.setStyleSheet(text)
     _last_applied = key

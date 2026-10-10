@@ -48,6 +48,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--root", default=".", help="repository root (resource path base)")
     parser.add_argument("--data", default="", help="data dir; a temp one is used when omitted")
     parser.add_argument("--popup", action="store_true", help="also grab one dropdown popup")
+    parser.add_argument("--wizard", action="store_true", help="also grab the first-run wizard")
     return parser.parse_args(argv)
 
 
@@ -135,6 +136,39 @@ def main(argv: list[str] | None = None) -> int:
         target = out / f"{index}_{key}.png"
         window.grab().save(str(target))
         print(f"  {args.theme} {key:10} -> {target.name}")
+
+    if args.wizard:
+        from PySide6.QtWidgets import QWidget as _QWidget
+
+        from gui.wizard_overlay import WizardOverlay, WizardStep
+
+        step_widget = _QWidget()
+        overlay = WizardOverlay(
+            window,
+            [WizardStep(title="Step one", description="Check the overlay is opaque.", widget=step_widget)],
+            {"back": "Back", "next": "Next", "done": "Done", "skip": "Skip"},
+        )
+        overlay.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen, True)
+        overlay.setGeometry(window.rect())
+        overlay.show()
+        overlay.raise_()
+        QApplication.processEvents()
+        # let the entry fade settle: grabbing mid-animation would make the two grabs differ by the
+        # animation itself rather than by anything bleeding through
+        from PySide6.QtTest import QTest
+
+        QTest.qWait(400)
+        QApplication.processEvents()
+        overlay_only = out / "wizard_overlay.png"
+        with_page = out / "wizard_with_page.png"
+        overlay.grab().save(str(overlay_only))
+        # grab the window limited to the overlay's own rectangle, so the two images are the same size
+        # and can be compared pixel for pixel: an opaque overlay must match exactly
+        window.grab(overlay.geometry()).save(str(with_page))
+        print(f"  {args.theme} wizard    -> {overlay_only.name} + {with_page.name}")
+        overlay.hide()
+        overlay.deleteLater()
+        QApplication.processEvents()
 
     if args.popup:
         for combo in window.findChildren(QComboBox):

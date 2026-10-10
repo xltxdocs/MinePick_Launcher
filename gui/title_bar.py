@@ -24,10 +24,55 @@ painted by the style sheet, so both themes match.
 
 from __future__ import annotations
 
-from PySide6.QtCore import QPoint, Qt
+from PySide6.QtCore import QEvent, QPoint, Qt
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QWidget
 
+from gui import theme
+
 BAR_HEIGHT = 38
+
+
+class _WindowButton(QPushButton):
+    """A window control that styles itself.
+
+    The application stylesheet addresses these by object name and, on the real Windows platform,
+    Qt does not adopt those rules: measured with a probe colour that never appeared, while the
+    same rules work offscreen. The buttons therefore came out as solid accent squares with no
+    hover feedback. A widget-level stylesheet is always honoured, and rebuilding it on
+    StyleChange keeps it in step with the theme.
+    """
+
+    def __init__(self, glyph: str, name: str, hover_token: str, hover_text_token: str) -> None:
+        super().__init__(glyph)
+        self.setObjectName(name)
+        self._hover_token = hover_token
+        self._hover_text_token = hover_text_token
+        self._restyling = False
+        self._restyle()
+
+    def changeEvent(self, event) -> None:
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.StyleChange and not self._restyling:
+            self._restyle()
+
+    def _restyle(self) -> None:
+        tokens = theme.current_tokens()
+        hint = tokens.get("FG_HINT", "palette(mid)")
+        sheet = f"QPushButton {{ background: transparent; border: none; color: {hint}; }}"
+        fill = tokens.get(self._hover_token)
+        if fill:
+            text = tokens.get(self._hover_text_token, hint)
+            sheet += f" QPushButton:hover {{ background: {fill}; color: {text}; }}"
+        if sheet == self.styleSheet():
+            return  # nothing to do: and installing an identical sheet would bounce a StyleChange back
+        # setStyleSheet delivers StyleChange to this widget, which would call us again: the flag breaks
+        # that loop (without it the suite died with a stack overflow), and the equality check above keeps
+        # the common no-op case from re-entering at all.
+        self._restyling = True
+        try:
+            self.setStyleSheet(sheet)
+        finally:
+            self._restyling = False
 
 
 class TitleBar(QWidget):
@@ -57,8 +102,13 @@ class TitleBar(QWidget):
 
     @staticmethod
     def _make_button(name: str, glyph: str, slot) -> QPushButton:
-        button = QPushButton(glyph)
-        button.setObjectName(name)
+        is_minimize = name.endswith("Minimize")
+        button = _WindowButton(
+            glyph,
+            name,
+            "BG_TITLEBAR_MINIMIZE" if is_minimize else "BG_TITLEBAR_CLOSE",
+            "FG_TEXT" if is_minimize else "FG_SELECTED",
+        )
         button.setFixedSize(36, 26)
         button.setCursor(Qt.CursorShape.PointingHandCursor)
         button.setFocusPolicy(Qt.FocusPolicy.NoFocus)  # the bar is mouse-only
