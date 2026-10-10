@@ -385,16 +385,31 @@ def apply_theme(
     text = text.replace("__RADIUS_XS__", f"{extra_small}px")
     text = text.replace("__RADIUS_SM__", f"{small}px")
     text = text.replace("__RADIUS_LG__", f"{large}px")
-    # NOTE: do not "clear first" here. `setStyleSheet("")` + `setStyleSheet(text)` is much faster (it puts
-    # Qt back on a cheap path: about 0.2s per theme switch instead of ~5.8s once the cost has accumulated),
-    # but the 0.4.0 build shipped unstyled widgets because of it: dropdown arrows and several page
-    # backgrounds came out wrong and the first-run wizard was see-through. The offscreen renderer applies
-    # the theme once and never reproduced it, so it reached the user before anyone saw it here.
-    # The identical-apply guard below is safe and stays; clearing the application style is not.
     # The palette covers the surfaces Qt draws itself (native popup frames, menu shadows, platform-drawn
-    # viewports, disabled text); the stylesheet covers the widgets we wrote. Both come from the same tokens.
+    # viewports, disabled text); the stylesheet covers the widgets we wrote. Both come from the same tokens,
+    # and the palette must be in force *before* the sheet is touched - see the note on clearing below.
     app.setPalette(theme_qpalette(theme, accent))
     # Publish the tokens before the sheet: a widget that reacts to StyleChange reads them there.
     _last_tokens = dict(palette)
+    # Clear the application sheet before installing the new one. Qt's cost for *replacing* it accumulates
+    # within a process: in a clean run with one window, eight consecutive replacements took 0.06s, 0.25s,
+    # 0.42s, 0.42s, 0.44s, 1.72s, 2.16s, and a real 1455-widget window paid 4.5-6.5s per dark/light switch
+    # once it had. Dropping the sheet first puts Qt back on a cheap path - 0.86-1.04s per switch, flat
+    # instead of growing: ten switches cost 8.6s against 54.3s. What is left is Qt re-polishing every
+    # widget, and that is per-widget rather than per-rule: a 47-character sheet still costs 0.53s of it,
+    # so shrinking the stylesheet would not remove it. Going below this needs the colours to move from the
+    # stylesheet into the palette (setPalette alone measured 0ms), which is a restructuring, not a tweak.
+    #
+    # This used to say the opposite. Clearing was blamed when the 0.4.0 build shipped unstyled widgets
+    # (dropdown arrows, page backgrounds, a see-through wizard) and was reverted. It was not the cause: the
+    # application palette was never themed, so the surfaces Qt draws itself followed the OS while the
+    # stylesheet was momentarily absent. Re-measured with the palette themed (commit 3166c91), the fast
+    # path renders identically - 8 pages plus the wizard, real platform, before and after a dark->light
+    # switch, match exactly at 3.3M samples each against a measured noise floor of zero. The one pixel
+    # difference a wider comparison turned up was a spin box's value (a mod-count-derived memory
+    # suggestion), not a colour. tests/test_theme_apply_cache.py pins the clear-then-install sequence and
+    # the palette-before-sheet ordering it depends on.
+    if app.styleSheet():
+        app.setStyleSheet("")
     app.setStyleSheet(text)
     _last_applied = key
