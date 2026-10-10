@@ -57,10 +57,12 @@ QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
     selection-color: __ACCENT_SEL_TEXT__;
 }
 QLineEdit:hover, QComboBox:hover, QSpinBox:hover, QDoubleSpinBox:hover { border-color: __BORDER_HOVER__; }
-QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus { border: 1px solid __FOCUS_RING__; }
+/* Focus visuals live in one place: the [keyboardFocus="true"] block at the end of this sheet.
+   The rules that used to sit here were plain :focus, so clicking an input with the mouse
+   painted a ring - the rule is that nothing shows focus unless it came from Tab, the arrow
+   keys or assistive navigation. */
 /* Containers that can hold focus need a visible focus state of their own (UI guideline 5.1). They
    keep a 1px transparent border even at rest, so colouring it cannot shift the layout (3.3). */
-QTextEdit:focus, QTableWidget:focus, QTableView:focus, QScrollArea:focus { border: 1px solid __FOCUS_RING__; }
 QLineEdit:disabled, QComboBox:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled {
     color: __FG_DISABLED_2__;
     background: __BG_DISABLED__;
@@ -478,12 +480,14 @@ QLabel#emptyState {
 QListWidget[keyboardFocus="true"], QTableView[keyboardFocus="true"], QTableWidget[keyboardFocus="true"],
 QPlainTextEdit[keyboardFocus="true"], QTextEdit[keyboardFocus="true"], QComboBox[keyboardFocus="true"],
 QLineEdit[keyboardFocus="true"], QSpinBox[keyboardFocus="true"], QDoubleSpinBox[keyboardFocus="true"] {
-    border: 1px solid __ACCENT__;
+    border: 1px solid __FOCUS_RING__;
 }
 QPushButton[keyboardFocus="true"] { background: __ACCENT_HOVER__; }
 QPushButton#secondaryButton[keyboardFocus="true"], QPushButton#dangerButton[keyboardFocus="true"] {
-    border: 1px solid __ACCENT__;
+    border: 1px solid __FOCUS_RING__;
 }
+QScrollArea[keyboardFocus="true"] { border: 1px solid __FOCUS_RING__; }
+
 
 /* ---------- custom title bar (frameless window) ---------- */
 

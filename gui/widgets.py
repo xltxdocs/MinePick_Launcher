@@ -474,6 +474,7 @@ class KeyboardFocusTracker(QObject):
 
     _INTERACTIVE = (
         QAbstractItemView,
+        QAbstractScrollArea,  # scroll areas carry a keyboard-only ring of their own
         QAbstractSpinBox,
         QComboBox,
         QLineEdit,
@@ -500,12 +501,28 @@ class KeyboardFocusTracker(QObject):
 
     @staticmethod
     def _mark(widget, active: bool) -> None:
-        if bool(widget.property("keyboardFocus")) == active:
+        # A queued FocusOut can arrive after the C++ side of the widget is already gone - during
+        # shutdown, or when the garbage collector reclaims a window the tests are finished with.
+        # Touching such a wrapper took the whole process down with an access violation (Fatal Python
+        # error: Aborted), reproducibly in the full suite and never in a single test file, because only
+        # a long run lines the destruction up with the queued event. Every access is guarded; a widget
+        # that is still alive behaves exactly as before.
+        try:
+            import shiboken6
+
+            if not shiboken6.isValid(widget):
+                return
+            if bool(widget.property("keyboardFocus")) == active:
+                return
+            widget.setProperty("keyboardFocus", active)
+            style = widget.style()
+            if style is None:
+                return
+            style.unpolish(widget)
+            style.polish(widget)
+        except RuntimeError:
+            # The widget died between the validity check and the call: nothing left to restyle.
             return
-        widget.setProperty("keyboardFocus", active)
-        style = widget.style()
-        style.unpolish(widget)
-        style.polish(widget)
 
 
 class NumericTableItem(QTableWidgetItem):

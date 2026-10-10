@@ -43,17 +43,24 @@ from pathlib import Path
 
 
 def _qss_focus_selectors(root: Path) -> list[str]:
-    """Every selector that mentions :focus in either stylesheet."""
+    """Every selector a focused widget can be styled by, in either stylesheet.
+
+    Two shapes count. `:focus` rules are the obvious one. The other is the
+    `[keyboardFocus="true"]` block: this launcher deliberately shows focus only for keyboard
+    navigation (see gui.widgets.KeyboardFocusTracker), so the keyboard ring lives there and carries no
+    `:focus` pseudo-state at all. Looking only for `:focus` reported a missing rule for every control
+    whose visual had moved to that block.
+    """
     selectors: list[str] = []
     for name in ("style.qss", "style_light.qss"):
         path = root / "gui" / "resources" / name
         if not path.exists():
             continue
         text = path.read_text(encoding="utf-8")
-        for block in re.findall(r"([^{}]*:focus[^{}]*)\{", text):
+        for block in re.findall(r"([^{}]*)\{", text):
             for part in block.split(","):
                 part = part.strip()
-                if part and ":focus" in part:
+                if part and (":focus" in part or "keyboardFocus" in part):
                     selectors.append(part)
     return selectors
 
@@ -116,6 +123,7 @@ def _selector_target(selector: str) -> str:
     id so an object-name rule can be told apart from a class rule.
     """
     base = selector.split("::")[0]
+    base = re.sub(r"\[[^\]]*\]", "", base)  # drop attribute conditions like [keyboardFocus="true"]
     return base.split(":")[0].strip()
 
 
