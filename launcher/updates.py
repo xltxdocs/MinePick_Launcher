@@ -235,8 +235,11 @@ def download_release_exe(release: ReleaseInfo, target_dir: Path, client=None, on
         partial.unlink(missing_ok=True)
 
     try:
+        from launcher.net.downloader import download_activity
+
         try:
-            with client.stream("GET", release.exe_url) as response:
+            # Counted like any other download: quitting while an update is streaming in must ask too.
+            with download_activity(), client.stream("GET", release.exe_url) as response:
                 if response.status_code != 200:
                     raise UpdateError("http", f"HTTP {response.status_code}")
                 total = int(response.headers.get("Content-Length") or release.exe_size or 0)

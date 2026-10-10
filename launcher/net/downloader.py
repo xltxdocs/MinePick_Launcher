@@ -31,6 +31,7 @@ import threading
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -134,6 +135,35 @@ class _SpeedLimiter:
                 time.sleep(min(overshoot / self.limit, 5.0))
 
 
+_active_downloads = 0
+
+
+def active_download_count() -> int:
+    """How many download batches are running right now.
+
+    Kept in the launcher layer because the GUI asks about it (the quit confirmation) while the core
+    must stay UI-agnostic; a single integer is enough for that question.
+    """
+    return _active_downloads
+
+
+@contextmanager
+def download_activity():
+    """Count one download for as long as the block runs, whatever way it ends.
+
+    Every download path uses this - the downloader's own batches and the updater's streaming download -
+    so there is exactly one counter behind active_download_count(), and the quit confirmation sees all
+    of them. try/finally, so an exception cannot leave the counter stuck above zero and keep asking the
+    user about downloads that are no longer running.
+    """
+    global _active_downloads
+    _active_downloads += 1
+    try:
+        yield
+    finally:
+        _active_downloads -= 1
+
+
 class Downloader:
     """Download a list of tasks concurrently; files that already exist and pass verification are skipped, and failed tasks are reported in aggregate.
 
@@ -170,9 +200,12 @@ class Downloader:
         progress: Callable[[DownloadProgress], None] | None = None,
     ) -> DownloadResult:
         client = self._client or _new_client()
+        global _active_downloads
+        _active_downloads += 1
         try:
             return self._download(client, tasks, progress)
         finally:
+            _active_downloads -= 1
             if self._owns_client:
                 client.close()
 

@@ -433,7 +433,57 @@ class MainWindow(QMainWindow):
         self.statusBar().show()
         self.set_status(tr("status.ready"))
 
+    def keyPressEvent(self, event) -> None:
+        """Accept keys that nothing in the window claimed.
+
+        Windows plays its default alert sound when a key event reaches the window unused and unaccepted
+        - pressing Enter or Space with the focus on a list item, a label or a disabled button was the
+        audible "ding". This handler only runs after every child widget declined the key, so buttons,
+        dialogs and line edits keep their own behaviour; it just stops the event escaping to the desktop.
+        """
+        if event.key() in (
+            Qt.Key.Key_Return,
+            Qt.Key.Key_Enter,
+            Qt.Key.Key_Space,
+            Qt.Key.Key_Backspace,
+        ):
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
+    def _confirm_quit_while_downloading(self) -> bool:
+        """Ask before quitting when downloads are still running. Returns True when it is fine to close.
+
+        The downloads themselves have no cancellation (an interrupted one keeps its .part and resumes
+        next time), so the only real choices are "wait" and "quit now" - the dialog exists so the second
+        one is deliberate. Nothing runs it when no download is active: the count is zero and the whole
+        thing is one integer comparison.
+        """
+        from launcher.net import downloader
+
+        active = downloader.active_download_count()
+        if active <= 0:
+            return True
+        from PySide6.QtWidgets import QMessageBox
+
+        from gui.i18n import tr
+
+        box = QMessageBox(self)
+        box.setIcon(QMessageBox.Icon.Question)
+        box.setWindowTitle(tr("quit.busy.confirm"))
+        box.setText(tr("quit.busy.message").format(active))
+        cancel = box.addButton(tr("quit.busy.cancel"), QMessageBox.ButtonRole.RejectRole)
+        confirm = box.addButton(tr("quit.busy.confirm"), QMessageBox.ButtonRole.AcceptRole)
+        box.setDefaultButton(cancel)  # the safe choice is the default one
+        box.exec()
+        return box.clickedButton() is confirm
+
     def closeEvent(self, event) -> None:
+        if not getattr(self, "_quit_confirmed", False):
+            if not self._confirm_quit_while_downloading():
+                event.ignore()
+                return
+            self._quit_confirmed = True
         from launcher import config
 
         page = self.pages.get("about")

@@ -18,6 +18,9 @@
 EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
     'zh_tw': {
         "a11y.nav": "主導覽",
+"quit.busy.message": "仍有 {} 個下載任務正在進行，確定要結束嗎？",
+"quit.busy.cancel": "取消",
+"quit.busy.confirm": "結束",
         "a11y.java_list": "Java 執行環境清單",
         "a11y.device_code": "裝置代碼",
         "a11y.offline_name": "離線使用者名稱",
@@ -662,6 +665,9 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
     },
     'ja_jp': {
         "a11y.nav": "メインナビゲーション",
+"quit.busy.message": "{} 件のダウンロードが進行中です。終了しますか？",
+"quit.busy.cancel": "キャンセル",
+"quit.busy.confirm": "終了",
         "a11y.java_list": "Java ランタイム一覧",
         "a11y.device_code": "デバイスコード",
         "a11y.offline_name": "オフラインユーザー名",
@@ -1306,6 +1312,9 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
     },
     'ko_kr': {
         "a11y.nav": "주 내비게이션",
+"quit.busy.message": "{}개의 다운로드가 진행 중입니다. 종료할까요?",
+"quit.busy.cancel": "취소",
+"quit.busy.confirm": "종료",
         "a11y.java_list": "Java 런타임 목록",
         "a11y.device_code": "장치 코드",
         "a11y.offline_name": "오프라인 사용자 이름",
@@ -1950,6 +1959,9 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
     },
     'ru_ru': {
         "a11y.nav": "Основная навигация",
+"quit.busy.message": "Ещё выполняется загрузок: {}. Всё равно выйти?",
+"quit.busy.cancel": "Отмена",
+"quit.busy.confirm": "Выйти",
         "a11y.java_list": "Список сред Java",
         "a11y.device_code": "Код устройства",
         "a11y.offline_name": "Имя пользователя офлайн",
@@ -2594,6 +2606,9 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
     },
     'fr_fr': {
         "a11y.nav": "Navigation principale",
+"quit.busy.message": "{} téléchargement(s) en cours. Quitter quand même ?",
+"quit.busy.cancel": "Annuler",
+"quit.busy.confirm": "Quitter",
         "a11y.java_list": "Liste des environnements Java",
         "a11y.device_code": "Code d'appareil",
         "a11y.offline_name": "Nom d'utilisateur hors ligne",
@@ -3238,6 +3253,9 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
     },
     'es_es': {
         "a11y.nav": "Navegación principal",
+"quit.busy.message": "Hay {} descarga(s) en curso. ¿Salir de todos modos?",
+"quit.busy.cancel": "Cancelar",
+"quit.busy.confirm": "Salir",
         "a11y.java_list": "Lista de entornos Java",
         "a11y.device_code": "Código de dispositivo",
         "a11y.offline_name": "Nombre de usuario sin conexión",
@@ -3882,6 +3900,9 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
     },
     'de_de': {
         "a11y.nav": "Hauptnavigation",
+"quit.busy.message": "Es laufen noch {} Downloads. Trotzdem beenden?",
+"quit.busy.cancel": "Abbrechen",
+"quit.busy.confirm": "Beenden",
         "a11y.java_list": "Java-Laufzeitliste",
         "a11y.device_code": "Gerätecode",
         "a11y.offline_name": "Offline-Benutzername",
