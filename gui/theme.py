@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import re
 
+from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
 
 from launcher import paths
@@ -205,6 +206,74 @@ def theme_palette(theme: str, accent: str | None = None) -> dict[str, str]:
     palette.update(accent_palette(theme, accent))
     return palette
 
+
+# QPalette roles the stylesheet cannot reach.
+#
+# The QSS paints the widgets we wrote, but Qt still draws some surfaces itself: the frame and base of a
+# native popup, menu shadows, the viewport inside a platform-drawn container, disabled text, the 3D
+# shades. Those come from the application palette, and the palette the platform hands us follows the
+# *system* colour scheme - on a dark-mode Windows that is a dark palette. A light QSS over a dark palette
+# therefore painted dark surfaces wherever the stylesheet stopped, which is exactly what the user saw:
+# "the light theme is inexplicably ugly", wrong page and dropdown backgrounds, a see-through wizard.
+# The mapping below derives every role from the same tokens the QSS uses, so there is still exactly one
+# source of truth for colour.
+PALETTE_ROLES = {
+    "Window": "BG_WINDOW",
+    "WindowText": "FG_TEXT",
+    "Base": "BG_LIST",
+    "AlternateBase": "BG_LIST_2",
+    "Text": "FG_TEXT",
+    "Button": "BG_BUTTON_SECONDARY",
+    "ButtonText": "FG_TEXT",
+    "BrightText": "FG_PAGE_TITLE",
+    "Highlight": "ACCENT_SEL",
+    "HighlightedText": "ACCENT_SEL_TEXT",
+    "ToolTipBase": "BG_LIST_2",
+    "ToolTipText": "FG_TEXT",
+    "PlaceholderText": "FG_HINT",
+    "Link": "ACCENT",
+    "Light": "BG_SEPARATOR",
+    "Midlight": "BG_SECTION",
+    "Mid": "BORDER_LIST",
+    "Dark": "BORDER_HOVER",
+    "Shadow": "BORDER_BUTTON_SECONDARY",
+}
+
+PALETTE_DISABLED = {
+    "Window": "BG_DISABLED",
+    "Base": "BG_DISABLED",
+    "Button": "BG_DISABLED",
+    "WindowText": "FG_DISABLED",
+    "Text": "FG_DISABLED",
+    "ButtonText": "FG_DISABLED",
+    "Highlight": "BG_DISABLED_2",
+    "HighlightedText": "FG_DISABLED_2",
+}
+
+
+def theme_qpalette(theme: str, accent: str | None = None) -> QPalette:
+    """The application palette for one theme, built from the same tokens as the QSS.
+
+    ``setColor(role, colour)`` fills every colour group, so an unfocused window keeps the same colours as
+    a focused one - the platform default dims text in inactive windows, which in a themed window reads as
+    "the background changed when I clicked away". The disabled group is then overridden explicitly.
+    """
+    tokens = theme_palette(theme, accent)
+    palette = QPalette()
+    for role_name, token in PALETTE_ROLES.items():
+        role = getattr(QPalette.ColorRole, role_name, None)
+        if role is not None:
+            palette.setColor(role, QColor(tokens[token]))
+    for role_name, token in PALETTE_DISABLED.items():
+        role = getattr(QPalette.ColorRole, role_name, None)
+        if role is not None:
+            palette.setColor(QPalette.ColorGroup.Disabled, role, QColor(tokens[token]))
+    # Qt 6.6 added an Accent role; older builds simply do not have it.
+    accent_role = getattr(QPalette.ColorRole, "Accent", None)
+    if accent_role is not None:
+        palette.setColor(accent_role, QColor(tokens["ACCENT"]))
+    return palette
+
 def font_stack(family: str | None = None) -> str:
     """Font-family value for the QSS: the chosen family first, then safe fallbacks."""
     name = (family or "").strip() or DEFAULT_FONT
@@ -311,5 +380,8 @@ def apply_theme(
     # backgrounds came out wrong and the first-run wizard was see-through. The offscreen renderer applies
     # the theme once and never reproduced it, so it reached the user before anyone saw it here.
     # The identical-apply guard below is safe and stays; clearing the application style is not.
+    # The palette covers the surfaces Qt draws itself (native popup frames, menu shadows, platform-drawn
+    # viewports, disabled text); the stylesheet covers the widgets we wrote. Both come from the same tokens.
+    app.setPalette(theme_qpalette(theme, accent))
     app.setStyleSheet(text)
     _last_applied = key
