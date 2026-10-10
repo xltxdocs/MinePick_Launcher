@@ -156,7 +156,7 @@ QListWidget::item { padding: 8px 12px; border-radius: __RADIUS_SM__; margin: 0 0
 QListWidget::item:hover { background: __BG_HOVER__; }
 QListWidget::item:selected,
 QListWidget::item:selected:focus,
-QListWidget::item:selected:!focus { background: __ACCENT_SEL__; color: __FG_SELECTED__; outline: none; }
+QListWidget::item:selected:!focus { background: __ACCENT_SEL__; color: __ACCENT_SEL_TEXT__; outline: none; }
 
 /* ---------- sidebar navigation rail ---------- */
 
@@ -292,7 +292,7 @@ QMenu {
     padding: 4px;
 }
 QMenu::item { padding: 8px 24px; border-radius: __RADIUS_SM__; }
-QMenu::item:selected { background: __ACCENT_SEL__; color: __FG_SELECTED__; }
+QMenu::item:selected { background: __ACCENT_SEL__; color: __ACCENT_SEL_TEXT__; }
 QMenu::separator { height: 1px; background: __BG_SEPARATOR__; margin: 4px 8px; }
 QToolTip {
     background: __BG_LIST_2__;
