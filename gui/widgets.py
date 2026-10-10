@@ -149,6 +149,40 @@ class WheelBlocker(QObject):
         return False
 
 
+A11Y_ALERT_ENV = "MCLAUNCHER_NO_A11Y_ALERT"
+
+
+def a11y_alerts_enabled() -> bool:
+    """False when ``MCLAUNCHER_NO_A11Y_ALERT=1`` forces the announcements off.
+
+    The escape hatch, not the normal path: read on every call so it can be flipped without a rebuild.
+    The normal path is assistive_tech_is_active() below.
+    """
+    import os
+
+    return os.environ.get(A11Y_ALERT_ENV, "").strip().lower() not in {"1", "true", "yes", "on"}
+
+
+def assistive_tech_is_active() -> bool:
+    """Whether anything is actually listening to accessibility events.
+
+    False - the usual case - means no screen reader is running, and then the announcement buys
+    nothing while still costing something: Qt's Windows accessibility bridge turns ``Event.Alert``
+    into a system alert, and Windows plays the alert sound for it whether or not a reader is attached.
+    That is what made the launcher chime on startup, on exit and during the first-run wizard - the
+    three moments the status line changes. With a reader running the announcement is sent exactly as
+    before, so WCAG 4.1.3 is unaffected.
+
+    Any failure here means "no reader": accessibility must never break a status update.
+    """
+    try:
+        from PySide6.QtGui import QAccessible
+
+        return bool(QAccessible.isActive())
+    except Exception:  # noqa: BLE001 - accessibility is optional
+        return False
+
+
 class StatusLabel(QLabel):
     """Status text whose colour follows the severity of the last message.
 
@@ -193,6 +227,11 @@ class StatusLabel(QLabel):
             return
         self._announced = text
         if not text:
+            return
+        if not a11y_alerts_enabled():
+            return
+        if not assistive_tech_is_active():
+            # Nobody is listening, and the event would still make Windows play the alert sound.
             return
         try:
             from PySide6.QtGui import QAccessible, QAccessibleEvent
