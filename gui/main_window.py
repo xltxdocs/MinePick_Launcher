@@ -48,7 +48,8 @@ from gui.wizard_overlay import BulletList, OptionGrid, WizardOverlay, WizardStep
 
 NAV_KEYS = ["launch", "instances", "versions", "java", "account", "mods", "settings", "about"]
 PAGE_FADE_MS = 150  # interactive, so it stays under the 200ms ceiling (guideline §2.3)
-ENTRY_START_OPACITY = 0.9  # R-QT-6
+ENTRY_START_OPACITY = 0.45  # rolled back to the pre-0.4.0 value at the user's request: the page
+# switch fades in from a clearly translucent state again, which is what it used to look like
 
 
 class MainWindow(QMainWindow):

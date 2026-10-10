@@ -232,11 +232,10 @@ PALETTE_ROLES = {
     "ToolTipText": "FG_TEXT",
     "PlaceholderText": "FG_HINT",
     "Link": "ACCENT",
-    "Light": "BG_SEPARATOR",
-    "Midlight": "BG_SECTION",
-    "Mid": "BORDER_LIST",
-    "Dark": "BORDER_HOVER",
-    "Shadow": "BORDER_BUTTON_SECONDARY",
+    # The 3D-shade roles (Light/Midlight/Mid/Dark/Shadow) are deliberately not mapped: they paint frame
+    # edges and container backgrounds with hardcoded light/dark offsets relative to Button, which showed
+    # up as wrong panel backgrounds on the mods page. Qt falls back to its own derivation there, which is
+    # what the light theme looked like before. The roles above are the ones the bug actually needed.
 }
 
 PALETTE_DISABLED = {
@@ -361,10 +360,12 @@ def apply_theme(
     # url() in QSS cannot reliably resolve relative paths: replace with the image's absolute path when
     # loading, choosing the bitmap that matches this screen's scaling (see glyph_path).
     suffix = "_light" if theme == "light" else ""
-    text = text.replace("__DOWN_ARROW__", glyph_path(f"down_arrow{suffix}", scale))
-    text = text.replace("__SPIN_UP__", glyph_path(f"spin_up{suffix}", scale))
-    text = text.replace("__SPIN_DOWN__", glyph_path(f"spin_down{suffix}", scale))
-    text = text.replace("__CHECK__", glyph_path("check", scale))
+    # Rolled back at the user's request: pick the plain 1x bitmaps again. The @2x/@3x variants and their
+    # generator stay in the tree (tests/test_ui_assets.py still guards them), they are simply unused.
+    text = text.replace("__DOWN_ARROW__", paths.resource_path(f"gui/resources/down_arrow{suffix}.png").as_posix())
+    text = text.replace("__SPIN_UP__", paths.resource_path(f"gui/resources/spin_up{suffix}.png").as_posix())
+    text = text.replace("__SPIN_DOWN__", paths.resource_path(f"gui/resources/spin_down{suffix}.png").as_posix())
+    text = text.replace("__CHECK__", paths.resource_path("gui/resources/check.png").as_posix())
     text = text.replace("__FONT__", font_stack(font))
     palette = theme_palette(theme, accent)
     # longest placeholders first so __ACCENT__ never eats the prefixed variants
