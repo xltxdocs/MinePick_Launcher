@@ -152,4 +152,17 @@ def main() -> int:
 
         QTimer.singleShot(int(auto_quit), app.quit)
 
+    # Shutdown order matters: stop accepting worker callbacks first, then give the pool a bounded
+    # moment to finish, then clear anything still queued. Without this a slow download could report
+    # into a window Qt had already destroyed. Idle applications pay nothing here.
+    from PySide6.QtCore import QThreadPool
+
+    from gui import workers
+
+    def _prepare_shutdown() -> None:
+        workers.begin_shutdown()
+        QThreadPool.globalInstance().waitForDone(2500)
+        QThreadPool.globalInstance().clear()
+
+    app.aboutToQuit.connect(_prepare_shutdown)
     return app.exec()

@@ -35,12 +35,38 @@ class WorkerSignals(QObject):
     finished = Signal()
 
 
+# Set once the application starts shutting down. Worker threads can outlive the interface - a download
+# or an update can be minutes long - and a progress callback that reaches a destroyed Qt object aborts
+# the whole process ("Fatal Python error: Aborted", with the thread parked in as_completed). Everything
+# a worker thread can call into Qt goes through the flag below, so after shutdown begins those calls are
+# no-ops by construction rather than by timing.
+_shutting_down = False
+
+
+def begin_shutdown() -> None:
+    """Mark the application as shutting down; worker callbacks become inert from here on."""
+    global _shutting_down
+    _shutting_down = True
+
+
+def is_shutting_down() -> bool:
+    return _shutting_down
+
+
+def reset_shutdown_for_tests() -> None:
+    """Only for tests: the flag is process-global, so a test must be able to clear it."""
+    global _shutting_down
+    _shutting_down = False
+
+
 class ProgressBridge(QObject):
     """Callable object: emits a queued signal back to the main thread when called from a worker thread."""
 
     progress = Signal(object)
 
     def __call__(self, value: Any) -> None:
+        if _shutting_down:
+            return
         self.progress.emit(value)
 
 
@@ -106,7 +132,16 @@ class Worker(QRunnable):
 
     @staticmethod
     def _safe_emit(signal, *args) -> None:
-        """Ignore emit errors when the receiver (page) has been destroyed."""
+        """Deliver a worker result, unless the interface is going away.
+
+        Every emit a worker makes goes through here, so the shutdown flag is the one place that has to
+        be right: once ``begin_shutdown()`` has run, a worker that finishes late cannot reach Qt at all
+        - no signal, no queued event, no dereference of a widget being destroyed. The check costs one
+        boolean read in normal use. ``RuntimeError`` is still swallowed for the case where a receiver
+        was destroyed without a shutdown (a page closed on its own).
+        """
+        if is_shutting_down():
+            return
         try:
             signal.emit(*args)
         except RuntimeError:
