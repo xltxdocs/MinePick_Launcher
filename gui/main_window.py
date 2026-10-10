@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with MinePick Launcher. If not, see <https://www.gnu.org/licenses/>.
 
-"""Main window: sidebar navigation + page stack (rebuilds on UI language switch)."""
+"""Main window: sidebar navigation + page stack (pages built on first visit, rebuilt on language switch)."""
 
 from __future__ import annotations
 
@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QListWidget,
     QMainWindow,
+    QSizePolicy,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -48,6 +49,85 @@ from gui.wizard_overlay import BulletList, OptionGrid, WizardOverlay, WizardStep
 
 NAV_KEYS = ["launch", "instances", "versions", "java", "account", "mods", "settings", "about"]
 PAGE_FADE_MS = 150  # interactive, so it stays under the 200ms ceiling (guideline §2.3)
+
+
+class _LazyPages:
+    """The window's page registry, building each page the first time it is asked for.
+
+    Startup used to construct all eight pages - 802 widgets offscreen, 1457 in the real window - before
+    the window was even up, and every one of them is polished by the application stylesheet at that
+    cost. Only the first page is visible at that moment, so the other seven are now built on first use.
+
+    Two access patterns are deliberately different:
+
+    * ``pages[key]`` / ``pages.get(key)`` build that one page - this is what navigation and the
+      cross-page slots use, so opening one page never builds another.
+    * iterating (``for key in pages``, ``pages.items()``, ``len(pages)``) means "I want all of them" and
+      materialises the lot. The quality audits and the GUI tests walk every page on purpose, and this
+      keeps them working without change - and without silently auditing a single page.
+    """
+
+    def __init__(self, window: MainWindow) -> None:
+        self._window = window
+        self._built: dict[str, QWidget] = {}
+
+    # -- building ---------------------------------------------------------
+    def _build(self, key: str) -> QWidget:
+        page = self._window._make_page(key)
+        self._built[key] = page
+        self._window._adopt_page(key, page)
+        return page
+
+    def _materialise_all(self) -> None:
+        for key in NAV_KEYS:
+            if key not in self._built:
+                self._build(key)
+
+    def built_keys(self) -> tuple[str, ...]:
+        """Keys built so far, without building anything - for tests and diagnostics."""
+        return tuple(key for key in NAV_KEYS if key in self._built)
+
+    def peek(self, key: str) -> QWidget | None:
+        """The page if it happens to be built, else ``None`` - never builds."""
+        return self._built.get(key)
+
+    def clear(self) -> None:
+        """Drop every page (language switch): the next access builds a fresh one."""
+        for page in self._built.values():
+            page.setParent(None)
+            page.deleteLater()
+        self._built.clear()
+
+    # -- mapping behaviour ------------------------------------------------
+    def __getitem__(self, key: str) -> QWidget:
+        page = self._built.get(key)
+        return page if page is not None else self._build(key)
+
+    def get(self, key: str, default: QWidget | None = None) -> QWidget | None:
+        if key not in NAV_KEYS:
+            return default
+        return self[key]
+
+    def __contains__(self, key: object) -> bool:
+        return key in NAV_KEYS
+
+    def __iter__(self):
+        self._materialise_all()
+        return iter(NAV_KEYS)
+
+    def __len__(self) -> int:
+        return len(NAV_KEYS)
+
+    def keys(self) -> list[str]:
+        return list(NAV_KEYS)
+
+    def values(self) -> list[QWidget]:
+        self._materialise_all()
+        return [self._built[key] for key in NAV_KEYS]
+
+    def items(self) -> list[tuple[str, QWidget]]:
+        self._materialise_all()
+        return [(key, self._built[key]) for key in NAV_KEYS]
 ENTRY_START_OPACITY = 0.45  # rolled back to the pre-0.4.0 value at the user's request: the page
 # switch fades in from a clearly translucent state again, which is what it used to look like
 
@@ -57,6 +137,11 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("MinePick Launcher")
         self.resize(1000, 600)
+        # Declared explicitly because the layout would otherwise derive the minimum from whichever pages
+        # happen to be built: with lazy construction that grows the moment someone visits a tall page and
+        # the window refuses to shrink afterwards. 1000x610 is the size the width audit holds every
+        # language to (tools/measure_min_width.py raises the window from its own minimum).
+        self.setMinimumSize(1000, 610)
 
         from gui.widgets import StatusLabel, apply_no_focus_outline
 
@@ -72,6 +157,11 @@ class MainWindow(QMainWindow):
         nav_layout.addWidget(self.sidebar, 1)
 
         self.stack = QStackedWidget()
+        # The window's minimum must not depend on which pages happen to be built. A stacked widget
+        # reports the largest minimum of its children, so with lazy construction the floor would rise
+        # the moment a tall page was first visited - and the window would refuse to shrink again.
+        # Ignoring the height stops that; the explicit minimum above is the floor every page fits at.
+        self.stack.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Ignored)
 
         content = QWidget()
         content.setObjectName("appContent")
@@ -99,7 +189,8 @@ class MainWindow(QMainWindow):
         self.status_label.setObjectName("hint")
         self.statusBar().addWidget(self.status_label)
 
-        self.sidebar.currentRowChanged.connect(self.stack.setCurrentIndex)
+        # One handler for both jobs: it builds the page if this is its first visit, shows it, refreshes
+        # it. Connecting the stack directly as well would fight it over which widget is current.
         self.sidebar.currentRowChanged.connect(self._on_nav_changed)
         self.build_pages()
         self.sidebar.setCurrentRow(0)
@@ -133,55 +224,93 @@ class MainWindow(QMainWindow):
         else:
             self.status_label.setText(text)
 
-    def build_pages(self) -> None:
-        """(Re)build all pages in the current language."""
-        self.pages: dict[str, QWidget] = {
-            "launch": LaunchPage(),
-            "instances": InstancesPage(),
-            "versions": VersionsPage(),
-            "java": JavaPage(),
-            "account": LoginPage(),
-            "mods": ResourcesPage(),
-            "settings": SettingsPage(),
-            "about": AboutPage(),
+    def _make_page(self, key: str) -> QWidget:
+        """Construct one page. Called by the registry the first time that page is needed."""
+        factories = {
+            "launch": LaunchPage,
+            "instances": InstancesPage,
+            "versions": VersionsPage,
+            "java": JavaPage,
+            "account": LoginPage,
+            "mods": ResourcesPage,
+            "settings": SettingsPage,
+            "about": AboutPage,
         }
-        # Clear and rebuild the navigation + page stack
+        return factories[key]()
+
+    def _wiring_for(self, key: str) -> list[tuple[str, object]]:
+        """Outgoing signal → window-level slot for one page.
+
+        Connected when the page is built. The slots resolve the peer page through the registry at
+        signal time, because connecting straight to another page's bound method would build that peer
+        immediately and undo the laziness this exists for.
+        """
+        return {
+            "account": [("account_changed", self._on_account_changed)],
+            "launch": [
+                ("account_changed", self._on_launch_account_changed),
+                ("instance_requested", self._goto_instance),
+                ("instance_settings_requested", self._goto_instance_settings),
+                ("account_requested", self._goto_account),
+            ],
+            "settings": [("settings_changed", self._on_settings_changed)],
+            "versions": [
+                ("versions_changed", self._on_versions_changed),
+                ("launch_requested", self._goto_launch),
+                ("instance_requested", self._goto_instance),
+            ],
+        }.get(key, [])
+
+    def _adopt_page(self, key: str, page: QWidget) -> None:
+        """Put a freshly built page into the stack and connect its outgoing signals."""
+        self.stack.addWidget(page)
+        for signal_name, slot in self._wiring_for(key):
+            getattr(page, signal_name).connect(slot)
+
+    def build_pages(self) -> None:
+        """(Re)create the navigation. Pages themselves are constructed on first use."""
+        # A fresh registry: after a language switch every page must be built again in the new language
+        self.pages = _LazyPages(self)
         self.sidebar.blockSignals(True)
         self.sidebar.clear()
         for key in NAV_KEYS:
             self.sidebar.addItem(i18n.tr("nav." + key))
-        self.sidebar.blockSignals(False)
         while self.stack.count():
             widget = self.stack.widget(0)
             self.stack.removeWidget(widget)
             widget.deleteLater()
-        for key in NAV_KEYS:
-            self.stack.addWidget(self.pages[key])
         self.sidebar.setCurrentRow(0)
-
-        # Cross-page wiring
-        self.pages["account"].account_changed.connect(self.pages["launch"].refresh_account)
-        self.pages["launch"].account_changed.connect(self.pages["account"].refresh)
-        self.pages["settings"].settings_changed.connect(self._on_settings_changed)
-        self.pages["versions"].launch_requested.connect(self._goto_launch)
-        self.pages["versions"].instance_requested.connect(self._goto_instance)
-        self.pages["launch"].instance_requested.connect(self._goto_instance)
-        self.pages["launch"].instance_settings_requested.connect(self._goto_instance_settings)
-        self.pages["launch"].account_requested.connect(self._goto_account)
-        self.pages["versions"].versions_changed.connect(self.pages["launch"].refresh_versions)
+        self.sidebar.blockSignals(False)
+        self._on_nav_changed(0)  # blocks were held, so the first page is shown explicitly
 
     def _on_nav_changed(self, row: int) -> None:
-        """Refresh the version dropdown when switching to the launch page (auto-syncs after loader/modpack install)."""
-        if row == 0:
-            self.pages["launch"].refresh_versions()
-        if row == NAV_KEYS.index("instances"):
-            self.pages["instances"].refresh()
-        if row == NAV_KEYS.index("versions"):
-            # A version can be deleted on the instances page: re-mark the installed column
-            self.pages["versions"].refresh_installed()
-        if row == NAV_KEYS.index("about"):
-            self.pages["about"].refresh()  # the update settings may have changed elsewhere
+        """Show the page for ``row`` - building it on first visit - then refresh and fade it in."""
+        if not 0 <= row < len(NAV_KEYS):
+            return
+        key = NAV_KEYS[row]
+        page = self.pages[key]  # first visit to a page is what constructs it
+        self.stack.setCurrentWidget(page)
+        if key == "launch":
+            # auto-syncs the version dropdown after a loader/modpack install
+            page.refresh_versions()
+        elif key == "instances":
+            page.refresh()
+        elif key == "versions":
+            # a version can be deleted on the instances page: re-mark the installed column
+            page.refresh_installed()
+        elif key == "about":
+            page.refresh()  # the update settings may have changed elsewhere
         self._fade_in_current_page()
+
+    # -- cross-page slots (resolve the peer lazily, so peers are not built by wiring alone) --
+    def _on_account_changed(self) -> None:
+        self.pages["launch"].refresh_account()
+
+    def _on_launch_account_changed(self) -> None:
+        self.pages["account"].refresh()
+
+    def _on_versions_changed(self) -> None:
+        self.pages["launch"].refresh_versions()
 
     def _fade_in_current_page(self) -> None:
         """Short fade when switching pages: cheap, and it hides the layout jump.

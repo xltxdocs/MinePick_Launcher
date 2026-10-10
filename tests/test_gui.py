@@ -46,16 +46,19 @@ def _offline_manifest_fetch(monkeypatch):
 
 def test_window_pages_navigation(app, monkeypatch, ws_tmp):
     monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data"))
-    from gui.main_window import MainWindow
+    from gui.main_window import NAV_KEYS, MainWindow
 
     window = MainWindow()
     assert window.windowTitle() == "MinePick Launcher"
     stack = window.findChild(QStackedWidget)
     assert stack is not None
-    for index in range(stack.count()):
+    # Pages are built on first visit, so walk the navigation keys rather than stack.count(): the stack
+    # only holds the pages visited so far, and counting it would silently check a single page.
+    for index, key in enumerate(NAV_KEYS):
         window.sidebar.setCurrentRow(index)
         app.processEvents()
-        assert stack.currentIndex() == index
+        assert stack.currentWidget() is window.pages[key]
+    assert stack.count() == len(NAV_KEYS)  # every page ends up in the stack once visited
     window.close()
 
 
