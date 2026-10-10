@@ -20,7 +20,9 @@
 from __future__ import annotations
 
 import re
+import weakref
 
+from PySide6.QtCore import QTimer
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
 
@@ -338,6 +340,32 @@ def glyph_path(name: str, scale: int) -> str:
     return paths.resource_path(f"gui/resources/{name}.png").as_posix()
 
 
+_applying = False
+_self_styling: weakref.WeakSet[object] = weakref.WeakSet()
+
+
+def is_applying() -> bool:
+    """True while apply_theme() is swapping the application stylesheet."""
+    return _applying
+
+
+def register_self_styling(obj: object) -> None:
+    """Register an object with an on_theme_applied() method to be called after each swap."""
+    _self_styling.add(obj)
+
+
+def _notify_self_styling() -> None:
+    for obj in list(_self_styling):
+        callback = getattr(obj, "on_theme_applied", None)
+        if callback is None:
+            continue
+        try:
+            callback()
+        except RuntimeError:
+            # The widget died between the swap starting and finishing; nothing to restyle.
+            pass
+
+
 def apply_theme(
     theme: str,
     accent: str | None = None,
@@ -409,7 +437,25 @@ def apply_theme(
     # difference a wider comparison turned up was a spin box's value (a mod-count-derived memory
     # suggestion), not a colour. tests/test_theme_apply_cache.py pins the clear-then-install sequence and
     # the palette-before-sheet ordering it depends on.
-    if app.styleSheet():
-        app.setStyleSheet("")
-    app.setStyleSheet(text)
+    # While this swap is in flight the application stylesheet is momentarily absent and Qt is walking
+    # every widget to tell it so. A widget that styles itself (see title_bar._WindowButton) must not
+    # install its own sheet during that walk: doing so mutates style data under Qt's feet and corrupted
+    # the heap (0xc0000374) when a theme change came from inside a widget's signal handler - which is how
+    # the settings page saves. Self-styling widgets register with register_self_styling() instead and are
+    # told once the swap is complete.
+    global _applying
+    _applying = True
+    try:
+        if app.styleSheet():
+            app.setStyleSheet("")
+        app.setStyleSheet(text)
+    finally:
+        _applying = False
+    # Queued, not called here. This runs immediately after an application-wide stylesheet swap, and when
+    # the swap was triggered from inside a widget's own signal handler - saving the settings page, for
+    # instance - installing a widget-level sheet before Qt has finished dispatching that signal corrupts the
+    # heap. Measured: 0xc0000374, with the frame pointing at _WindowButton._restyle. One turn of the event
+    # loop later it is safe, and the application sheet is already in place, so nothing looks unstyled in the
+    # meantime. Deferring only this keeps the swap itself synchronous, which the existing tests rely on.
+    QTimer.singleShot(0, _notify_self_styling)
     _last_applied = key

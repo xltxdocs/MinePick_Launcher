@@ -49,13 +49,25 @@ class _WindowButton(QPushButton):
         self._hover_text_token = hover_text_token
         self._restyling = False
         self._restyle()
+        # Restyled from apply_theme() once the application stylesheet swap is complete; see _restyle.
+        theme.register_self_styling(self)
 
     def changeEvent(self, event) -> None:
         super().changeEvent(event)
         if event.type() == QEvent.Type.StyleChange and not self._restyling:
             self._restyle()
 
+    def on_theme_applied(self) -> None:
+        """Called by apply_theme() after the application stylesheet swap has finished."""
+        self._restyle()
+
     def _restyle(self) -> None:
+        if theme.is_applying():
+            # apply_theme() is mid-swap: Qt is walking the widget tree sending StyleChange, and
+            # installing a sheet here mutates style data during that walk. It corrupted the heap
+            # (0xc0000374) when the theme change came from a widget's own signal handler - the
+            # settings page saving, for instance. on_theme_applied() does this once the swap is done.
+            return
         tokens = theme.current_tokens()
         hint = tokens.get("FG_HINT", "palette(mid)")
         sheet = f"QPushButton {{ background: transparent; border: none; color: {hint}; }}"
