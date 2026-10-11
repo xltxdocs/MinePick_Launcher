@@ -106,6 +106,15 @@ class LauncherConfig(BaseModel):
         le=1_048_576,
         description="Download speed limit (KB/s); 0 = unlimited",
     )
+    download_segments: int = Field(
+        default=1,
+        ge=1,
+        le=16,
+        description=(
+            "Shards per file: 1 = one stream per file (the historical behaviour); above 1 splits each "
+            "file into that many parallel Range requests when the server supports it"
+        ),
+    )
     window_start_mode: str = Field(
         default="default",
         description="Window start state: default / maximized / minimized / remember",

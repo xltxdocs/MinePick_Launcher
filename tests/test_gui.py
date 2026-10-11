@@ -80,6 +80,26 @@ def test_settings_isolation_toggle_saves(app, monkeypatch, ws_tmp):
     window.close()
 
 
+def test_settings_download_segments_control(app, monkeypatch, ws_tmp):
+    """The shard count is a real setting: it shows the configured value and writes through on change."""
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data_segments"))
+    from gui.main_window import MainWindow
+
+    window = MainWindow()
+    page = window.pages["settings"]
+    # the default keeps the historical behaviour (one stream per file)
+    assert page.download_segments_spin.value() == 1
+    assert page.download_segments_spin.minimum() == 1
+    assert page.download_segments_spin.specialValueText()  # "1" reads as "single stream", not a bare 1
+    page.download_segments_spin.setValue(4)
+    cfg, _ = config_mod.load()
+    assert cfg.download_segments == 4
+    # a reload shows the stored value again
+    page.load()
+    assert page.download_segments_spin.value() == 4
+    window.close()
+
+
 def test_settings_autosave_without_save_button(app, monkeypatch, ws_tmp):
     """Settings apply immediately: there is no Save button, a control change persists itself."""
     monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data_autosave"))

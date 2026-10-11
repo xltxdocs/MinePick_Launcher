@@ -91,6 +91,10 @@ class SettingsPage(QWidget):
         self.memory_suggest_label.setObjectName("hint")
         self.concurrency_spin = NoWheelSpinBox()
         self.concurrency_spin.setRange(1, 32)
+        self.download_segments_spin = NoWheelSpinBox()
+        self.download_segments_spin.setRange(1, 16)
+        self.download_segments_spin.setSpecialValueText(tr("settings.download_segments.single"))
+        self.download_segments_spin.setToolTip(tr("settings.download_segments.hint"))
         self.isolation_check = QCheckBox(tr("settings.isolation"))
         self.demo_check = QCheckBox(tr("launch.demo"))
         self.after_launch_combo = QComboBox()
@@ -205,6 +209,7 @@ class SettingsPage(QWidget):
         form.addRow("", self.memory_auto_check)
         form.addRow("", self.memory_suggest_label)
         form.addRow(tr("settings.concurrency"), self.concurrency_spin)
+        form.addRow(tr("settings.download_segments"), self.download_segments_spin)
         form.addRow(tr("settings.speed_limit"), self.speed_limit_spin)
         form.addRow(tr("settings.proxy"), self.proxy_edit)
         form.addRow(tr("settings.cf_key"), self.cf_key_edit)
@@ -297,7 +302,12 @@ class SettingsPage(QWidget):
             self.encrypt_check,
         ):
             on_change(check.toggled)
-        for spin in (self.memory_spin, self.concurrency_spin, self.speed_limit_spin):
+        for spin in (
+            self.memory_spin,
+            self.concurrency_spin,
+            self.download_segments_spin,
+            self.speed_limit_spin,
+        ):
             on_change(spin.valueChanged)
         for edit in (
             self.game_dir_edit,
@@ -320,6 +330,7 @@ class SettingsPage(QWidget):
         self.memory_auto_check.setChecked(cfg.memory_auto)
         self._refresh_memory_suggestion()
         self.concurrency_spin.setValue(cfg.max_concurrent_downloads)
+        self.download_segments_spin.setValue(cfg.download_segments)
         self.isolation_check.setChecked(cfg.default_isolation)
         self.demo_check.setChecked(cfg.demo_mode)
         idx = self.after_launch_combo.findData(cfg.after_launch_behavior)
@@ -408,6 +419,7 @@ class SettingsPage(QWidget):
         cfg.memory_gb = self.memory_spin.value()
         cfg.memory_auto = self.memory_auto_check.isChecked()
         cfg.max_concurrent_downloads = self.concurrency_spin.value()
+        cfg.download_segments = self.download_segments_spin.value()
         cfg.default_isolation = self.isolation_check.isChecked()
         cfg.demo_mode = self.demo_check.isChecked()
         cfg.after_launch_behavior = self.after_launch_combo.currentData() or "keep"
