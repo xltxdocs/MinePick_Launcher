@@ -47,6 +47,22 @@ from launcher.auth import AccountStore, MicrosoftSession, create_offline_account
 tr = i18n.tr
 
 AVATAR_SIZE = 42  # px; the account avatar is square, so one size covers both uses
+# The letter avatar's fill is a disc whose hue comes from the username, so each account gets its own
+# colour. Saturation and value are the only design choices left in it, and the white letter on top is
+# what constrains them: WCAG AA wants 4.5:1, and the worst of the 360 hues is always 60 (yellow, the
+# brightest point of the wheel), so the value has to come down until that single hue clears the bar.
+# Measured over the whole circle, white letter on QColor.fromHsv(hue, AVATAR_SATURATION, value):
+#     value 150 -> 3.13:1  (the original fill: fine as large text, below AA for a normal-size letter)
+#     value 120 -> 4.64:1  (clears it, but by 3% - a rounding change would break it silently)
+#     value 110 -> 5.35:1  <- used, 19% of headroom, and the hue stays the one thing that varies
+# Saturation barely moves the number (100..255 all land within 0.1 of each other at value 110), so it
+# stays where it was and keeps neighbouring hues apart. The cost is a darker disc: its own contrast
+# against the dark page background drops from 1.91:1 to 1.44:1 at the worst hue, which is acceptable
+# for a decorative avatar - the account name beside it carries the information.
+# tests/test_account_avatar.py walks all 360 hues and fails if either number stops clearing 4.5:1.
+AVATAR_HUE_STEP = 37  # hue = sum(ord(c) for c in username) * step % 360
+AVATAR_SATURATION = 160
+AVATAR_VALUE = 110
 MIN_VISIBLE_ACCOUNTS = 2  # rows kept readable even in a short window (a half-cut row is worse)
 MAX_VISIBLE_ACCOUNTS = 4  # rows shown once the page has room for them
 
@@ -157,7 +173,7 @@ class LoginPage(QWidget):
         account = accounts.get(cfg.selected_account) if cfg.selected_account else None
         if account is None:
             self.account_label.setText(tr("account.none"))
-            self._set_letter_avatar("?")
+            self._clear_avatar()  # no account: the slot keeps its size and paints nothing
         else:
             kind = tr("kind.ms") if account.type == "microsoft" else tr("kind.offline")
             self.account_label.setText(tr("account.current", account.username, kind))
@@ -166,15 +182,36 @@ class LoginPage(QWidget):
 
     # ---------- Avatar ----------
 
+    def _clear_avatar(self) -> None:
+        """Leave the avatar slot empty: transparent, and still exactly AVATAR_SIZE wide.
+
+        Both "no account yet" and "a name with no letter in it" end up here. The label is *cleared* and
+        not handed a transparent pixmap, because an empty QLabel paints nothing at all, so the page's own
+        background shows through the slot. The fixed size is what keeps the rest of the account row where
+        it was: the layout allocates the same 42px whether or not anything is drawn inside it.
+        """
+        self.avatar_label.clear()
+
     def _set_letter_avatar(self, username: str) -> None:
+        """Draw the fallback avatar: the account's first letter, white, inside its own colour disc.
+
+        The disc's hue is taken from the username, so two accounts differ in colour as well as in letter;
+        AVATAR_VALUE is the number that keeps the white letter readable on every one of those hues (see
+        the note on the constants). A name that has no letter to show - empty, or nothing but whitespace -
+        leaves the avatar transparent rather than falling back to a placeholder glyph.
+        """
         from PySide6.QtCore import Qt as _Qt
         from PySide6.QtGui import QColor, QFont, QPainter, QPixmap
 
+        letter = (username.strip()[:1] or "").upper()
+        if not letter:
+            self._clear_avatar()
+            return
         pixmap = QPixmap(64, 64)
         pixmap.fill(Qt.transparent)
         painter = QPainter(pixmap)
-        hue = (sum(ord(c) for c in username) * 37) % 360
-        painter.setBrush(QColor.fromHsv(hue, 160, 150))
+        hue = (sum(ord(c) for c in username) * AVATAR_HUE_STEP) % 360
+        painter.setBrush(QColor.fromHsv(hue, AVATAR_SATURATION, AVATAR_VALUE))
         painter.setPen(_Qt.NoPen)
         painter.drawEllipse(0, 0, 64, 64)
         painter.setPen(QColor("#ffffff"))
@@ -182,7 +219,7 @@ class LoginPage(QWidget):
         font.setPixelSize(30)
         font.setBold(True)
         painter.setFont(font)
-        painter.drawText(pixmap.rect(), _Qt.AlignCenter, (username[:1] or "?").upper())
+        painter.drawText(pixmap.rect(), _Qt.AlignCenter, letter)
         painter.end()
         self.avatar_label.setPixmap(
             pixmap.scaled(AVATAR_SIZE, AVATAR_SIZE, _Qt.KeepAspectRatio, _Qt.SmoothTransformation)

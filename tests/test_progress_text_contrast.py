@@ -34,8 +34,6 @@ file is the part that can run anywhere, on the offscreen platform, in a couple o
 
 from __future__ import annotations
 
-import colorsys
-
 import pytest
 
 from gui import theme
@@ -252,23 +250,23 @@ def test_the_audit_still_names_the_text_it_cannot_enumerate():
                 )
 
 
-def test_the_default_avatar_letter_is_documented_as_below_aa():
-    """The account page's letter avatar: the leftover of the same class, pinned with its real ratio.
+def test_the_avatar_entry_is_settled_and_names_the_fill_the_code_draws():
+    """The account page's letter avatar: the leftover of the same class, now measured and pinned.
 
-    The fill is a hue derived from the username (login_page._set_letter_avatar), so which colour the
-    white letter lands on is data, not design - the reason the audit cannot enumerate it either. The
-    measurement here is the computation the audit prints, and it is the number to decide on: the letter
-    is 30px bold, so WCAG's large-text threshold (3:1) is met and its normal-text one (4.5:1) is not.
+    The fill is a hue derived from the username (login_page._set_letter_avatar), so which colour the white
+    letter lands on is data, not design - the reason the audit cannot enumerate it as a pair either. What the
+    audit *can* do is print the worst hue of the circle for whatever formula the entry names, and that entry
+    has to be the fill the code really paints, marked as settled once it clears AA. The 360-hue walk itself
+    lives in tests/test_account_avatar.py; this keeps the audit's copy of the formula in step with it.
     """
-    ratio, hue = min((contrast("#ffffff", _hsv_to_hex(hue, 160, 150)), hue) for hue in range(360))
-    assert ratio >= 3.0, f"the worst hue ({hue}) is now below even the large-text threshold: {ratio:.2f}"
-    assert ratio < 4.5, (
-        "the avatar now clears 4.5:1 for every hue - update the audit's DYNAMIC_TEXT entry, "
-        "which currently reports this case as OPEN"
+    from gui.pages.login_page import AVATAR_SATURATION, AVATAR_VALUE
+    from tools.audit_ui_quality import DYNAMIC_TEXT
+
+    entry = next(item for item in DYNAMIC_TEXT if "avatar" in item[0].lower())
+    what, foreground, _placement, backgrounds, _how, fixed = entry
+    assert foreground == "#ffffff", f"{what}: the letter is not white any more"
+    assert fixed is True, f"{what}: still reported as OPEN - needs a decision"
+    assert backgrounds == (f"hue-from-username@{AVATAR_SATURATION},{AVATAR_VALUE}",), (
+        f"{what}: the audit names {backgrounds}, so it would print the ratio of a fill the code no longer "
+        f"draws ({AVATAR_SATURATION},{AVATAR_VALUE})"
     )
-
-
-def _hsv_to_hex(hue: int, saturation: int, value: int) -> str:
-    """Qt's QColor.fromHsv scaling: hue 0-359, saturation and value 0-255."""
-    red, green, blue = colorsys.hsv_to_rgb(hue / 360.0, saturation / 255.0, value / 255.0)
-    return f"#{round(red * 255):02x}{round(green * 255):02x}{round(blue * 255):02x}"

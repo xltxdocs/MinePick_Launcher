@@ -226,13 +226,19 @@ DYNAMIC_TEXT: tuple[tuple[str, str, str, tuple[str, ...], str, bool], ...] = (
     (
         "account avatar letter (account page)",
         "#ffffff",
-        "hue derived from the username: QColor.fromHsv(sum(ord) * 37 % 360, 160, 150)",
-        # The letter is 30px and bold in a 64px circle, so WCAG calls it large text: 3:1, not 4.5:1.
-        # The worst hue clears 3:1 and misses 4.5:1, which is the number to decide on - the fill is
-        # derived from the username, so any hue in the circle is reachable by some account name.
-        ("hue-from-username@160,150",),
-        "tests/test_progress_text_contrast.py enumerates the same circle; the ratio needs no render",
-        False,
+        "hue derived from the username: QColor.fromHsv(sum(ord) * 37 % 360, 160, 110)",
+        # The fill comes from the username, so any hue in the circle is reachable by some account name and
+        # the circle had to be walked to find the worst one. It was walked twice: at the original value 150
+        # the worst hue (60, yellow) put the white letter at 3.13:1 - legible as large text, below the
+        # 4.5:1 AA wants for a normal-size letter, which is how it was reported. Lowering the value to 110
+        # (saturation unchanged, and it barely matters: 100..255 stay within 0.1 of each other) lifts that
+        # same worst hue to 5.35:1 while leaving the hue - the part that tells accounts apart - alone.
+        ("hue-from-username@160,110",),
+        (
+            "tests/test_account_avatar.py walks the same circle and pins the worst hue;"
+            " tests/measure_account_avatar.py samples the rendered pixels"
+        ),
+        True,
     ),
 )
 
