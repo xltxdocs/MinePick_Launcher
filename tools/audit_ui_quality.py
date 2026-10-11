@@ -120,7 +120,14 @@ TEXT_PAIRS: tuple[Pair, ...] = (
 
 # Non-text contrast (WCAG 1.4.11): 3:1 for the visual information needed to identify a component.
 NON_TEXT_PAIRS: tuple[Pair, ...] = (
-    ("ACCENT", "BG_LIST", 3.0, False),  # hover border: decoration, the control is already identified
+    # The raw accent, drawn as borders and fills on list-like surfaces: the selected sidebar bar, the
+    # progress chunk, the checkbox fill, the tab underline, the hover borders. All decoration - each of
+    # those controls is identified by its label, fill or position - and two of the light presets do fall
+    # below 3.0 there (#f59e0b 2.15, #14b8a6 2.49 against #ffffff), which is why this one is
+    # informational rather than failing. Note this pair was never the keyboard focus ring: that used to
+    # be drawn in ACCENT but now has its own pairs on FOCUS_RING below, so do not read this line as a
+    # leftover from it.
+    ("ACCENT", "BG_LIST", 3.0, False),
     ("FOCUS_RING", "BG_WINDOW", 3.0, True),  # keyboard focus ring
     ("FOCUS_RING", "BG_LIST", 3.0, True),
     ("FOCUS_RING", "BG_SIDEBAR", 3.0, True),
@@ -510,6 +517,29 @@ def check_token_usage() -> int:
     return 0
 
 
+def report_shared_token_values() -> None:
+    """Hint, never a failure: tokens whose dark and light values are identical.
+
+    Theme-independent colours are legitimate - the close button is red on both, the text on an accent
+    fill is white on both. It is also exactly the shape a real mistake takes: BG_HOVER once carried the
+    dark #1c2531 in the light theme too, which put hover text at 1.06:1. A hint cannot tell those two
+    apart, so it lists them and leaves the judgement to whoever adds the next token.
+    """
+    import gui.theme as theme_module
+
+    tokens = theme_module.NEUTRAL_TOKENS
+    shared = sorted(name for name, values in tokens.items() if values["dark"] == values["light"])
+    if not shared:
+        print("    none: every token has a value per theme")
+        return
+    for name in shared:
+        print(f"    {name:26} {tokens[name]['dark']}")
+    print(
+        f"    {len(shared)} of {len(tokens)} tokens share one value - fine when the colour really is"
+        " theme-independent, worth a second look when it is not"
+    )
+
+
 def main() -> int:
     sys.stdout.reconfigure(errors="replace")  # never crash on console encoding
     if "--dpi" in sys.argv:  # worker mode: no QApplication may exist yet
@@ -532,6 +562,8 @@ def main() -> int:
     width_failures = 1 if check_window_width(MAX_WINDOW_WIDTH) else 0
     print("\n=== 5. token usage ===")
     token_failures = check_token_usage()
+    print("\n=== 6. tokens shared between themes (hint, never a failure) ===")
+    report_shared_token_values()
     print(
         "\nsummary: contrast failures =",
         contrast_failures,
