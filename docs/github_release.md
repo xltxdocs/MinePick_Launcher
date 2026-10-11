@@ -26,7 +26,7 @@ git push -u origin main
 打包好的成品先暂存在仓库的 `Releases\` 文件夹（该文件夹已进 .gitignore，不随 git 提交），同时也会产出到 `dist\`：
 
 - `MinePick_Launcher.exe`（GUI 单文件 EXE，已签名，约 65 MB）
-- `Source_code.zip`（源代码包，供 GPL-3.0 合规分发，约 1 MB）
+- `Source_code.zip`（源代码包，供 GPL-3.0 合规分发，约 3.5 MB）
 
 1. GitHub 仓库页 → Releases → Draft a new release，Tag 填 `v0.4.0`（当前版本；仓库已有 `v0.1.0`、`v0.1.1`、`v0.1.2`、`v0.1.4`、`v0.1.5`、`v0.2.0`、`v0.3.0`、`v0.3.1`，远端另有一个 `v0.1.3`）；
 2. 把上面两个文件拖进附件区；

@@ -30,7 +30,7 @@ git push -u origin main
 The packaged artifacts are staged first in the repository's `Releases\` folder (that folder is covered by .gitignore, so it is never committed), and are also produced in `dist\`:
 
 - `MinePick_Launcher.exe` (single-file GUI EXE, signed, roughly 65 MB)
-- `Source_code.zip` (source code package, for GPL-3.0 compliant distribution, roughly 1 MB)
+- `Source_code.zip` (source code package, for GPL-3.0 compliant distribution, roughly 3.5 MB)
 
 1. On the GitHub repository page → Releases → Draft a new release, and set the Tag to `v0.4.0` (the current version; the repository already has `v0.1.0`, `v0.1.1`, `v0.1.2`, `v0.1.4`, `v0.1.5`, `v0.2.0`, `v0.3.0`, `v0.3.1`, and the remote carries an extra `v0.1.3`);
 2. Drag the two files above into the attachments area;
