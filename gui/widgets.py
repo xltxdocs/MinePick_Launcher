@@ -42,6 +42,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from gui import a11y_trace
+
 
 class NoFocusDelegate(QStyledItemDelegate):
     """List/table delegate: remove the HasFocus state when painting so the style engine stops drawing the focus rectangle."""
@@ -175,12 +177,9 @@ def assistive_tech_is_active() -> bool:
 
     Any failure here means "no reader": accessibility must never break a status update.
     """
-    try:
-        from PySide6.QtGui import QAccessible
-
-        return bool(QAccessible.isActive())
-    except Exception:  # noqa: BLE001 - accessibility is optional
-        return False
+    # The same single question, asked through the trace module so that MCLAUNCHER_A11Y_TRACE=1 can
+    # record it. With the trace off this is one environment lookup plus the Qt call itself.
+    return a11y_trace.recorded_isActive()
 
 
 class StatusLabel(QLabel):
@@ -221,24 +220,50 @@ class StatusLabel(QLabel):
         return self._level
 
     def _announce(self, text: str) -> None:
-        """Tell assistive technology the status line changed - once per distinct message."""
+        """Tell assistive technology the status line changed - once per distinct message.
+
+        The decision is unchanged; ``MCLAUNCHER_A11Y_TRACE=1`` only writes down what it decided and
+        why (``gui.a11y_trace``). With the switch off the trace module reports "off" from one
+        environment lookup and is never touched again, so every branch below behaves as before.
+        """
         text = text or ""
         if text == self._announced:
             return
+        before = self._announced
         self._announced = text
         if not text:
+            # Clearing the status line is not a status message; nothing to observe, nothing to say.
             return
         if not a11y_alerts_enabled():
+            # The escape hatch: recorded so the log can tell this silence apart from "no reader".
+            a11y_trace.record_announce(
+                "blocked", before, text, forced_silent=True, reason=f"{A11Y_ALERT_ENV} forces silence"
+            )
             return
-        if not assistive_tech_is_active():
+        # One query serves both the gate and the log: the gate's answer, written down.
+        active = a11y_trace.recorded_isActive()
+        if not active:
             # Nobody is listening, and the event would still make Windows play the alert sound.
+            a11y_trace.record_announce(
+                "blocked", before, text, forced_silent=False, reader_active=False
+            )
             return
+        sent = False
         try:
             from PySide6.QtGui import QAccessible, QAccessibleEvent
 
             QAccessible.updateAccessibility(QAccessibleEvent(self, QAccessible.Event.Alert))
+            sent = True
         except Exception:  # noqa: BLE001 - accessibility is optional: never break a status update
-            return
+            sent = False
+        a11y_trace.record_announce(
+            "sent" if sent else "error",
+            before,
+            text,
+            forced_silent=False,
+            reader_active=True,
+            sent=sent,
+        )
 
     def _apply_level(self, level: str) -> None:
         self._level = level

@@ -25,6 +25,7 @@ import sys
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
+from gui import a11y_trace
 from launcher import paths
 from launcher.logging_setup import configure_logging
 
@@ -122,6 +123,12 @@ def create_app(argv: list[str] | None = None) -> QApplication:
 
 def main() -> int:
     configure_logging(log_file=paths.launcher_dir() / "logs" / "launcher.log")
+    # Opt-in accessibility diagnostics (MCLAUNCHER_A11Y_TRACE=1): with the switch off this returns
+    # None immediately. With it on, the log's location is announced here, before any window exists,
+    # because a windowed build has no console to print progress to.
+    trace_file = a11y_trace.init("gui.main.main()")
+    if trace_file is not None:
+        logging.getLogger(__name__).info("accessibility trace: %s", trace_file)
     # A single-file build unpacks into a fresh _MEI folder on every start; a hard-killed run leaves
     # its folder behind (measured: 22 leftovers, 0.70 GB, in one temp directory). Sweep the stale
     # ones once, before any window exists.
