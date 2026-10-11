@@ -22,8 +22,10 @@ Set ``MCLAUNCHER_A11Y_TRACE=1`` and every accessibility-relevant fact is appende
 ``%TEMP%\\minepick_a11y_trace.log`` (override the path with ``MCLAUNCHER_A11Y_TRACE_FILE``):
 
 - whether anything is listening (``QAccessible.isActive()``), every time it is asked, with the moment;
-- every status change: old text -> new text, each gate's verdict, and whether the event actually
-  went out through ``QAccessible.updateAccessibility(...)``;
+- every status change: old text -> new text, each gate's verdict, whether the message went out at all,
+  and one verdict per carrier it was handed to (``channel_label_name``, ``channel_bar_name``,
+  ``channel_label_announcement``) - so a message that is not heard can be traced to the carrier that
+  was meant to carry it;
 - the accessibility-related environment variables, so "was it forced silent?" is answerable.
 
 The switch is off by default and off means *nothing happens*: no file, no extra queries, no retained
@@ -220,6 +222,7 @@ def record_announce(
     forced_silent: bool | None = None,
     reader_active: bool | None = None,
     sent: bool | None = None,
+    channels: dict[str, str] | None = None,
     reason: str = "",
 ) -> None:
     """Log one status-change decision: the texts, each gate verdict, and the outcome.
@@ -228,12 +231,18 @@ def record_announce(
     means it was asked and said no. That distinction is what separates "the gate closed" from "the
     decision never got that far".
 
+    ``channels`` is what the send step did per carrier (``{"label_name": "sent", ...}``, see
+    ``gui.widgets.A11Y_CHANNELS``), written as one ``channel_<name>=<verdict>`` field each. It is
+    ``None`` on the paths that never reach the send step: when a gate closed there is no carrier to
+    report on, and the gate verdict above is the whole answer. ``sent`` stays the summary - at least
+    one carrier took the message - so the field means the same thing it always did.
+
     With the switch off this is the whole cost of the call: one environment lookup, then return. The
     keyword defaults exist so the call sites read the same whether or not anyone is reading the log.
     """
     if not trace_enabled():
         return
-    _record_announce(phase, before, after, forced_silent, reader_active, sent, reason)
+    _record_announce(phase, before, after, forced_silent, reader_active, sent, channels, reason)
 
 
 def _record_announce(
@@ -243,6 +252,7 @@ def _record_announce(
     forced_silent: bool | None,
     reader_active: bool | None,
     sent: bool | None,
+    channels: dict[str, str] | None,
     reason: str,
 ) -> None:
     alert = alert_env_name()
@@ -268,5 +278,10 @@ def _record_announce(
     }
     if reason:
         fields["why"] = reason
+    # One line per carrier, in the order gui.widgets sends them, so two messages can be compared line
+    # by line. A carrier that was skipped says why it was skipped, which is the difference between
+    # "nothing can carry it here" and "it went out and was still not heard".
+    for channel, verdict in (channels or {}).items():
+        fields[f"channel_{channel}"] = verdict
     fields.update(_env_fields())
     _write(_lines(f"announce/{phase}", fields))

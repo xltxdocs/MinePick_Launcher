@@ -35,14 +35,20 @@ import tempfile
 from pathlib import Path
 
 import pytest
+from PySide6 import QtGui
 from PySide6.QtGui import QAccessible
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QStatusBar
 
 from gui import a11y_trace
 from gui.widgets import StatusLabel
 
 DOWNLOADING = "正在下载"
 READY = "准备就绪"
+
+
+def carriers(announcements, kind):
+    """Every event of one carrier: one message travels on several, so each is counted on its own."""
+    return [(obj, event_type) for obj, event_type in announcements if event_type == kind]
 
 
 class Log:
@@ -190,10 +196,52 @@ def test_a_status_change_is_logged_with_both_gates_and_the_outcome(
     assert announce[0]["gate1_force_silence"] == "PASS (MCLAUNCHER_NO_A11Y_ALERT not set)"
     assert announce[0]["gate2_reader"] == "PASS (QAccessible.isActive() == True)"
     assert announce[0]["sent"] == "True"
-    assert len(announcements) == 1
+    # One message, several carriers: each one is counted on its own, and every one of them announces
+    # rather than alerts - see tests/test_status_announce.py for why an alert may never come back.
+    assert len(carriers(announcements, QAccessible.Event.NameChanged)) == 1
     # The log says the reader question was asked, when, and what it answered.
     assert tracing.field("isActive", "isActive") == "True"
     assert tracing.field("isActive", "moment") == "status change"
+
+
+def test_every_carrier_that_took_the_message_is_named_in_the_log(
+    app, announcements, reader_running, tracing
+):
+    """One field per carrier, so an unheard message points at the carrier that was meant to carry it.
+
+    A bare label has no status bar, and the log says so instead of staying quiet about it: "nothing
+    here can carry it" and "it went out and was still not heard" have to stay distinguishable, the
+    same way the two gates above them are.
+    """
+    label = StatusLabel("")
+    label.setText(DOWNLOADING)
+
+    announce = tracing.only("announce/sent")
+    assert announce["channel_label_name"] == "sent"
+    assert announce["channel_bar_name"] == "skipped (no QStatusBar host)"
+    if hasattr(QtGui, "QAccessibleAnnouncementEvent"):
+        assert announce["channel_label_announcement"] == "sent"
+    else:
+        # PySide6 >= 6.6 is allowed, and Qt < 6.8 has no announcement event: a skipped carrier.
+        assert announce["channel_label_announcement"].startswith("skipped")
+    # The alert carrier is gone, so the log has no line for it any more.
+    assert "channel_label_alert" not in announce
+
+
+def test_the_log_names_the_status_bar_carrier_when_the_label_has_one(
+    app, announcements, reader_running, tracing
+):
+    """Hosted on a status bar, the container carrier stops being skipped - and the log says so."""
+    bar = QStatusBar()
+    label = StatusLabel("")
+    bar.addWidget(label)
+    try:
+        label.setText(DOWNLOADING)
+        assert tracing.only("announce/sent")["channel_bar_name"] == "sent"
+        assert bar.accessibleName() == DOWNLOADING
+    finally:
+        bar.close()
+        bar.deleteLater()
 
 
 def test_the_log_records_the_environment_and_the_windows_it_belongs_to(app, reader_running, tracing):
@@ -262,6 +310,11 @@ def test_the_send_failure_is_recorded_rather_than_swallowed(app, reader_running,
 
     assert tracing.field("announce/error", "sent") == "False"
     assert tracing.field("announce/error", "gate2_reader") == "PASS (QAccessible.isActive() == True)"
+    # Every carrier was tried and every one of them failed the same way: "sent" is the summary, and
+    # the per-carrier fields are what say which carrier broke.
+    assert tracing.field("announce/error", "channel_label_name") == "error (RuntimeError)"
+    if hasattr(QtGui, "QAccessibleAnnouncementEvent"):
+        assert tracing.field("announce/error", "channel_label_announcement") == "error (RuntimeError)"
 
 
 def test_a_repeated_message_is_not_logged_as_a_change(app, reader_running, tracing):
@@ -378,14 +431,20 @@ def test_off_adds_no_measurable_time_to_the_announcement(app, no_reader, monkeyp
 
 
 def test_off_does_not_change_what_is_decided_or_sent(app, announcements, reader_running, trace_off):
-    """Same decisions with the switch off: a reader still hears every distinct message."""
+    """Same decisions with the switch off: a reader still hears every distinct message.
+
+    Including the carriers: the trace is an observer, so turning it off cannot change how many of
+    them a message travels on.
+    """
     label = StatusLabel("")
     label.setText(DOWNLOADING)
     label.set_error("导入失败")
     label.setText("")  # silent
     label.setText(READY)
 
-    assert len(announcements) == 3
+    assert len(carriers(announcements, QAccessible.Event.NameChanged)) == 3
+    if hasattr(QtGui, "QAccessibleAnnouncementEvent"):
+        assert len(carriers(announcements, QAccessible.Event.Announcement)) == 3
     assert trace_off.exists is False
 
 
