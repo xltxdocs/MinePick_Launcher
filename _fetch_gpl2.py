@@ -36,5 +36,5 @@ try:
     print("LEN=", len(text))
     print("HEAD=", text[:50].replace(chr(10), " "))
     print("OK")
-except Exception as exc:
+except Exception as exc:  # noqa: BLE001 - a one-off diagnostic: print the failure, never die
     print("FAIL:", type(exc).__name__, str(exc)[:300])
