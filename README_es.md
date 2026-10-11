@@ -65,11 +65,12 @@ recursos de Modrinth y CurseForge, cargadores Fabric/Forge/NeoForge/Quilt, insta
 - Se comprueba automáticamente en cada cambio: las parejas texto/fondo se **enumeran a partir de los tokens de color**
   (dos temas × ocho colores de acento; texto ≥4,5:1, elementos no textuales ≥3:1), los objetivos pulsables miden ≥24×24 px
   (76 controles en una ejecución real, todos correctos), todo es accesible con el teclado y con un indicador de foco visible
-  en **los 58 puntos de foco**, un nombre legible en cada control interactivo, información emergente que **se puede
-  sobrevolar sin que desaparezca**, y mensajes de estado anunciados a las tecnologías de asistencia.
-- **No hecho**: una revisión manual con lector de pantalla (NVDA / Narrador). Quedan dos puntos por verificar en una máquina
-  real: el comportamiento de la información emergente en un gestor de ventanas real y si el lector de pantalla anuncia
-  realmente los mensajes de estado.
+  en **cada punto alcanzable con el teclado**, sin ninguno sin foco, un nombre legible en cada control interactivo,
+  información emergente que **se puede sobrevolar sin que desaparezca**, y mensajes de estado anunciados a las tecnologías
+  de asistencia.
+- **No hecho**: una revisión manual con lector de pantalla (NVDA / Narrador). Los puntos que hay que verificar en una
+  máquina real (comprobación del anillo de foco punto por punto, orden de anuncio de las tablas y los desplegables,
+  comportamiento de la información emergente en un gestor de ventanas real) se enumeran en las notas de la versión.
 - Problemas conocidos: cerrar el programa mientras hay una descarga o actualización en curso puede provocar un fallo.
   Véanse las notas de la versión.
 

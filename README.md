@@ -64,11 +64,12 @@ single portable EXE.
 - Checked automatically on every change: text/background pairs enumerated from the colour tokens
   (both themes × eight accent presets; body text ≥4.5:1, non-text ≥3:1), click targets ≥24×24 px
   (76 controls in a real desktop run, all passing), full keyboard reach with a visible focus indicator
-  at every one of the 58 focus stops, a readable name on every interactive control, tooltips that can be
-  hovered and never expire on their own, and status messages announced to assistive technology.
-- **Not done**: a manual screen-reader walkthrough (NVDA / Narrator). Two details still need a check on
-  real hardware: how the tooltip behaves under a real window manager, and whether a screen reader
-  actually speaks the status messages.
+  at every keyboard-reachable stop and no gaps, a readable name on every interactive control, tooltips
+  that can be hovered and never expire on their own, and status messages announced to assistive
+  technology.
+- **Not done**: a manual screen-reader walkthrough (NVDA / Narrator). The items that need a real desktop
+  to confirm (per-stop focus-ring checks, how the tables and dropdowns are announced, and how the tooltip
+  behaves under a real window manager) are listed in the release notes.
 - Known issue: closing the program while a download or update is still running can crash it. See the
   release notes.
 

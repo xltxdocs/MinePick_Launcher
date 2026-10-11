@@ -66,11 +66,13 @@ dans un seul EXE portable.
 - Vérifié automatiquement à chaque modification : les paires texte/fond sont **énumérées à partir des jetons de couleur**
   (deux thèmes × huit couleurs d'accent ; texte ≥4,5:1, éléments non textuels ≥3:1), les cibles cliquables font ≥24×24 px
   (76 contrôles lors d'une exécution réelle, tous conformes), tout est atteignable au clavier avec un indicateur de focus
-  visible sur **chacun des 58 arrêts de focus**, un nom lisible sur chaque contrôle interactif, des infobulles que l'on peut
-  **survoler sans qu'elles disparaissent**, et des messages d'état annoncés aux technologies d'assistance.
-- **Non fait** : une vérification manuelle avec un lecteur d'écran (NVDA / Narrateur). Deux points restent à vérifier sur
-  une machine réelle : le comportement de l'infobulle dans un vrai gestionnaire de fenêtres, et le fait qu'un lecteur
-  d'écran annonce réellement les messages d'état.
+  visible sur **chaque arrêt atteignable au clavier**, sans aucun manque, un nom lisible sur chaque contrôle interactif,
+  des infobulles que l'on peut **survoler sans qu'elles disparaissent**, et des messages d'état annoncés aux technologies
+  d'assistance.
+- **Non fait** : une vérification manuelle avec un lecteur d'écran (NVDA / Narrateur). Les points à vérifier sur
+  une machine réelle (contrôle de l'anneau de focus arrêt par arrêt, ordre d'annonce des tableaux et des listes
+  déroulantes, comportement de l'infobulle dans un vrai gestionnaire de fenêtres) sont énumérés dans les notes de
+  version.
 - Problèmes connus : fermer le programme pendant un téléchargement ou une mise à jour peut provoquer un plantage. Voir
   les notes de version.
 

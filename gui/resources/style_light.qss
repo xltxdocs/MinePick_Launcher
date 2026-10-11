@@ -95,13 +95,23 @@ QTableWidget::item:selected, QTableView::item:selected {
 
 /* ---------- buttons ---------- */
 
-/* White text sits on the readable fill (AA contrast), the pure accent stays for borders */
+/* White text sits on the readable fill (AA contrast), the pure accent stays for borders.
+
+   The transparent border is the focus ring's placeholder, the same shape the checkbox and the sidebar
+   rail already use: it is always there, so colouring it cannot change the layout, the size hint or a
+   single unfocused pixel - measured against the previous `border: none; padding: 8px 16px`, this rule
+   renders the same button byte for byte (tools/button_state_hashes.py makes that a two-run diff).
+
+   `padding: 4px 12px` is the compensation, not a design change: padding sits inside the border, so
+   border + padding adds up to what padding alone used to (4+4 = 8, 4+12 = 16) and the text and the
+   fill stay exactly where they were. Both numbers also sit on the spacing ladder the audit checks - a
+   compensating `6px 14px` would have been off it and failed that gate. */
 QPushButton {
     background: __ACCENT_BUTTON__;
     color: __FG_SELECTED__;
-    border: none;
+    border: 4px solid transparent;
     border-radius: __RADIUS_SM__;
-    padding: 8px 16px;
+    padding: 4px 12px;
     font-weight: 600;
 }
 QPushButton:hover { background: __ACCENT_BUTTON_HOVER__; }
@@ -109,12 +119,53 @@ QPushButton:pressed { background: __ACCENT_BUTTON_PRESS__; }
 QPushButton:disabled { background: __BG_DISABLED_2__; color: __FG_DISABLED__; }
 QPushButton:focus { outline: none; }
 
+/* A focused filled button shows a ring, not just a slightly different green. It used to show only
+   `background: __ACCENT_HOVER__` - measured 1.18:1 against the unfocused fill, which is a colour
+   change the eye cannot resolve (WCAG 1.4.11 wants 3:1 for the indicator).
+
+   The ring is drawn in __FG_SELECTED__, the one token the theme guarantees against this fill: the
+   fill is `readable_fill(accent)`, i.e. the shade chosen so this foreground clears 4.5:1 on it, which
+   holds for every accent preset in both themes (measured worst case 4.50:1). __FOCUS_RING__ cannot do
+   this job here and this sheet is where it shows: the light theme deliberately sets FOCUS_RING *to*
+   ACCENT_BUTTON (see accent_palette), so a ring in it is 1.00:1 against the fill it encloses - the
+   focused button was literally indistinguishable from the unfocused one. FOCUS_RING stays what it is
+   for the surfaces it was paired with (inputs, lists, the rail), where it measures 3:1 or better.
+
+   The placeholder is 4px rather than 2px because the compensation has to land on the spacing ladder
+   (4+4 = 8, 4+12 = 16); 2px would have needed the off-ladder `6px 14px`. The visible ring is the full
+   4px, i.e. twice the 2px the task asks for, and a ring drawn *inside* the button is the construct
+   Qt's stylesheet engine supports - `outline` and `outline-offset` are parsed and then ignored. */
+QPushButton[keyboardFocus="true"] {
+    background: __ACCENT_HOVER__;
+    border-color: __FG_SELECTED__;
+}
+
+/* The default button of a dialog: the one Enter activates. Qt reports the standard `:default`
+   pseudo-state for the *other* buttons in this build (measured: `QPushButton:default` matched the
+   non-default button and never the default one), and QMessageBox does not paint a Fusion default
+   indicator once a stylesheet sets the fill - which is how the quit confirmation ended up with two
+   pixel-identical buttons. So the dialog marks its own default button with this property and the
+   sheet draws the same ring the keyboard focus cue uses: one visual language, and the marker cannot
+   drift onto a button nobody chose. Non-default buttons have no `defaultChoice` property and are
+   untouched, byte for byte (tests/test_button_states.py pins both directions). */
+QPushButton[defaultChoice="true"] { border-color: __FG_SELECTED__; }
+/* Disabled wins over both: a dead button must not advertise itself as the default choice. */
+QPushButton[defaultChoice="true"]:disabled,
+QPushButton[keyboardFocus="true"]:disabled { border-color: transparent; }
+
 /* ---------- button variants: default = primary, plus secondary and danger ---------- */
 
+/* These two keep their original 1px border and their original padding: measured, a wider border here
+   repainted 310 pixels of the unfocused button (worst channel delta 52-94, against a measured noise
+   floor of 0), so a thicker ring was not worth it. Declaring the padding explicitly is what holds their
+   pre-change size now that the base rule's padding pays for its own border. Their focus cue is the
+   border colour - FOCUS_RING on a transparent surface, which is what these were always paired with -
+   and it stays exactly as visible as it was. */
 QPushButton#secondaryButton {
     background: transparent;
     color: __FG_BUTTON_SECONDARY__;
     border: 1px solid __BORDER_BUTTON_SECONDARY__;
+    padding: 8px 16px;
     font-weight: 600;
 }
 QPushButton#secondaryButton:hover {
@@ -133,6 +184,7 @@ QPushButton#dangerButton {
     background: transparent;
     color: __DANGER_FG__;
     border: 1px solid __DANGER_BORDER__;
+    padding: 8px 16px;
     font-weight: 600;
 }
 QPushButton#dangerButton:hover { background: __DANGER_BG__; border-color: __DANGER_BORDER_2__; }
@@ -209,7 +261,11 @@ QProgressBar::chunk { background: __ACCENT__; border-radius: 7px; }
 
 /* ---------- checkboxes ---------- */
 
-QCheckBox { spacing: 8px; }
+/* The 1px transparent border is the focus ring's placeholder, the same shape QListWidget#sidebar uses:
+   the border is always 1px wide, so colouring it cannot change the layout or the size hint. Without a
+   rule here a focused checkbox looked identical to an unfocused one - the walkthrough found every
+   checkbox on the settings and instance pages in that state once it started enumerating all stops. */
+QCheckBox { spacing: 8px; border: 1px solid transparent; }
 QCheckBox::indicator {
     width: 16px;
     height: 16px;
@@ -483,10 +539,26 @@ QLineEdit[keyboardFocus="true"], QSpinBox[keyboardFocus="true"], QDoubleSpinBox[
     border: 1px solid __FOCUS_RING__;
 }
 QPushButton[keyboardFocus="true"] { background: __ACCENT_HOVER__; }
+/* Variant buttons are outlined on transparent, not filled: FG_SELECTED would be white-on-white on the
+   light sheet. Their focus cue stays the FOCUS_RING they were already paired with, which clears 3:1
+   against the surfaces they sit on in both themes. Only the colour is set - the 1px width comes from
+   their own rule, so this cannot shift anything. */
 QPushButton#secondaryButton[keyboardFocus="true"], QPushButton#dangerButton[keyboardFocus="true"] {
-    border: 1px solid __FOCUS_RING__;
+    border-color: __FOCUS_RING__;
 }
 QScrollArea[keyboardFocus="true"] { border: 1px solid __FOCUS_RING__; }
+/* Checkboxes: the ring is the control's own 1px border, which sits at `1px solid transparent` in the
+   checkbox section below, so colouring it cannot move anything. Gated on keyboardFocus like the rest, so
+   a mouse click paints nothing. */
+QCheckBox[keyboardFocus="true"]:focus {
+    border-color: __FOCUS_RING__;
+}
+/* The resource tab widget is itself the focus stop (its tab bar is NoFocus and draws the tabs). Qt gives
+   a styled QTabWidget a pane frame, so the ring belongs on QTabWidget::pane - colouring the widget's own
+   border would draw a second rectangle next to the pane's. */
+QTabWidget[keyboardFocus="true"]::pane {
+    border: 1px solid __FOCUS_RING__;
+}
 
 
 /* ---------- custom title bar (frameless window) ---------- */

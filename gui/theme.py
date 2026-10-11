@@ -319,6 +319,20 @@ def current_tokens() -> dict[str, str]:
     return dict(_last_tokens)
 
 
+def accent_focus_ring() -> str:
+    """The focus ring colour of the theme currently in force.
+
+    Widgets that must style themselves (a widget-level stylesheet wins over the application sheet for
+    every property it declares, so a rule in the sheet can never reach them) need the ring as a value,
+    not as a placeholder. Reading it from the applied token table keeps colour at one source of truth:
+    ``FOCUS_RING`` is the same token every other focus ring in the sheet uses, so this cannot drift.
+    """
+    tokens = current_tokens()
+    if "FOCUS_RING" in tokens:
+        return tokens["FOCUS_RING"]
+    return DEFAULT_ACCENTS["dark"]  # before the first apply_theme call: any valid colour will do
+
+
 def device_scale(app: QApplication) -> int:
     """The screen's device pixel ratio, clamped to the asset multiples we ship (1x/2x/3x)."""
     screen = app.primaryScreen()

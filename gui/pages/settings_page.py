@@ -39,7 +39,7 @@ from PySide6.QtWidgets import (
 )
 
 from gui import i18n
-from gui.theme import DEFAULT_ACCENTS, normalize_hex, resolve_theme
+from gui.theme import DEFAULT_ACCENTS, accent_focus_ring, normalize_hex, resolve_theme
 from gui.widgets import (
     NoWheelDoubleSpinBox,
     NoWheelSpinBox,
@@ -66,6 +66,46 @@ COMMON_FONTS = (
     "Consolas",
     "Cascadia Mono",
 )
+
+
+class AccentPresetButton(QPushButton):
+    """One-click accent swatch, with a keyboard focus cue.
+
+    A widget-level stylesheet wins over the application sheet for every property it declares, and this
+    button declares both the fill and the border - so the sheet's
+    ``QPushButton[keyboardFocus="true"]:focus`` rule never applied to it. Measured: focusing one of these
+    changed 0 pixels, while the same rule on a plain button changed 28345. The ring therefore lives in
+    this button's own sheet: the same 1px border, recoloured when focus is held. Nothing else differs, so
+    the unfocused rendering is byte-for-byte what it was.
+    """
+
+    REST_BORDER = "#3a4757"
+
+    def __init__(self, color: str, focus_ring: str) -> None:
+        super().__init__()
+        self._color = color
+        self._focus_ring = focus_ring
+        self.setFixedSize(22, 22)
+        self.setToolTip(color)
+        # WCAG 4.1.2: the button has no text at all - the colour is painted, not written - so the
+        # tooltip was its only name and a hex value is not a name. It carries no visible label by
+        # design (22x22 swatch), which is exactly why the accessible name has to say what it is.
+        self.setAccessibleName(tr("a11y.accent_preset", color))
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._paint(self.REST_BORDER)
+
+    def _paint(self, border: str) -> None:
+        self.setStyleSheet(
+            f"background: {self._color}; border: 1px solid {border}; border-radius: 5px;"
+        )
+
+    def focusInEvent(self, event) -> None:
+        super().focusInEvent(event)
+        self._paint(self._focus_ring)
+
+    def focusOutEvent(self, event) -> None:
+        super().focusOutEvent(event)
+        self._paint(self.REST_BORDER)
 
 
 class SettingsPage(QWidget):
@@ -197,6 +237,14 @@ class SettingsPage(QWidget):
 
         form = QFormLayout()
         style_form(form)
+        # WCAG 4.1.2: a control added straight to a row *is* the row's field, so QFormLayout hands it the
+        # label text as its accessible name. Wrapping a control in a layout instead (the three rows
+        # below) breaks that association - the form sees a layout, not a field - which left the game
+        # directory and accent fields announced as unnamed edit boxes. The names are set explicitly
+        # rather than through a buddy, so they reach UIA on every platform and survive a row being
+        # restructured later.
+        self.game_dir_edit.setAccessibleName(tr("settings.game_dir"))  # WCAG 4.1.2
+        self.accent_edit.setAccessibleName(tr("settings.accent"))  # WCAG 4.1.2
         game_row = QHBoxLayout()
         game_row.addWidget(self.game_dir_edit, 1)
         game_row.addWidget(self.browse_game)
@@ -363,16 +411,9 @@ class SettingsPage(QWidget):
 
     def _make_preset_button(self, color: str) -> QPushButton:
         """One-click accent swatch."""
-        button = QPushButton()
-        button.setFixedSize(22, 22)
-        button.setToolTip(color)
-        button.setCursor(Qt.CursorShape.PointingHandCursor)
-        button.setStyleSheet(
-            f"background: {color}; border: 1px solid #3a4757; border-radius: 5px;"
-        )
+        button = AccentPresetButton(color, accent_focus_ring())
         button.clicked.connect(lambda *_, value=color: self._set_accent(value))
         return button
-
     def _set_accent(self, color: str) -> None:
         self.accent_edit.setText(color)
         self.save()

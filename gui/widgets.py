@@ -21,6 +21,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import QEvent, QModelIndex, QObject, Qt
 from PySide6.QtWidgets import (
+    QAbstractButton,
     QAbstractItemView,
     QAbstractScrollArea,
     QAbstractSpinBox,
@@ -29,7 +30,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPlainTextEdit,
-    QPushButton,
     QSizePolicy,
     QSpinBox,
     QStatusBar,
@@ -38,6 +38,7 @@ from PySide6.QtWidgets import (
     QStyleOptionViewItem,
     QTabBar,
     QTableWidgetItem,
+    QTabWidget,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -67,6 +68,24 @@ def apply_no_focus_outline(view) -> None:
         if setter is not None:
             setter(QAbstractItemView.ScrollMode.ScrollPerPixel)
     attach_hover_scrollbar(view)
+
+
+def name_table_for_screen_readers(table, name: str) -> None:
+    """Give a table view *and* its header a readable accessible name (WCAG 4.1.2).
+
+    A table is a keyboard stop - Tab reaches it and the arrow keys move inside it - but it has no text
+    of its own, so a screen reader announces "table" with no indication of what it holds. The header is
+    a stop of its own as well (it is what makes column sorting reachable from the keyboard), and it
+    reports the hovered/selected *column title* as its accessible name, which names the column rather
+    than the table; without its own name a reader lands on the header with no context at all.
+
+    Call this before or after ``setHorizontalHeaderLabels`` / ``setModel`` - it only sets names, it
+    never reads the headers, so it cannot depend on their content.
+    """
+    table.setAccessibleName(name)
+    header = table.horizontalHeader()
+    if header is not None:
+        header.setAccessibleName(name)
 
 
 def disable_keeping_focus(button) -> None:
@@ -676,14 +695,19 @@ class KeyboardFocusTracker(QObject):
     interface stays flat; this restores an indicator for keyboard users only.
     """
 
+    # Every control family whose stylesheet focus ring is gated on this property. A family missing here
+    # never gets marked, so its rule can never match and the control looks the same focused and
+    # unfocused - QCheckBox was missing, which is what nine checkboxes across the settings, instance and
+    # versions pages looked like: focusable, and with no focus cue at all when reached by Tab.
     _INTERACTIVE = (
+        QAbstractButton,  # QCheckBox, QRadioButton, QPushButton and their subclasses
         QAbstractItemView,
         QAbstractScrollArea,  # scroll areas carry a keyboard-only ring of their own
         QAbstractSpinBox,
         QComboBox,
         QLineEdit,
         QPlainTextEdit,
-        QPushButton,
+        QTabWidget,  # the resource tabs: the widget is the stop, its tab bar draws the tabs
         QTextEdit,
     )
 

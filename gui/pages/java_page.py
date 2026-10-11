@@ -109,6 +109,9 @@ class JavaPage(QWidget):
         self.major_combo = QComboBox()
         for major in (8, 11, 17, 21, 25):
             self.major_combo.addItem(str(major), major)
+        # WCAG 4.1.2: its "major version" label is a plain QLabel in the same row layout, so the combo
+        # never received it as a name (only a QFormLayout row passes the label on automatically).
+        self.major_combo.setAccessibleName(tr("java.install.major"))
         self.install_button = QPushButton(tr("java.install.button"))
 
         managed_row = QHBoxLayout()

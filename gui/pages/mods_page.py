@@ -164,6 +164,16 @@ class _ContentTab(QWidget):
         "shaderpack": "shaderpacks",
     }
 
+    # Tab title per kind, so a control inside a tab can name the tab it belongs to. The four tabs share
+    # one class and each has its own source dropdown, so a bare "source" would name four different
+    # controls identically (WCAG 4.1.2 wants the name to identify the control).
+    KIND_TITLE_KEY: ClassVar[dict[str, str]] = {
+        "mod": "mods.tab.mods",
+        "modpack": "mods.tab.modpacks",
+        "resourcepack": "mods.tab.resourcepacks",
+        "shaderpack": "mods.tab.shaderpacks",
+    }
+
     def __init__(self, kind: str) -> None:
         super().__init__()
         self.kind = kind
@@ -178,6 +188,9 @@ class _ContentTab(QWidget):
         self.loader_combo = QComboBox()
         for name in ("fabric", "forge", "neoforge", "quilt"):
             self.loader_combo.addItem(display_loader_name(name), name)
+        # WCAG 4.1.2: the row's "loader" label is a plain QLabel beside this combo, so it never became
+        # the combo's name (only a QFormLayout row does that automatically).
+        self.loader_combo.setAccessibleName(tr("mods.loader"))
         self.game_version_edit = QLineEdit("1.20.1")
         self.game_version_edit.setAccessibleName(tr("mods.picker.col.game_versions"))  # WCAG 4.1.2
         self.slug_edit = QLineEdit()
@@ -808,6 +821,9 @@ class ResourcesPage(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self.tabs = QTabWidget()
+        # WCAG 4.1.2: the tab widget is keyboard focusable and its tab bar reports the selected tab as
+        # its own name, but the container itself had none. The page's own title names it.
+        self.tabs.setAccessibleName(tr("mods.page.title"))
         # Remove the tab widget's built-in bottom baseline to stay fully flat
         self.tabs.tabBar().setDrawBase(False)
         self.tabs.tabBar().setFocusPolicy(Qt.NoFocus)  # remove the focus outline on the selected tab's text
@@ -831,6 +847,11 @@ class ResourcesPage(QWidget):
             combo = QComboBox()
             combo.addItem(tr("mods.source.modrinth"), "modrinth")
             combo.addItem(tr("mods.source.curseforge"), "curseforge")
+            # WCAG 4.1.2: it sits in the search row with no adjacent label at all, and the four tabs
+            # each own one, so the name says both what it is and which tab it belongs to.
+            combo.setAccessibleName(
+                tr(_ContentTab.KIND_TITLE_KEY[tab.kind]) + " · " + tr("mods.source")
+            )
             # Wide enough for "CurseForge" plus the arrow and generous padding
             combo.setFixedWidth(combo.fontMetrics().horizontalAdvance("CurseForge") + 60)
             combo.currentIndexChanged.connect(self._on_source_changed)

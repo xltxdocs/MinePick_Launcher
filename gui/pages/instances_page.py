@@ -157,6 +157,9 @@ class InstancesPage(QWidget):
         self.sort_combo = QComboBox()
         self.sort_combo.addItem(tr("instances.sort.name"), "name")
         self.sort_combo.addItem(tr("instances.sort.time"), "time")
+        # WCAG 4.1.2: the visible label sits in the same row layout, not in a QFormLayout row, so it
+        # never became this combo's name and the control was announced as an unlabelled list.
+        self.sort_combo.setAccessibleName(tr("instances.sort.label"))
 
         self.create_button = QPushButton(tr("instances.create_copy"))
         self.import_button = QPushButton(tr("instances.import"))

@@ -63,12 +63,12 @@ einzelne portable EXE.
   Desktop-Anwendung. Wir beanspruchen die Teilmenge ihrer A-/AA-Kriterien, die **auf ein Desktop-Programm zutrifft**.
 - Bei jeder Änderung automatisch geprüft: Text-/Hintergrund-Paare werden **aus den Farbrollen aufgezählt** (beide Themes ×
   acht Akzentfarben; Text ≥4,5:1, Nicht-Text ≥3:1), Klickziele ≥24×24 px (76 Elemente in einem echten Lauf, alle
-  bestanden), vollständige Tastaturbedienung mit sichtbarem Fokus an **allen 58 Fokuspositionen**, ein lesbarer Name an
-  jedem bedienbaren Element, Tooltips, die man **überfahren kann, ohne dass sie verschwinden**, und Statusmeldungen, die an
-  Hilfstechnologien gemeldet werden.
-- **Nicht gemacht**: ein manueller Durchgang mit einem Screenreader (NVDA / Narrator). Zwei Punkte sind noch auf echter
-  Hardware zu prüfen: das Verhalten des Tooltips unter einem echten Fenstermanager und ob ein Screenreader die
-  Statusmeldungen tatsächlich vorliest.
+  bestanden), vollständige Tastaturbedienung mit sichtbarem Fokus an **jeder per Tastatur erreichbaren Fokusposition**,
+  ohne Lücke, ein lesbarer Name an jedem bedienbaren Element, Tooltips, die man **überfahren kann, ohne dass sie
+  verschwinden**, und Statusmeldungen, die an Hilfstechnologien gemeldet werden.
+- **Nicht gemacht**: ein manueller Durchgang mit einem Screenreader (NVDA / Narrator). Die Punkte, die auf echter
+  Hardware zu prüfen sind (Fokusring Position für Position, Ansagereihenfolge von Tabellen und Aufklapplisten,
+  Verhalten des Tooltips unter einem echten Fenstermanager), sind in den Versionshinweisen aufgeführt.
 - Bekannte Probleme: Das Beenden während eines laufenden Downloads oder Updates kann einen Absturz verursachen. Siehe
   Versionshinweise.
 

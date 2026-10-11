@@ -15,22 +15,27 @@
 # You should have received a copy of the GNU General Public License
 # along with MinePick Launcher. If not, see <https://www.gnu.org/licenses/>.
 
-"""Keyboard-only walkthrough: send Tab through every page and record where focus lands.
+"""Keyboard-only walkthrough: record where keyboard focus can land on every page.
 
 The UI guideline requires "unplug the mouse, then walk the whole main flow with Tab and the arrow
 keys, confirming every step shows where focus is". A claim like that is worth little in a changelog;
 what is worth something is a record that can be regenerated on demand and diffed between commits.
 
-This tool drives the real window offscreen, presses nothing but Tab, and writes a Markdown report:
+This tool drives the real window offscreen and walks each page's focus chain - the order Qt's own Tab
+navigation follows - then writes a Markdown report:
 
-* the focus path per page (class, object name, readable label, focus policy);
-* pages where Tab never moves focus at all (a hard failure - exit code 1);
+* the focus stops per page (class, object name, readable label, focus policy, where the name comes from);
+* pages with no focusable control at all (a hard failure - exit code 1);
 * interactive widgets that are explicitly *not* focusable, i.e. the exception list that has to stay
   short and deliberate;
+* for each stop, whether focusing it changes the pixels around it (the focus cue is visible);
 * every `:focus` selector in the stylesheets, so a missing focus visual can be spotted by eye.
 
+The per-page numbers are counts of focusable controls, reproducible run to run. They are a property of
+one build's interface, not a claim to quote in user-facing documents.
+
 Usage:
-    python tools/keyboard_walkthrough.py --out <report.md> [--theme dark] [--max-steps 80]
+    python tools/keyboard_walkthrough.py --out <report.md> [--theme dark]
 """
 
 from __future__ import annotations
@@ -65,9 +70,80 @@ def _qss_focus_selectors(root: Path) -> list[str]:
     return selectors
 
 
+def _widget_text(widget) -> str:
+    """The control's own visible text, if it has any."""
+    for getter in ("text", "currentText"):
+        attr = getattr(widget, getter, None)
+        try:
+            value = attr() if callable(attr) else None
+        except Exception:  # noqa: BLE001 - a widget without that getter is normal
+            value = None
+        if isinstance(value, str) and value.strip():
+            return value.strip().replace("\n", " ")
+    return ""
+
+
+def accessible_name_of(widget) -> str:
+    """What a screen reader announces for this widget: explicit name, else what Qt reports.
+
+    The second half is what WCAG 4.1.2 actually asks about, and Qt answers it for more than just text
+    widgets: a QCheckBox is named by its own label, a QSpinBox or QComboBox by the QFormLayout row it
+    sits in, a QPushButton by its text. A tooltip and a placeholder are *not* part of that answer
+    (measured: ``QAccessible.text(Name)`` returns "" for a button that only has a toolTip and for a
+    field that only has a placeholderText). This module and tests/test_accessible_names.py both ask the
+    question through this one function, so the report and the gate cannot drift apart on what "named"
+    means.
+    """
+    explicit = (widget.accessibleName() or "").strip()
+    if explicit:
+        return explicit
+    try:
+        from PySide6.QtGui import QAccessible
+    except ImportError:  # tooling without Qt: fall back to the widget's own text
+        return _widget_text(widget)
+    interface = QAccessible.queryAccessibleInterface(widget)
+    if interface is None:
+        return ""
+    try:
+        return (interface.text(QAccessible.Text.Name) or "").strip()
+    except Exception:  # noqa: BLE001 - an interface that refuses the question names nothing
+        return ""
+
+
+def name_source_of(widget) -> str:
+    """Where a screen reader gets this control's name from (WCAG 4.1.2).
+
+    `accessible` - an explicit setAccessibleName, the only source that reaches UIA on every platform.
+    `text`       - the accessible interface reports a name derived from the widget's own text or its
+                   form label, which Qt answers for checkboxes, buttons, spin boxes and combos. Usable.
+    `placeholder`/`tooltip` - weak: a placeholder disappears once the field has content, and a tooltip
+                   written as an instruction ("switch account") is read out as an order (C4). Qt does
+                   not pass either on as a name, so these need an explicit one.
+    `none`       - nothing at all.
+    """
+    explicit = (widget.accessibleName() or "").strip()
+    if explicit:
+        return "accessible"
+    name = accessible_name_of(widget)
+    own_text = _widget_text(widget)
+    if name and (own_text.startswith(name) or name.startswith(own_text) or own_text == name):
+        return "text"
+    if name:
+        return "text"  # a name Qt derived from a form label rather than from the widget itself
+    placeholder = getattr(widget, "placeholderText", None)
+    if callable(placeholder) and (placeholder() or "").strip():
+        return "placeholder"
+    if (widget.toolTip() or "").strip():
+        return "tooltip"
+    return "none"
+
+
 def _readable(widget) -> str:
     """What a human (or a screen reader) would call this widget."""
-    for getter in ("accessibleName", "text", "currentText", "placeholderText", "title", "toolTip"):
+    for candidate in (accessible_name_of(widget), _widget_text(widget)):
+        if candidate:
+            return candidate.replace("\n", " ")[:60]
+    for getter in ("placeholderText", "title", "toolTip"):
         value = None
         try:
             attr = getattr(widget, getter, None)
@@ -79,32 +155,7 @@ def _readable(widget) -> str:
     return ""
 
 
-def _name_source(widget) -> str:
-    """Where would a screen reader get this control's name from? (WCAG 4.1.2)
-
-    `accessible` - an explicit setAccessibleName, which is the only source that always reaches UIA.
-    `text`       - the control's own visible text.
-    `placeholder`/`tooltip` - weak: a placeholder disappears once the field has content, and a tooltip
-                   written as an instruction ("switch account") is read out as an order (C4), so both
-                   are reported as names that still need an explicit one.
-    `none`       - nothing at all.
-    """
-    if (widget.accessibleName() or "").strip():
-        return "accessible"
-    for getter in ("text", "currentText", "title"):
-        attr = getattr(widget, getter, None)
-        try:
-            value = attr() if callable(attr) else None
-        except Exception:  # noqa: BLE001
-            value = None
-        if isinstance(value, str) and value.strip():
-            return "text"
-    placeholder = getattr(widget, "placeholderText", None)
-    if callable(placeholder) and (placeholder() or "").strip():
-        return "placeholder"
-    if (widget.toolTip() or "").strip():
-        return "tooltip"
-    return "none"
+_name_source = name_source_of  # the name the two call sites below have used since before unification
 
 
 def _describe(widget) -> tuple[str, str, str, str]:
@@ -163,6 +214,52 @@ INTERACTIVE = (
     "QTabBar",
 )
 
+# Bound on one page's focus chain. The chain is circular, so the walk stops when it comes back to where
+# it started; the limit only exists so a chain that never returns cannot hang the tool.
+FOCUS_CHAIN_LIMIT = 20_000
+
+# Tab presses allowed per focus stop of a page. Presses that land outside the page (on the sidebar or on
+# another page's widgets on the way around) consume presses but are not recorded, so the walk needs more
+# than one per stop; the page's own count is the bound that keeps an unclosed chain finite.
+TAB_PRESSES_PER_STOP = 4
+
+# Stops a real Tab press actually reached in this run. The visual pass reads it: the focus ring is only
+# painted for focus that arrives with a key event, so a stop no press reached cannot be judged by
+# focusing it programmatically, and saying "no visible focus" about it would describe the tool rather
+# than the interface. Filled by :func:`_tab_reach`.
+_TAB_REACHED: set[int] = set()
+
+# Qt's own sub-widgets of a compound control. They are focus stops in the chain but a user never addresses
+# them: the spin box beside the line edit is what Tab reaches, the line edit inside it carries the same
+# value and the same (absent) name, and the tab bar inside a QTabWidget is driven by the widget itself.
+# Counting them reports the same control twice and reports a name defect the user can never meet.
+INTERNAL_OBJECT_NAMES = frozenset(
+    {
+        "qt_spinbox_lineedit",
+        "qt_tableview_cornerbutton",
+        "qt_scrollarea_hcontainer",
+        "qt_scrollarea_vcontainer",
+        "qt_tabbar",
+        "qt_editable_combobox",
+    }
+)
+
+
+def _is_internal(widget) -> bool:
+    """A Qt-internal part of a compound control, not a control of its own."""
+    if widget.objectName() in INTERNAL_OBJECT_NAMES:
+        return True
+    parent = widget.parent()
+    parent_class = type(parent).__name__ if parent is not None else ""
+    return type(widget).__name__ == "QLineEdit" and parent_class in (
+        "QComboBox",
+        "QAbstractSpinBox",
+        "QSpinBox",
+        "QDoubleSpinBox",
+        "NoWheelSpinBox",
+        "NoWheelDoubleSpinBox",
+    )
+
 
 def _find_non_focusable(page) -> list[tuple[str, str, str]]:
     """Interactive children that cannot take focus - the exception list must stay deliberate."""
@@ -182,44 +279,122 @@ def _find_non_focusable(page) -> list[tuple[str, str, str]]:
     return out
 
 
-def _walk(
-    app, page, max_steps: int, selectors: list[str]
-) -> tuple[list[tuple[str, str, str, str, bool]], list]:
-    """Press Tab until focus returns to where it started (or the step budget runs out).
+def _page_focus_stops(page) -> list:
+    """Every widget inside ``page`` that can take keyboard focus, in the page's focus-chain order.
 
-    The focus-rule flag is decided here, while the widget itself is at hand: a rule naming a *base*
-    class still applies (Qt matches subclasses), which cannot be told from a recorded class name.
-    The live widgets are returned alongside the recorded rows so the visual pass can reuse the exact
-    traversal the report describes.
+    This is the list the walk has to cover. Focus within one page follows the focus chain
+    (``nextInFocusChain``), which is the order Qt's own Tab navigation walks, so walking the chain and
+    walking with Tab visit the same controls - but only the chain is bounded on both ends. A simulated
+    Tab press cannot be contained: it leaves the page once it reaches the last control, and the page's
+    own position in that journey depends on layout, so the number of presses needed to come back is not
+    known in advance. The chain is a property of the widget tree instead, it is finite, and it visits
+    every focusable control exactly once - which is what makes a stop count reproducible.
+    """
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QWidget
+
+    stops: list = []
+    seen: set[int] = set()
+    node = page
+    for _ in range(FOCUS_CHAIN_LIMIT):
+        node = node.nextInFocusChain()
+        if node is None or node is page or id(node) in seen:
+            break  # the chain is circular and has come back to where it started
+        seen.add(id(node))
+        if not isinstance(node, QWidget):
+            continue  # a QAction carries no focus of its own
+        if not (node is page or page.isAncestorOf(node)):
+            break  # left the page subtree: everything from here belongs to another page
+        if _is_internal(node):
+            continue  # Qt's part of a compound control, not a stop a user reaches on its own
+        if node.focusPolicy() == Qt.FocusPolicy.NoFocus:
+            continue
+        if not node.isVisibleTo(page) or not node.isEnabled():
+            continue
+        stops.append(node)
+    return stops
+
+
+def _tab_reach(app, page) -> list:
+    """The stops of ``page`` that real Tab presses actually reach, for the visual pass.
+
+    Returns ``(widgets, closed)``: the widgets focus entered, in the order it entered them, and whether
+    the traversal came back to its starting stop. The list can be shorter than the page's stop list -
+    Qt's Tab order is geometric, so a control laid out inside a collapsed scroll area is skipped - and
+    ``closed`` says whether that happened.
+
+    The visual pass needs real Tab presses rather than ``setFocus``: the focus ring is only painted for
+    focus that arrives with a key event. The tracker marks the widget either way - the ``keyboardFocus``
+    property reads True under ``setFocus`` too - but the pixels do not change at all. Measured on the
+    instances page's sort combo: a whole-window diff of 0 bytes with ``setFocus`` (with or without a
+    repolish and an explicit repaint) against 1245 bytes when focus arrived by Tab.
     """
     from PySide6.QtCore import Qt
     from PySide6.QtTest import QTest
 
-    page.setFocus(Qt.FocusReason.OtherFocusReason)
+    stops = _page_focus_stops(page)
+    if not stops:
+        return [], True
+    start = stops[0]
+    start.setFocus(Qt.FocusReason.OtherFocusReason)
+    app.processEvents()
+    if not start.hasFocus():
+        return [], True
+    _TAB_REACHED.add(id(start))  # the press below leaves it, but focus did start there
+    QTest.keyClick(start, Qt.Key.Key_Tab)  # keyboard-navigation mode on, and one step taken
     app.processEvents()
 
-    path: list[tuple[str, str, str, str, bool]] = []
-    widgets: list = []
-    target = app.focusWidget() or page
-    for _ in range(max_steps):
-        QTest.keyClick(target, Qt.Key.Key_Tab)
-        app.processEvents()
+    reached: list = []
+    seen: set[int] = set()
+    for _ in range(len(stops) * TAB_PRESSES_PER_STOP):
         widget = app.focusWidget()
-        if widget is None:
-            break
-        step = (*_describe(widget), _has_focus_rule(widget, selectors), _name_source(widget))
-        if step in path:
-            break  # wrapped around: the focus chain for this page is closed
-        path.append(step)
-        widgets.append(widget)
-        target = widget
-    return path, widgets
+        if widget is start:
+            return reached, True  # focus came back to the first stop
+        if widget is not None and page.isAncestorOf(widget) and id(widget) not in seen:
+            seen.add(id(widget))
+            _TAB_REACHED.add(id(widget))
+            reached.append(widget)
+        QTest.keyClick(widget or start, Qt.Key.Key_Tab)
+        app.processEvents()
+    return reached, False
+
+
+def _walk(
+    app, page, selectors: list[str]
+) -> tuple[list[tuple[str, str, str, str, bool, str]], list, list, bool]:
+    """Record every focus stop of ``page``; also return the stops a Tab press reached, and `closed`.
+
+    The stop list comes from the page's focus chain (see :func:`_page_focus_stops`), which is what makes
+    the count a property of the interface instead of a property of the walk. This is the fix for the count
+    that made "58 focus stops" quotable: the walk used to end at the *first repeated description*, and
+    class + objectName + label + focus policy cannot tell two similar controls apart (two "浏览…" buttons,
+    two like-sized spin boxes, the two QLineEdits inside a spin box). The second of such a pair therefore
+    read as "already visited" and cut the walk short - on a page whose chain visits eight controls, the old
+    rule stopped after two.
+
+    The two lists are returned separately because they answer different questions: the first is "how many
+    controls can take keyboard focus here", the second is "which of them did this offscreen run actually
+    paint a focus cue for". The flag says whether the Tab traversal closed on itself.
+    """
+    stops = _page_focus_stops(page)
+    if not stops:
+        return [], [], [], True
+    path = [
+        (*_describe(widget), _has_focus_rule(widget, selectors), _name_source(widget))
+        for widget in stops
+    ]
+    reached, closed = _tab_reach(app, page)
+    return path, stops, reached, closed
 
 
 GRAB_PAD = 4  # pixels of margin around the widget, so a ring drawn outside its rect is visible
 
 
 NEUTRAL_RETRIES = 3  # how many times the neutral frame may be re-taken before calling it unstable
+
+# How many times a non-`yes` verdict is re-measured before it is believed. Painting is asynchronous, so
+# one unlucky grab is not evidence of a missing focus cue.
+FOCUS_VISUAL_ATTEMPTS = 3
 
 
 def _repolish(app, *widgets) -> None:
@@ -237,62 +412,99 @@ def _repolish(app, *widgets) -> None:
     app.processEvents()
 
 
-def _focus_visual(app, window, widget, neutral) -> str:
+def _focus_visual(app, window, widget, neutral, measured: bool) -> str:
     """Does focusing this widget change the pixels around it?
 
     Returns `yes`, `no`, `unknown:moved` (the widget shifted between the grabs, e.g. focus scrolling it
     into view), `unknown:out_of_view` (the widget is clipped by the window, so part of it - possibly the
-    part carrying the focus cue - is not rendered at all) or `unknown:unstable` (the neutral frame never
-    settled - async status text is the usual culprit). `unknown` is never treated as a defect.
+    part carrying the focus cue - is not rendered at all), `unknown:not_focused` (the widget did not take
+    focus, so nothing was measured), `unknown:not_painted_by_setfocus` (the widget was not reached by a
+    Tab press, so this path cannot paint its ring - see below) or `unknown:unstable` (the neutral frame
+    never settled - async status text is the usual culprit). `unknown` is never a defect, and `no` is
+    only reported where the comparison is known to be meaningful.
+
+    That last restriction is the important one, and ``measured`` is what carries it. This check focuses a
+    widget with ``setFocus``, and the focus ring is drawn from the ``[keyboardFocus="true"]`` block when
+    focus *arrives* with a key event. Under ``setFocus`` the tracker still marks the widget - the
+    ``keyboardFocus`` property reads True - but the ring is not painted: measured one control at a time on
+    a freshly built window, the settings page's theme combo, spin box and game-directory field all showed
+    0 bytes of window change while the checkbox beside them, reached by a real Tab press, showed 315. So a
+    `no` here would be an announcement about the measurement, not about the interface, and the caller
+    reports how many stops the real Tab traversal covered instead.
     """
     from PySide6.QtCore import QPoint, QRect, Qt
+    from PySide6.QtTest import QTest
 
     top_left = widget.mapTo(window, QPoint(0, 0))
     # A partially visible widget cannot be judged: grabbing only the visible strip made a button that
     # had merely scrolled out of view look like "no visible focus". Any clipping means unknown.
     if not window.rect().contains(QRect(top_left, widget.size())):
         return "unknown:out_of_view"
-    rect = QRect(top_left, widget.size()).adjusted(-GRAB_PAD, -GRAB_PAD, GRAB_PAD, GRAB_PAD)
-    rect = rect.intersected(window.rect())
-    if rect.isEmpty():
-        return "unknown:moved"
 
-    widget.setFocus(Qt.FocusReason.OtherFocusReason)
+    # The grab is taken of the *widget*, not of a window region around it. `window.grab(rect)` was the
+    # tool's blind spot: in this environment it hands back pixels that do not include a child's fresh
+    # paint, so it reported **0 bytes for an unconditional 2px red border** on a checkbox while
+    # `widget.grab()` on the same widget reported 4767 bytes - and the same blindness made 17 controls
+    # look as if they had no focus cue at all. The widget grab is also the tighter comparison: same
+    # control, same rectangle, nothing else in frame.
     _repolish(app, widget, neutral)
+    app.processEvents()
+    widget.setFocus(Qt.FocusReason.OtherFocusReason)
+    # The key press goes to the *neutral* widget, not to this one: any key press re-arms the tracker, and
+    # pressing it on the widget under test makes the comparison meaningless (the press itself repaints the
+    # widget, so the focused frame stops being a frame of "focused, nothing else").
+    QTest.keyClick(neutral, Qt.Key.Key_F13)
+    app.processEvents()
+    if not widget.hasFocus():
+        return "unknown:not_focused"
+    if not measured:
+        return "unknown:not_painted_by_setfocus"
     if widget.mapTo(window, QPoint(0, 0)) != top_left:
         return "unknown:moved"
-    # The grab must stay alive while its buffer is read: `window.grab(rect).toImage().constBits()`
+    # The grab must stay alive while its buffer is read: `widget.grab().toImage().constBits()`
     # in one expression hands back a view into an already-destroyed image (access violation).
-    focused_image = window.grab(rect).toImage()
+    focused_image = widget.grab().toImage()
     focused = bytes(focused_image.constBits())
 
     for _attempt in range(NEUTRAL_RETRIES):
         neutral.setFocus(Qt.FocusReason.OtherFocusReason)
         _repolish(app, neutral, widget)
+        QTest.keyClick(neutral, Qt.Key.Key_F13)  # keeps keyboard mode armed on the neutral side too
+        app.processEvents()
         if widget.mapTo(window, QPoint(0, 0)) != top_left:
             return "unknown:moved"
-        baseline_image = window.grab(rect).toImage()
+        baseline_image = widget.grab().toImage()
         baseline = bytes(baseline_image.constBits())
         app.processEvents()
-        repeat_image = window.grab(rect).toImage()
+        repeat_image = widget.grab().toImage()
         repeat = bytes(repeat_image.constBits())
         if baseline == repeat:
             return "yes" if focused != baseline else "no"
     return "unknown:unstable"
 
 
-def _focus_visual_confirmed(app, window, widget, neutral) -> str:
-    """`no` and `unknown` are re-tested once: an async repaint must not be reported as a defect."""
-    first = _focus_visual(app, window, widget, neutral)
-    if first == "yes":
-        return "yes"
-    second = _focus_visual(app, window, widget, neutral)
-    if first == second:
+def _focus_visual_confirmed(app, window, widget, neutral, measured: bool) -> str:
+    """Re-test a `no` before believing it, and never turn a `yes` into a defect.
+
+    A single `no` is not evidence here: the same control can answer `no` on one attempt and `yes` on the
+    next within one run (measured - three accent-swatch buttons reported `no` while five identical ones
+    beside them reported `yes`). Painting is asynchronous, so the retries exist to catch the attempt that
+    did paint. Only a control that never once painted while focused is reported as having no visible focus
+    cue, and only controls a Tab press actually reached are judged at all (``measured``).
+    """
+    verdicts: list[str] = []
+    for _attempt in range(FOCUS_VISUAL_ATTEMPTS):
+        verdict = _focus_visual(app, window, widget, neutral, measured)
+        if verdict == "yes":
+            return "yes"
+        verdicts.append(verdict)
+    first = verdicts[0]
+    if all(verdict == first for verdict in verdicts):
         return first
-    for verdict in (second, first):
+    for verdict in verdicts:
         if verdict.startswith("unknown"):
             return verdict
-    return "flaky"
+    return "no" if "no" in verdicts else "flaky"
 
 
 def _has_focus_rule_name(kind: str, object_name: str, selectors: list[str]) -> bool:
@@ -318,7 +530,6 @@ def main() -> int:
     parser.add_argument("--root", default=".", help="checkout root (default: current directory)")
     parser.add_argument("--out", required=True, help="where to write the Markdown report")
     parser.add_argument("--theme", default="dark", choices=["dark", "light"])
-    parser.add_argument("--max-steps", type=int, default=80)
     parser.add_argument("--preview", default=None, help="where to keep _preview data (default: root)")
     args = parser.parse_args()
 
@@ -408,15 +619,20 @@ def main() -> int:
     lines: list[str] = []
     failures: list[str] = []
     total = 0
+    visual_covered = 0
+    visual_total = 0
+    visual_gaps: list[str] = []
     invisible: list[tuple[str, str, str, str, str]] = []  # page, class, objectName, label, rect
     visual_tally: dict[str, int] = {"yes": 0, "no": 0, "unknown": 0, "flaky": 0}
+    not_measured: list[tuple[str, str, str, str, str]] = []  # page, class, name, label, cause
     unknown_causes: dict[str, int] = {}
     neutral = window.stack  # a container with no :focus rule, used to park focus for the comparison
 
     lines.append("# MinePick 键盘走查记录")
     lines.append("")
-    lines.append("> 由 `tools/keyboard_walkthrough.py` 自动生成:离屏启动真实窗口,**只发送 Tab 键**,")
-    lines.append("> 记录每个页面的焦点落点。重新生成即可与上一次对比(界面改动后必须重出)。")
+    lines.append("> 由 `tools/keyboard_walkthrough.py` 自动生成:离屏启动真实窗口,记录每个页面的焦点落点")
+    lines.append("> (逐个控件统计,不是「按到重复就停」的截断结果),并对能到达的落点做焦点可见性实测。")
+    lines.append("> 重新生成即可与上一次对比(界面改动后必须重出)。")
     lines.append("")
     lines.append(f"- 主题:`{args.theme}`;窗口:`1000x600`;页面数:`{len(NAV_KEYS)}`")
     lines.append("")
@@ -429,13 +645,16 @@ def main() -> int:
             continue
         window.stack.setCurrentIndex(index)
         app.processEvents()
-        path, widgets = _walk(app, page, args.max_steps, selectors)
+        path, stops, widgets, closed = _walk(app, page, selectors)
         total += len(path)
         if not path:
-            failures.append(f"页面 `{key}`:Tab 完全不动(没有任何可获得焦点的控件)")
+            failures.append(f"页面 `{key}`:没有任何可获得焦点的控件")
+        visuals_by_id: dict[int, str] = {}
         visuals: list[str] = []
-        for widget in widgets:
-            verdict = _focus_visual_confirmed(app, window, widget, neutral)
+        reached_ids = {id(widget) for widget in widgets}
+        for widget in stops:
+            verdict = _focus_visual_confirmed(app, window, widget, neutral, id(widget) in reached_ids)
+            visuals_by_id[id(widget)] = verdict
             visuals.append(verdict)
             bucket = "unknown" if verdict.startswith("unknown") else verdict
             visual_tally[bucket] = visual_tally.get(bucket, 0) + 1
@@ -447,8 +666,29 @@ def main() -> int:
 
                 point = widget.mapTo(window, QPoint(0, 0))
                 rect = f"{point.x()},{point.y()} {widget.width()}x{widget.height()}"
-                kind, name, label, _policy, _has_rule, _source = path[len(visuals) - 1]
+                kind, name, label, _policy, _has_rule, _source = _describe(widget) + (
+                    _has_focus_rule(widget, selectors),
+                    _name_source(widget),
+                )
                 invisible.append((key, kind, name, label, rect))
+            elif verdict.startswith("unknown:") and verdict.split(":", 1)[1] in (
+                "not_painted_by_setfocus",
+                "out_of_view",
+            ):
+                # Measure-nothing cases stay visible in the report instead of being folded into a count:
+                # "the tool could not see this" must never read as "this control is fine".
+                kind, name, label, _policy, _has_rule, _source = _describe(widget) + (
+                    _has_focus_rule(widget, selectors),
+                    _name_source(widget),
+                )
+                not_measured.append((key, kind, name, label, verdict.split(":", 1)[1]))
+        # How much of the page the visual pass could see. Qt's Tab order is geometric, so a control that
+        # sits inside a collapsed scroll area is skipped by a press; the row is then reported without a
+        # visual verdict instead of being counted as "no visible focus".
+        visual_covered += len(widgets)
+        visual_total += len(stops)
+        if not closed:
+            visual_gaps.append(f"{key}(走查 {len(widgets)}/{len(stops)})")
         without_rule = [
             f"`{kind}` `{name}`"
             for kind, name, _label, _policy, has_rule, _source in path
@@ -475,7 +715,8 @@ def main() -> int:
         detail.append("|---|---|---|---|---|---|---|---|")
         for step_index, (kind, name, label, policy, has_rule, source) in enumerate(path):
             mark = "✅" if has_rule else "⚠️"
-            visual = visuals[step_index] if step_index < len(visuals) else "—"
+            widget = widgets[step_index] if step_index < len(widgets) else None
+            visual = visuals_by_id.get(id(widget), "—") if widget is not None else "—"
             visual_mark = {"yes": "✅", "no": "❌", "unknown": "❓", "flaky": "〰️"}.get(visual, "—")
             source_mark = {"accessible": "✅ accessible", "text": "✅ text"}.get(source, f"❗ {source}")
             detail.append(
@@ -493,28 +734,53 @@ def main() -> int:
 
     lines.append("## 概览")
     lines.append("")
-    lines.append(f"- 焦点落点总数:`{total}`")
+    lines.append(f"- 焦点落点总数:`{total}`(逐控件统计:每页数的是该页可获得焦点的控件,不是走查走到哪算哪)")
     lines.append(f"- 硬失败:`{len(failures)}`")
     for failure in failures:
         lines.append(f"  - ❌ {failure}")
     unknown_detail = ", ".join(f"{name} `{count}`" for name, count in sorted(unknown_causes.items()))
     lines.append(
-        f"- 焦点可见性实测:可见 `{visual_tally.get('yes', 0)}` /"
-        f" **不可见 `{visual_tally.get('no', 0)}`** / 无法判定 `{visual_tally.get('unknown', 0)}`"
+        f"- 焦点可见性实测(覆盖 `{visual_covered}` / `{visual_total}` 个落点):可见"
+        f" `{visual_tally.get('yes', 0)}` / **不可见 `{visual_tally.get('no', 0)}`** /"
+        f" 无法判定 `{visual_tally.get('unknown', 0)}`"
         + (f"({unknown_detail})" if unknown_detail else "")
         + f" / 不稳定 `{visual_tally.get('flaky', 0)}`"
     )
+    if visual_gaps:
+        lines.append(
+            "- 焦点可见性未覆盖的页面:"
+            + ", ".join(visual_gaps)
+            + " — Qt 的 Tab 顺序是几何顺序,折叠滚动区内的控件按不到;这些行不写可见性结论"
+        )
     lines.append("")
     lines.append(f"## 无可辨焦点效果的控件({len(invisible)} 个)")
     lines.append("")
-    lines.append("> 判据:把焦点放到该控件与把焦点移开后,**窗口同一区域(控件矩形外扩 4px)的像素完全相同**")
-    lines.append("> ⇒ 用户看不出焦点在哪。两个 `no` 才算数;`unknown`(控件被滚动移出可视区 / 中性帧不稳定)不算缺陷。")
+    lines.append("> 判据:把焦点放到该控件与把焦点移开后,**控件自身(控件级抓图)的像素完全相同**")
+    lines.append("> ⇒ 用户看不出焦点在哪。多次重测都为 `no` 才算数;`unknown` 不算缺陷。")
+    lines.append("> 抓图用 `widget.grab()` 而不是 `window.grab(rect)`:后者在本环境下拿不到子控件刚重绘的像素")
+    lines.append("> (实测给复选框加一条无条件 2px 红边框后它仍报 0 字节,控件级抓图报 4767 字节)⇒ 曾误报 17 个。")
     lines.append("")
     if invisible:
         lines.append("| 页面 | 控件 | objectName | 可读名称 | 矩形(窗口坐标) |")
         lines.append("|---|---|---|---|---|")
         for page_key, kind, name, label, rect in invisible:
             lines.append(f"| {page_key} | `{kind}` | `{name}` | {label or '—'} | {rect} |")
+    else:
+        lines.append("(无)")
+    lines.append("")
+    lines.append(f"## 无法判定(测不准)的落点({len(not_measured)} 个,不是缺陷)")
+    lines.append("")
+    lines.append("> 这两类**不是**「焦点不可见」✗,而是本工具在离屏环境下**测不出来**。它们必须由真机复核")
+    lines.append("> (见 `MinePick_Docs/tasks/T-0004.md` 的 E5),**不得**被当成通过 ✗。")
+    lines.append("")
+    lines.append("> - `not_painted_by_setfocus`:该落点未被本轮 Tab 走查覆盖到,程序化放焦点不绘制焦点环 ⇒ 无从比较。")
+    lines.append("> - `out_of_view`:控件被窗口边界裁掉一部分(滚动区),只抓到半截 ⇒ 无从比较。")
+    lines.append("")
+    if not_measured:
+        lines.append("| 页面 | 控件 | objectName | 可读名称 | 原因 |")
+        lines.append("|---|---|---|---|---|")
+        for page_key, kind, name, label, cause in not_measured:
+            lines.append(f"| {page_key} | `{kind}` | `{name}` | {label or '—'} | `{cause}` |")
     else:
         lines.append("(无)")
     lines.append("")
@@ -538,6 +804,9 @@ def main() -> int:
     print(f"no visible focus effect: {len(invisible)}")
     for page_key, kind, name, label, rect in invisible:
         print(f"  INVISIBLE {page_key}: {kind} {name or '-'} {label or '-'} @ {rect}")
+    print(f"not measurable (NOT a pass): {len(not_measured)}")
+    for page_key, kind, name, label, cause in not_measured:
+        print(f"  UNMEASURED {page_key}: {kind} {name or '-'} {label or '-'} ({cause})")
     for failure in failures:
         print(f"  FAIL {failure}")
     return 1 if failures else 0
@@ -545,3 +814,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+

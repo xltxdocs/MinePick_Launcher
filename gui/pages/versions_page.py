@@ -164,6 +164,10 @@ class VersionsPage(QWidget):
             ]
         )
         self.table.setModel(self.model)
+        # WCAG 4.1.2: a table is a keyboard stop (arrow keys move inside it) with no text of its own, so
+        # it needs a name. Built from its own column titles rather than a new string: the name then
+        # always matches what the header actually shows, in every language.
+        self.table.setAccessibleName(" · ".join(self.model.headers()))
         apply_no_focus_outline(self.table)
         header = self.table.horizontalHeader()
         # Column width: widen the version-name column to fit 20 ASCII characters

@@ -64,6 +64,7 @@ from gui.widgets import (
     add_search_icon,
     apply_no_focus_outline,
     disable_keeping_focus,
+    name_table_for_screen_readers,
     set_app_status,
     style_form,
 )
@@ -365,6 +366,7 @@ class InstanceDetail(QWidget):
 
         self.mods_table = _ModsTable(self)
         apply_no_focus_outline(self.mods_table)
+        name_table_for_screen_readers(self.mods_table, tr("a11y.instance_mods"))
         self.mods_table.setHorizontalHeaderLabels(
             [
                 tr("instances.mods.col.enabled"),
@@ -389,6 +391,8 @@ class InstanceDetail(QWidget):
         self.mods_filter.addItem(tr("instances.mods.filter.all"), "all")
         self.mods_filter.addItem(tr("instances.mods.filter.enabled"), "enabled")
         self.mods_filter.addItem(tr("instances.mods.filter.disabled"), "disabled")
+        # WCAG 4.1.2: it appears nowhere near a QFormLayout row, so nothing supplied a name for it.
+        self.mods_filter.setAccessibleName(tr("a11y.mods_filter"))
         self.mods_refresh_button = QPushButton(tr("instances.mods.refresh"))
         self.mods_refresh_button.setObjectName("secondaryButton")
         self.mods_folder_button = QPushButton(tr("instances.mods.open_folder"))
@@ -456,6 +460,9 @@ class InstanceDetail(QWidget):
             self.content_empty[subdir] = empty
             inner_layout.addWidget(box, 1)
         scroll = QScrollArea()
+        # WCAG 4.1.2: the tab is a keyboard stop of its own and had no name. It is named after what it
+        # scrolls, so it tells a screen-reader user which tab the focus just entered.
+        scroll.setAccessibleName(tr("instances.detail.tab.resources"))
         scroll.setWidgetResizable(True)
         scroll.setWidget(inner)
         layout.addWidget(scroll, 1)
@@ -469,6 +476,7 @@ class InstanceDetail(QWidget):
         title_label = QLabel(title)
         title_label.setObjectName("title")
         table = QTableWidget(0, 2)
+        name_table_for_screen_readers(table, title)
         table.setHorizontalHeaderLabels(
             [tr("instances.detail.col.name"), tr("instances.detail.col.size")]
         )
@@ -504,6 +512,7 @@ class InstanceDetail(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(6)
         self.saves_table = QTableWidget(0, 3)
+        name_table_for_screen_readers(self.saves_table, tr("a11y.instance_saves"))
         self.saves_table.setHorizontalHeaderLabels(
             [
                 tr("instances.detail.col.name"),
@@ -653,6 +662,11 @@ class InstanceDetail(QWidget):
         self.java_follow_check.setToolTip(tr("instances.detail.settings.java.follow"))
         self.java_edit = QLineEdit()
         self.java_edit.setPlaceholderText(tr("instances.detail.java.follow_auto"))
+        # WCAG 4.1.2: the four fields below sit inside a box or an ElidedLabel row instead of in a
+        # QFormLayout row of their own, so the form never handed the label over and each was announced
+        # as an unnamed edit box / spinner. They are named after the form row they appear in, which is
+        # the label a sighted user reads next to them.
+        self.java_edit.setAccessibleName(tr("instances.detail.row.java"))
         self.java_browse_button = QPushButton(tr("settings.browse"))
         self.java_browse_button.setObjectName("secondaryButton")
         java_box = QWidget()
@@ -673,6 +687,7 @@ class InstanceDetail(QWidget):
         self.memory_spin.setRange(1.0, 64.0)
         self.memory_spin.setSingleStep(0.5)
         self.memory_spin.setSuffix(" " + tr("unit.gb"))
+        self.memory_spin.setAccessibleName(tr("instances.detail.row.memory"))
         memory_box = QWidget()
         memory_layout = QVBoxLayout(memory_box)
         memory_layout.setContentsMargins(0, 0, 0, 0)
@@ -682,8 +697,10 @@ class InstanceDetail(QWidget):
 
         self.jvm_args_edit = QLineEdit()
         self.jvm_args_edit.setPlaceholderText(tr("instances.detail.settings.jvm_args"))
+        self.jvm_args_edit.setAccessibleName(tr("instances.detail.settings.jvm_args"))
         self.game_args_edit = QLineEdit()
         self.game_args_edit.setPlaceholderText(tr("instances.detail.settings.game_args"))
+        self.game_args_edit.setAccessibleName(tr("instances.detail.settings.game_args"))
 
         form.addRow(tr("instances.detail.row.isolation"), self.isolation_combo)
         form.addRow(tr("instances.detail.row.java"), java_box)

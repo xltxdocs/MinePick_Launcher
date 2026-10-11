@@ -51,6 +51,10 @@ class VersionListModel(QAbstractTableModel):
             return self._headers[section]
         return None
 
+    def headers(self) -> list[str]:
+        """The column titles, for callers that need to describe the table (e.g. an accessible name)."""
+        return list(self._headers)
+
     def set_rows(self, rows: list[tuple[str, str, str, str]]) -> None:
         self.beginResetModel()
         self._rows = rows
