@@ -248,16 +248,36 @@ QListWidget#sidebar::item:selected {
 
 /* ---------- progress ---------- */
 
+/* The percentage is not painted by Qt inside the bar. The chunk grows from the left, so a centred value
+   ends up on the accent fill for most of a download, where FG_HINT measures 1.93:1 in this theme
+   (dark: 1.26:1) - and no single colour can clear AA on both halves at once, more so because the
+   accent is user-chosen. It sits in its own label to the right instead (gui/widgets.py
+   build_download_progress), on the static fill the bar itself uses: FG_HINT on BG_LIST is 6.48:1 in
+   both themes and cannot be reached by an accent. Zero spacing between the two, and the outline is
+   split across them, so the pair still reads as one control. */
 QProgressBar {
     background: __BG_LIST__;
     border: 1px solid __BORDER_LIST__;
-    border-radius: __RADIUS_LG__;
+    border-top-left-radius: __RADIUS_LG__;
+    border-bottom-left-radius: __RADIUS_LG__;
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
     height: 16px;
     text-align: center;
     color: __FG_HINT__;
     font-size: 11px;
 }
 QProgressBar::chunk { background: __ACCENT__; border-radius: 7px; }
+/* The bar's own fill and the right half of its outline: one control, two segments. */
+QLabel#downloadProgressText, QLabel#updateProgressText {
+    background: __BG_LIST__;
+    border: 1px solid __BORDER_LIST__;
+    border-left: none;
+    border-top-right-radius: __RADIUS_LG__;
+    border-bottom-right-radius: __RADIUS_LG__;
+    color: __FG_HINT__;
+    font-size: 11px;
+}
 
 /* ---------- checkboxes ---------- */
 

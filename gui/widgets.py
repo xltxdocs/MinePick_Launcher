@@ -25,11 +25,14 @@ from PySide6.QtWidgets import (
     QAbstractItemView,
     QAbstractScrollArea,
     QAbstractSpinBox,
+    QApplication,
     QComboBox,
     QDoubleSpinBox,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QPlainTextEdit,
+    QProgressBar,
     QSizePolicy,
     QSpinBox,
     QStatusBar,
@@ -693,6 +696,26 @@ class KeyboardFocusTracker(QObject):
 
     Qt also paints focus for mouse clicks, which this launcher suppresses so the
     interface stays flat; this restores an indicator for keyboard users only.
+
+    The flag means "the most recent input was the keyboard", not "a key was pressed at some point in
+    this session". That distinction is the whole feature: a click focuses its target, so keeping the
+    stale answer marks a widget the mouse just reached, and once the session had seen a single key
+    press - typing in a search box, a space on a checkbox, a Tab - every later mouse click drew a ring
+    again. Two things make it hold:
+
+    * a mouse event clears the answer *and* the mark already on the focused control, because Qt tells
+      the interface about the new focus **before** it delivers the click. Measured on a click from a
+      line edit to the sidebar: ``FocusIn`` on the sidebar, and only then ``MouseButtonPress`` (on the
+      scroll area viewport). Marking on that FocusIn and clearing the flag afterwards would leave the
+      ring lit with nothing left to take it down - the exact mouse-visible ring this class exists to
+      prevent;
+    * the widget is restyled on the spot, the same way ``_mark`` does it, so the ring goes out in the
+      same event as the click instead of waiting for the next focus change.
+
+    Purely passive pointer movement is deliberately not an input answer: a MouseMove or a HoverMove
+    says where the pointer is, not how the user is driving the interface, and the original QSS concern
+    (a keyboard user must always see where focus is) would break as soon as the pointer drifted across
+    a Tab-focused control. Presses, double clicks, releases, wheel, touch and tablet input do count.
     """
 
     # Every control family whose stylesheet focus ring is gated on this property. A family missing here
@@ -711,15 +734,32 @@ class KeyboardFocusTracker(QObject):
         QTextEdit,
     )
 
+    # The mouse answering "not the keyboard any more". Releases are in the list because a press can be
+    # swallowed by a widget that then never marks anything, while its release still belongs to the same
+    # mouse action; DoubleClick is a click the press-only rule would miss entirely.
+    _MOUSE_INPUT = (
+        QEvent.Type.MouseButtonPress,
+        QEvent.Type.MouseButtonDblClick,
+        QEvent.Type.MouseButtonRelease,
+        QEvent.Type.Wheel,
+        QEvent.Type.TouchBegin,
+        QEvent.Type.TabletPress,
+    )
+
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self._keyboard = False
+        # Controls currently carrying the mark. Usually one (the focused control) or none, and a
+        # mouse event is what walks it. A list rather than a set: identity is what matters, and a
+        # handful of entries compares faster by identity than by hash.
+        self._marked: list = []
 
     def eventFilter(self, obj, event) -> bool:
         kind = event.type()
         if kind == QEvent.Type.KeyPress:
             self._keyboard = True
-        elif kind in (QEvent.Type.MouseButtonPress, QEvent.Type.Wheel):
+        elif kind in self._MOUSE_INPUT:
+            self._clear_marks()
             self._keyboard = False
         elif kind == QEvent.Type.FocusIn and isinstance(obj, self._INTERACTIVE):
             self._mark(obj, self._keyboard)
@@ -727,8 +767,12 @@ class KeyboardFocusTracker(QObject):
             self._mark(obj, False)
         return False
 
-    @staticmethod
-    def _mark(widget, active: bool) -> None:
+    def _mark(self, widget, active: bool) -> None:
+        # Marks the control and, while the mark is on, remembers it as the one a mouse event has to take
+        # it off again. A widget that was already in the asked-for state is left completely alone:
+        # unpolish/polish on every focus change repainted controls for no reason (and, for a view,
+        # dropped invisible work into the event loop that the tests then had to pump).
+        #
         # A queued FocusOut can arrive after the C++ side of the widget is already gone - during
         # shutdown, or when the garbage collector reclaims a window the tests are finished with.
         # Touching such a wrapper took the whole process down with an access violation (Fatal Python
@@ -743,14 +787,159 @@ class KeyboardFocusTracker(QObject):
             if bool(widget.property("keyboardFocus")) == active:
                 return
             widget.setProperty("keyboardFocus", active)
+            if active:
+                if not any(w is widget for w in self._marked):
+                    self._marked.append(widget)
+            else:
+                self._marked = [w for w in self._marked if w is not widget]
             style = widget.style()
             if style is None:
                 return
             style.unpolish(widget)
             style.polish(widget)
-        except RuntimeError:
-            # The widget died between the validity check and the call: nothing left to restyle.
+        except Exception:  # noqa: BLE001 - an event filter must never raise into Qt's dispatch
+            # The widget died between the validity check and the call, or it has no QWidget behaviour to
+            # restyle. Either way there is nothing left to mark, and an event filter must never raise
+            # into Qt's dispatch. Deliberately not narrowed to RuntimeError: the failures this is here
+            # for (a half-destroyed wrapper, an object that is not a widget at all) do not all arrive
+            # as RuntimeError.
             return
+
+    def _clear_marks(self) -> None:
+        """Take the keyboard mark off every control still carrying it, right now.
+
+        Called when a mouse event says the answer is no longer "keyboard" - the flag is still the old
+        answer at this point, which is what tells the two cases apart below.
+
+        Qt reports the new focus before the click that caused it (FocusIn on the sidebar, then
+        MouseButtonPress), so the widget the mouse just reached can already be marked by the time the
+        click arrives: clearing only the flag would leave that ring lit until something else moved focus.
+        Restyling here is what makes the ring go out with the mouse event itself.
+
+        Only widgets this tracker marked are touched, and only their ``keyboardFocus`` property - not
+        their focus, geometry or visibility - which is what keeps the unfocused rendering byte-for-byte
+        what it was (the property is what the QSS ring is gated on, and nothing else reads it).
+
+        The focused widget is checked even when the list does not hold it, so a mark that arrived some
+        other way - an object this tracker never marked, or a property set by hand - cannot outlive the
+        keyboard mode either. That extra check runs only when the answer really is changing, so a mouse
+        event during keyboard navigation cannot take a mark off the control the user is tabbing through.
+        """
+        changing = self._keyboard
+        for widget in list(self._marked):
+            self._forget(widget)
+        focused = QApplication.focusWidget() if changing and QApplication is not None else None
+        if focused is not None:
+            self._forget(focused)
+
+    def _forget(self, widget) -> None:
+        """Clear one widget's mark, drop it from the list, and never raise into Qt's dispatch."""
+        self._marked = [w for w in self._marked if w is not widget]
+        try:
+            import shiboken6
+
+            if not shiboken6.isValid(widget):
+                return
+            if not bool(widget.property("keyboardFocus")):
+                return
+            widget.setProperty("keyboardFocus", False)
+            style = widget.style()
+            if style is None:
+                return
+            style.unpolish(widget)
+            style.polish(widget)
+        except Exception:  # noqa: BLE001 - see _mark: a dead widget must not break the filter
+            return
+
+
+# The percentage label's box, in px. Wide enough for "100%" at the 11px the stylesheet sets, so the
+# digits never push the bar around while the number goes from 0 to 100.
+PROGRESS_TEXT_MIN_WIDTH = 44
+
+
+def build_download_progress(name: str) -> tuple[QWidget, QProgressBar, QLabel]:
+    """A download progress row. Returns ``(row, bar, label)``.
+
+    The percentage used to be painted by Qt *inside* the bar, and that surface is not one colour: the
+    chunk grows from the left, so a centred "45%" sits on the unfilled background while "55%" sits on
+    the accent fill, and past the middle the text straddles both halves of the bar at once. Measured on
+    the real platform (tools/measure_progress_text.py), the stylesheet's ``FG_HINT`` text over the
+    accent chunk is 1.26:1 in the dark theme and 1.93:1 in the light one - against WCAG AA's 4.5:1 for
+    body text. No single colour fixes it: ACCENT is a saturated mid-tone, so a foreground bright enough
+    for it is invisible on the dark unfilled half, and one dark enough for that half disappears on the
+    fill. The accent is also user-chosen - the settings page offers eight presets, each with its own
+    luminance - so no token can be picked to make the two halves agree.
+
+    So the text leaves the moving surface instead of chasing it: it moves one slot to the right, onto
+    the static ``BG_LIST`` the row already uses. ``FG_HINT`` there is 6.48:1 in both themes and holds
+    for every accent preset, because an accent can no longer reach it. The stylesheet gives the label
+    the bar's own fill and border and the right half of its outline, and the layout uses zero spacing
+    and no margins, so the pair still reads as one control.
+
+    The two are wrapped in one plain container on purpose: every caller already shows and hides the bar
+    when its download starts and ends, and a single widget keeps that working unchanged while the two
+    can never drift apart - the label follows the bar's visibility by itself. ``text()`` on the bar is
+    still the same percentage, and the bar is still reachable with ``findChild``/``findChildren``, so
+    nothing that reads the value is affected.
+    """
+    row = QWidget()
+    row.setContentsMargins(0, 0, 0, 0)
+    layout = QHBoxLayout(row)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(0)
+
+    bar = QProgressBar()
+    bar.setObjectName(name)
+    # Qt's own text would land on the accent fill; the label carries it instead.
+    bar.setTextVisible(False)
+    bar.setAccessibleName(name)
+    label = QLabel()
+    label.setObjectName(f"{name}Text")
+    label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    label.setMinimumWidth(PROGRESS_TEXT_MIN_WIDTH)
+    label.setVisible(False)
+    layout.addWidget(bar, 1)
+    layout.addWidget(label)
+
+    def show_value(value: int) -> None:
+        # The same scale every progress bar is driven with: setRange(0, 1000), a tenth of a percent a step.
+        label.setText(f"{round(value / 10)}%")
+
+    def follow_visibility(shown: bool) -> None:
+        label.setVisible(shown)
+
+    bar.valueChanged.connect(show_value)
+    show_value(bar.value())
+    row.installEventFilter(_VisibilityFollower(row, label, follow_visibility))
+    row.setVisible(False)
+    return row, bar, label
+
+
+class _VisibilityFollower(QObject):
+    """Keeps a sibling in step with the widget it belongs to (see build_download_progress).
+
+    A container's own ``show``/``hide`` is what every caller already drives, so listening to it costs
+    no call-site changes and cannot be forgotten at a new one. ``isVisibleTo(parent)`` is the state the
+    callers mean: it ignores whether an ancestor is on screen yet, which matters because these pages are
+    built before their window is.
+    """
+
+    def __init__(self, watched: QWidget, sibling: QWidget, apply) -> None:
+        super().__init__(watched)
+        self._sibling = sibling
+        self._apply = apply
+
+    def eventFilter(self, obj, event) -> bool:
+        if event.type() in (QEvent.Type.Show, QEvent.Type.Hide):
+            try:
+                import shiboken6
+
+                if not shiboken6.isValid(self._sibling):
+                    return False
+            except Exception:  # noqa: BLE001 - a filter must never raise into Qt's dispatch
+                return False
+            self._apply(obj.isVisibleTo(obj.parentWidget()))
+        return False
 
 
 class NumericTableItem(QTableWidgetItem):

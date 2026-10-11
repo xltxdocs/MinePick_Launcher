@@ -38,7 +38,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMessageBox,
-    QProgressBar,
     QPushButton,
     QScrollArea,
     QVBoxLayout,
@@ -46,7 +45,13 @@ from PySide6.QtWidgets import (
 )
 
 from gui import i18n
-from gui.widgets import build_page_header, disable_keeping_focus, set_app_status, style_page_layout
+from gui.widgets import (
+    build_download_progress,
+    build_page_header,
+    disable_keeping_focus,
+    set_app_status,
+    style_page_layout,
+)
 from gui.workers import ProgressBridge, run_in_background
 from launcher import __version__, config, notices, updates
 
@@ -178,11 +183,11 @@ class AboutPage(QWidget):
         button_row.addStretch(1)
         layout.addLayout(button_row)
 
-        self.progress_bar = QProgressBar()
+        self.progress_row, self.progress_bar, self.progress_text = build_download_progress("updateProgress")
         self.progress_bar.setRange(0, 1000)
         self.progress_bar.setValue(0)
-        self.progress_bar.setVisible(False)
-        layout.addWidget(self.progress_bar)
+        self.progress_row.setVisible(False)
+        layout.addWidget(self.progress_row)
 
         layout.addWidget(QLabel(tr("about.update.mode.title")))
         self.mode_combo = QComboBox()
@@ -316,7 +321,7 @@ class AboutPage(QWidget):
             return
         self._downloading = True
         self.progress_bar.setValue(0)
-        self.progress_bar.setVisible(True)
+        self.progress_row.setVisible(True)
         set_app_status(self, tr("about.update.downloading", "0"))
         bridge = ProgressBridge()
         bridge.progress.connect(self._on_download_progress)
@@ -350,7 +355,7 @@ class AboutPage(QWidget):
     def _on_download_finished(self) -> None:
         self._downloading = False
         self.check_button.setEnabled(True)
-        self.progress_bar.setVisible(False)
+        self.progress_row.setVisible(False)
 
     def _on_download_progress(self, payload) -> None:
         done, total = payload

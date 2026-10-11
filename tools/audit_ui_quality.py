@@ -19,6 +19,8 @@
 #   1. text overflow  - does any label/button/header text not fit in 9 languages (ru/de are longest)?
 #   2. contrast       - WCAG ratio of the colour pairs defined in the theme module
 #   3. high DPI       - does the window still fit at 125% / 150% scaling?
+# It also reports, without failing, the text that sits on a surface this enumeration cannot see: a
+# widget whose background is not one colour (a progress bar's fill). See check_dynamic_backgrounds.
 
 """UI quality audit: text overflow per language, colour contrast, high-DPI behaviour."""
 
@@ -193,6 +195,121 @@ def _accent_choices(theme: str) -> list[str]:
         if colour not in unique:
             unique.append(colour)
     return unique
+
+
+# Text that sits on a surface the pair table above cannot express: the widget's background is not one
+# colour, but changes with the widget's own value, state or data.
+#
+# This is the gap the user's report came through. Every pair in TEXT_PAIRS is "this foreground token on
+# that background token", which is exactly what a stylesheet rule says - and Qt's QProgressBar says
+# `color: FG_HINT` while its chunk paints `background: ACCENT` underneath the very same pixels. Both
+# tokens were covered by pairs, so the enumeration was satisfied, and the text on the fill measured
+# 1.26:1 (dark) / 1.93:1 (light) against WCAG AA's 4.5:1 for as long as it took a person to say the
+# text was too faint to read. No pair can be added for it either: which surface the text lands on
+# depended on the value at that moment, and the accent is user-chosen, so the ratio is not a number.
+#
+# Entries here are therefore a prompt to go and measure, not a verdict. `fixed` says whether the code
+# still puts text on the moving surface - a fixed entry stays in the list because the enumeration still
+# cannot see it, and the next change to that widget needs the same measurement again.
+DYNAMIC_TEXT: tuple[tuple[str, str, str, tuple[str, ...], str, bool], ...] = (
+    (
+        "download progress percentage (versions page, about page)",
+        "FG_HINT",
+        # It used to be Qt's own text inside the bar, where it sat on the accent fill for most of a
+        # download. It is now a label to the right of the bar, on the static BG_LIST the row already
+        # uses, so ACCENT is no longer underneath it - listed here because only a render can prove that.
+        "qt-text-in-bar -> own label beside the bar (gui/widgets.py build_download_progress)",
+        ("ACCENT", "BG_LIST"),
+        "tools/measure_progress_text.py",
+        True,
+    ),
+    (
+        "account avatar letter (account page)",
+        "#ffffff",
+        "hue derived from the username: QColor.fromHsv(sum(ord) * 37 % 360, 160, 150)",
+        # The letter is 30px and bold in a 64px circle, so WCAG calls it large text: 3:1, not 4.5:1.
+        # The worst hue clears 3:1 and misses 4.5:1, which is the number to decide on - the fill is
+        # derived from the username, so any hue in the circle is reachable by some account name.
+        ("hue-from-username@160,150",),
+        "tests/test_progress_text_contrast.py enumerates the same circle; the ratio needs no render",
+        False,
+    ),
+)
+
+
+def check_dynamic_text() -> None:
+    """Report the text that sits on a background which is not one colour. Never fails the audit.
+
+    A static pair table cannot cover this class, so the honest thing the gate can do is name it: the
+    reader is told which pairings need a render and a pixel sample, and why. Exit codes stay with the
+    checks that can actually decide something.
+
+    A background written as ``min@fromHsv(hue, sat, val)`` is not a token either, but it is a formula, so
+    the worst case over the whole hue circle *can* be computed here - and that is the number the reader
+    needs. Every hue is enumerated because the fill is derived from the text (the account avatar's letter
+    is drawn on a hue taken from the username), so "which colours are reachable" is the whole circle.
+    """
+    from gui.theme import theme_palette
+
+    print("--- text on a dynamic background (hint: the WCAG ratio depends on the widget's state) ---")
+    print(
+        f"  {len(DYNAMIC_TEXT)} known case(s). These cannot be enumerated as a pair, so they are not part"
+        " of the exit code;"
+    )
+    print("  each needs a render and a per-pixel sample. See the note on DYNAMIC_TEXT.")
+    for what, foreground, placement, backgrounds, how, fixed in DYNAMIC_TEXT:
+        print(f"    * {what}")
+        print(f"        text: {foreground}   ({placement})")
+        for theme in ("dark", "light"):
+            palette = theme_palette(theme, None)
+            if foreground not in palette and not foreground.startswith("#"):
+                continue
+            colour = palette.get(foreground, foreground)
+            for background in backgrounds:
+                if "@" in background:
+                    formula, worst_ratio, worst_hue, worst_rgb = _worst_hue_case(background)
+                    ratio = contrast_ratio(hex_to_rgb(colour), worst_rgb)
+                    verdict = "ok" if ratio >= 4.5 else "BELOW 4.5"
+                    print(
+                        f"        {theme:5} {colour} on {formula:26} worst {ratio:5.2f} of"
+                        f" {worst_ratio:5.2f} at hue {worst_hue:3}  ({verdict})"
+                    )
+                elif background in palette:
+                    ratio = contrast_ratio(hex_to_rgb(colour), hex_to_rgb(palette[background]))
+                    verdict = "ok" if ratio >= 4.5 else "BELOW 4.5"
+                    print(f"        {theme:5} {colour} on {background:10} {ratio:5.2f}  ({verdict})")
+                else:
+                    print(f"        {theme:5} {colour} on {background:10}    -   (not a token: measure it)")
+        print(f"        check: {how}")
+        print(f"        status: {'fixed - remeasure before changing it' if fixed else 'OPEN - needs a decision'}")
+
+
+def _worst_hue_case(spec: str) -> tuple[str, float, int, tuple[int, int, int]]:
+    """Worst hue in a ``<what>@<saturation>,<value>`` background spec, against white text.
+
+    The hue is walked over the whole circle unless the spec pins one as a third number, because a fill
+    derived from the text's own content can be any hue - that is what the avatar's does. The scaling is
+    Qt's for ``QColor.fromHsv``: hue 0-359, saturation and value 0-255.
+    """
+    label, _, arguments = spec.partition("@")
+    numbers = [int(part) for part in arguments.split(",")]
+    hues = list(range(360)) if len(numbers) == 2 else [numbers[0]]
+    saturation, value = numbers[-2], numbers[-1]
+    worst_ratio, worst_hue, worst_rgb = 99.0, 0, (0, 0, 0)
+    for hue in hues:
+        rgb = _hsv_to_rgb(hue, saturation, value)
+        ratio = contrast_ratio((255, 255, 255), rgb)
+        if ratio < worst_ratio:
+            worst_ratio, worst_hue, worst_rgb = ratio, hue, rgb
+    return label, worst_ratio, worst_hue, worst_rgb
+
+
+def _hsv_to_rgb(hue: int, saturation: int, value: int) -> tuple[int, int, int]:
+    """Qt's QColor.fromHsv scaling: hue 0-359, saturation and value 0-255."""
+    import colorsys
+
+    red, green, blue = colorsys.hsv_to_rgb(hue / 360.0, saturation / 255.0, value / 255.0)
+    return round(red * 255), round(green * 255), round(blue * 255)
 
 
 def check_contrast() -> int:
@@ -554,6 +671,8 @@ def main() -> int:
 
     print("=== 1. contrast ===")
     contrast_failures = check_contrast()
+    print("\n=== 1b. text on a dynamic background (hint, never a failure) ===")
+    check_dynamic_text()
     print("\n=== 2. text overflow (9 languages) ===")
     overflow = check_text_overflow()
     print("\n=== 3. high DPI ===")
@@ -573,6 +692,7 @@ def main() -> int:
         width_failures,
         "| unreferenced tokens =",
         token_failures,
+        f"| dynamic-background texts = {len(DYNAMIC_TEXT)} (hint, not a failure)",
     )
     if wants_json:
         # machine-readable verdict: callers should judge by this, not by the exit code

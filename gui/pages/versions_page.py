@@ -36,7 +36,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPlainTextEdit,
-    QProgressBar,
     QPushButton,
     QTableView,
     QVBoxLayout,
@@ -50,6 +49,7 @@ from gui.view_state import apply_current_sort, remember_column_widths
 from gui.widgets import (
     add_search_icon,
     apply_no_focus_outline,
+    build_download_progress,
     build_page_header,
     disable_keeping_focus,
     set_app_status,
@@ -200,8 +200,8 @@ class VersionsPage(QWidget):
         self.auto_jre_check = QCheckBox(tr("versions.auto_jre"))
         self.auto_jre_check.setChecked(True)  # checked by default
         self.auto_jre_check.setObjectName("hint")
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setVisible(False)
+        self.progress_row, self.progress_bar, self.progress_text = build_download_progress("downloadProgress")
+        self.progress_row.setVisible(False)
 
         top = QHBoxLayout()
         top.addWidget(self.search_edit)
@@ -246,7 +246,7 @@ class VersionsPage(QWidget):
         layout.addLayout(latest_row)
         layout.addWidget(self.table, 1)
         layout.addWidget(self.info_label)
-        layout.addWidget(self.progress_bar)
+        layout.addWidget(self.progress_row)
         buttons = QHBoxLayout()
         buttons.addWidget(self.install_button)
         buttons.addWidget(self.open_instance_button)
@@ -394,7 +394,7 @@ class VersionsPage(QWidget):
         cfg, _ = config.load()
         game_dir = self._game_dir()
         disable_keeping_focus(self.install_button)
-        self.progress_bar.setVisible(True)
+        self.progress_row.setVisible(True)
         self.progress_bar.setRange(0, 1000)
         self.progress_bar.setValue(0)
         set_app_status(self, tr("versions.msg.installing", version_id))
@@ -567,7 +567,7 @@ class VersionsPage(QWidget):
 
     def _on_installed(self, payload) -> None:
         result, profile_id = payload
-        self.progress_bar.setVisible(False)
+        self.progress_row.setVisible(False)
         self.launch_button.setEnabled(True)
         self._refresh_installed()
         self._refilter()
@@ -581,7 +581,7 @@ class VersionsPage(QWidget):
         self.versions_changed.emit()
 
     def _on_install_error(self, message: str) -> None:
-        self.progress_bar.setVisible(False)
+        self.progress_row.setVisible(False)
         text = tr("versions.msg.install_fail", message)
         set_app_status(self, text, "error")
         show_fatal(self, text)  # fatal error dialog
