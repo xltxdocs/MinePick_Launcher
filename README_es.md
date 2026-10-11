@@ -53,8 +53,25 @@ recursos de Modrinth y CurseForge, cargadores Fabric/Forge/NeoForge/Quilt, insta
   el ancho de las columnas de las tablas, un clic en una cabecera ordena la columna
 - **Estados legibles de un vistazo** — los botones tienen jerarquía (principal / secundario / peligro con contorno), los
   mensajes de estado se colorean según su gravedad, las listas vacías explican qué hacer a continuación
-- **Accesible por defecto** — cada combinación de texto y fondo cumple el contraste WCAG AA (los rellenos
-  de acento con texto blanco se oscurecen automáticamente) y la interfaz está disponible en 9 idiomas
+- **Accesible por defecto** —— el contraste se comprueba token de color por token (dos temas × ocho colores de acento:
+  texto ≥4,5:1, elementos no textuales ≥3:1), cada control interactivo tiene un nombre legible, el foco del teclado
+  siempre es visible y los mensajes de estado se anuncian a las tecnologías de asistencia
+
+## Accesibilidad
+
+- **No afirmamos «conformidad con WCAG 2.2 AA»** —— WCAG está escrito para contenido web y esto es una aplicación de
+  escritorio. Lo que afirmamos es el subconjunto de sus criterios de nivel A / AA que **se aplica a un programa de
+  escritorio**.
+- Se comprueba automáticamente en cada cambio: las parejas texto/fondo se **enumeran a partir de los tokens de color**
+  (dos temas × ocho colores de acento; texto ≥4,5:1, elementos no textuales ≥3:1), los objetivos pulsables miden ≥24×24 px
+  (76 controles en una ejecución real, todos correctos), todo es accesible con el teclado y con un indicador de foco visible
+  en **los 58 puntos de foco**, un nombre legible en cada control interactivo, información emergente que **se puede
+  sobrevolar sin que desaparezca**, y mensajes de estado anunciados a las tecnologías de asistencia.
+- **No hecho**: una revisión manual con lector de pantalla (NVDA / Narrador). Quedan dos puntos por verificar en una máquina
+  real: el comportamiento de la información emergente en un gestor de ventanas real y si el lector de pantalla anuncia
+  realmente los mensajes de estado.
+- Problemas conocidos: cerrar el programa mientras hay una descarga o actualización en curso puede provocar un fallo.
+  Véanse las notas de la versión.
 
 ## Funciones del launcher
 

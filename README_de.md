@@ -53,8 +53,24 @@ einzelne portable EXE.
   Spaltenbreiten von Tabellen werden gemerkt; Kopfzeilen lassen sich per Klick sortieren
 - **Klar lesbare Zustände** — Schaltflächen sind abgestuft (primär / sekundär / gefährlich mit Umrandung),
   Statusmeldungen sind nach Schweregrad eingefärbt, leere Listen erklären die nächsten Schritte
-- **Standardmäßig barrierefrei** — jedes Text-/Hintergrund-Paar erfüllt den WCAG-AA-Kontrast (Akzentflächen
-  mit weißer Schrift werden automatisch abgedunkelt), und die Oberfläche ist in 9 Sprachen verfügbar
+- **Standardmäßig barrierefrei** —— der Kontrast wird Farbrolle für Farbrolle geprüft (beide Themes × acht Akzentfarben:
+  Text ≥4,5:1, Nicht-Text ≥3:1), jedes bedienbare Element hat einen lesbaren Namen, der Tastaturfokus ist immer sichtbar
+  und Statusmeldungen werden an Hilfstechnologien gemeldet
+
+## Barrierefreiheit
+
+- Wir **behaupten keine „WCAG-2.2-AA-Konformität“** —— WCAG ist für Webinhalte geschrieben, dies ist eine
+  Desktop-Anwendung. Wir beanspruchen die Teilmenge ihrer A-/AA-Kriterien, die **auf ein Desktop-Programm zutrifft**.
+- Bei jeder Änderung automatisch geprüft: Text-/Hintergrund-Paare werden **aus den Farbrollen aufgezählt** (beide Themes ×
+  acht Akzentfarben; Text ≥4,5:1, Nicht-Text ≥3:1), Klickziele ≥24×24 px (76 Elemente in einem echten Lauf, alle
+  bestanden), vollständige Tastaturbedienung mit sichtbarem Fokus an **allen 58 Fokuspositionen**, ein lesbarer Name an
+  jedem bedienbaren Element, Tooltips, die man **überfahren kann, ohne dass sie verschwinden**, und Statusmeldungen, die an
+  Hilfstechnologien gemeldet werden.
+- **Nicht gemacht**: ein manueller Durchgang mit einem Screenreader (NVDA / Narrator). Zwei Punkte sind noch auf echter
+  Hardware zu prüfen: das Verhalten des Tooltips unter einem echten Fenstermanager und ob ein Screenreader die
+  Statusmeldungen tatsächlich vorliest.
+- Bekannte Probleme: Das Beenden während eines laufenden Downloads oder Updates kann einen Absturz verursachen. Siehe
+  Versionshinweise.
 
 ## Launcher-Funktionen
 

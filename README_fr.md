@@ -54,8 +54,25 @@ dans un seul EXE portable.
   la largeur des colonnes des tableaux est mémorisée, un clic sur un en-tête trie la colonne
 - **États lisibles d'un coup d'œil** — les boutons sont hiérarchisés (principal / secondaire / danger en contour), les
   messages d'état sont colorés selon leur gravité, les listes vides expliquent quoi faire ensuite
-- **Accessible par défaut** — chaque combinaison texte/fond respecte le contraste WCAG AA (les aplats d'accent
-  portant du texte blanc sont assombris automatiquement), et l'interface est disponible en 9 langues
+- **Accessible par défaut** —— le contraste est vérifié jeton de couleur par jeton (deux thèmes × huit couleurs
+  d'accent : texte ≥4,5:1, éléments non textuels ≥3:1), chaque contrôle interactif porte un nom lisible, le focus
+  clavier reste toujours visible et les messages d'état sont annoncés aux technologies d'assistance
+
+## Accessibilité
+
+- Nous **ne revendiquons pas la « conformité WCAG 2.2 AA »** —— WCAG s'adresse aux contenus web, et ceci est une
+  application de bureau. Nous revendiquons le sous-ensemble de ses critères de niveau A / AA qui **s'applique à un
+  programme de bureau**.
+- Vérifié automatiquement à chaque modification : les paires texte/fond sont **énumérées à partir des jetons de couleur**
+  (deux thèmes × huit couleurs d'accent ; texte ≥4,5:1, éléments non textuels ≥3:1), les cibles cliquables font ≥24×24 px
+  (76 contrôles lors d'une exécution réelle, tous conformes), tout est atteignable au clavier avec un indicateur de focus
+  visible sur **chacun des 58 arrêts de focus**, un nom lisible sur chaque contrôle interactif, des infobulles que l'on peut
+  **survoler sans qu'elles disparaissent**, et des messages d'état annoncés aux technologies d'assistance.
+- **Non fait** : une vérification manuelle avec un lecteur d'écran (NVDA / Narrateur). Deux points restent à vérifier sur
+  une machine réelle : le comportement de l'infobulle dans un vrai gestionnaire de fenêtres, et le fait qu'un lecteur
+  d'écran annonce réellement les messages d'état.
+- Problèmes connus : fermer le programme pendant un téléchargement ou une mise à jour peut provoquer un plantage. Voir
+  les notes de version.
 
 ## Fonctionnalités du lanceur
 
