@@ -201,9 +201,27 @@ class TooltipController(QObject):
             return True
         if kind == QEvent.Type.Leave and obj is self._source:
             self._grace.start()
-        elif self._is_dismiss_event(obj, kind, event) and self.layer.isVisible():
+        elif self._is_dismiss_event(obj, kind, event) and self._layer_visible():
             self.hide_now()
         return False
+
+    def _layer_visible(self) -> bool:
+        """Whether the bubble is on screen, tolerating a layer whose C++ object is already gone.
+
+        The controller is installed as the application-wide event filter and outlives the bubble when
+        something else destroys that top-level widget first: the shared test teardown closes and deletes
+        every window, and a later click or wheel then reached this filter with a deleted ``TooltipLayer``
+        and raised "Internal C++ object already deleted" out of the filter. Same defence as ``visible()``
+        and as the other application-wide filter in ``gui.widgets`` - read the layer by attribute and
+        treat a dead one as "nothing to dismiss".
+        """
+        layer = getattr(self, "layer", None)
+        if layer is None or not widget_alive(layer):
+            return False
+        try:
+            return layer.isVisible()
+        except RuntimeError:  # the C++ object died between the validity check and the call
+            return False
 
     def _is_dismiss_event(self, obj, kind, event) -> bool:
         """Escape, a click, a wheel, or the window the user is working in losing activation."""

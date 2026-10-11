@@ -159,15 +159,34 @@ def main() -> int:
 
         QTimer.singleShot(int(auto_quit), app.quit)
 
-    # Shutdown order matters: stop accepting worker callbacks first, then give the pool a bounded
-    # moment to finish, then clear anything still queued. Without this a slow download could report
-    # into a window Qt had already destroyed. Idle applications pay nothing here.
+    # Shutdown order matters, and it has three stages for a reason:
+    #
+    # 1. stop accepting worker callbacks;
+    # 2. stop the *transfers* and wait for the threads running them;
+    # 3. give the Qt pool a bounded moment to finish, then clear anything still queued.
+    #
+    # Stage 2 is the part a Qt-only wait cannot do. The downloader runs its batches on
+    # `concurrent.futures.ThreadPoolExecutor` - measured: `launcher/net/downloader.py`, the two
+    # `ThreadPoolExecutor` blocks in `_download` and `_download_segmented` - so `QThreadPool.waitForDone`
+    # never reached those threads. They kept writing to disk after the last window was gone, and on the
+    # way out the process died in Qt6Core (0xc0000005, WER AppCrash report for PID 16576). Cancelling and
+    # draining them here means that by the time Qt tears anything down, no transfer thread exists to
+    # touch it. Both waits are bounded, and a run without downloads pays two comparisons.
     from PySide6.QtCore import QThreadPool
 
     from gui import workers
+    from launcher.net import downloader as downloader_mod
+
+    DOWNLOAD_DRAIN_SECONDS = 4.0
 
     def _prepare_shutdown() -> None:
         workers.begin_shutdown()
+        cancelled = downloader_mod.cancel_all_downloads()
+        drained = downloader_mod.wait_for_downloads(DOWNLOAD_DRAIN_SECONDS)
+        if cancelled:
+            logging.getLogger(__name__).info(
+                "shutdown: cancelled %d download(s), drained=%s", cancelled, drained
+            )
         QThreadPool.globalInstance().waitForDone(2500)
         QThreadPool.globalInstance().clear()
 

@@ -69,6 +69,29 @@ def window(app, monkeypatch, ws_tmp):
     win.close()
 
 
+class _FakeButton:
+    """A stand-in for the QPushButton QMessageBox.addButton returns.
+
+    It carries the Qt dynamic-property interface because the quit dialog marks its default button with
+    `setProperty("defaultChoice", True)` - that marker is what the stylesheet keys the visible ring on
+    (the standard `:default` pseudo-state identifies the wrong button in this build). Recording the
+    properties keeps that marker assertable here.
+    """
+
+    def __init__(self, text: str) -> None:
+        self._text = text
+        self.properties: dict[str, object] = {}
+
+    def text(self) -> str:
+        return self._text
+
+    def setProperty(self, name: str, value: object) -> None:
+        self.properties[name] = value
+
+    def property(self, name: str):
+        return self.properties.get(name)
+
+
 class _FakeMessageBox:
     """Stands in for QMessageBox: records what the code builds, never shows anything."""
 
@@ -84,6 +107,7 @@ class _FakeMessageBox:
         self.text = ""
         self.icon = None
         self.buttons: list[tuple[str, object]] = []
+        self.button_objects: list[_FakeButton] = []
         self.default = None
         self.exec_called = False
         _FakeMessageBox.built.append(self)
@@ -98,8 +122,9 @@ class _FakeMessageBox:
         self.text = text
 
     def addButton(self, text: str, role):
-        button = object()
+        button = _FakeButton(text)
         self.buttons.append((text, role))
+        self.button_objects.append(button)
         return button
 
     def setDefaultButton(self, button) -> None:
@@ -188,6 +213,10 @@ def test_dialog_content_and_safe_default(window, monkeypatch):
     assert roles[0] == QMessageBox.ButtonRole.RejectRole
     assert roles[1] == QMessageBox.ButtonRole.AcceptRole
     assert box.default == box.buttons[0][1] or box.default is not None  # cancel is the default
+    # The default button also carries the marker the stylesheet draws the visible ring from; the other
+    # button must not, or the two would still look alike (T-0004 E8 step 3 measured them identical).
+    assert box.default.property("defaultChoice") is True
+    assert box.button_objects[1].property("defaultChoice") is None
     assert result is False, "nothing was clicked, so the safe answer is 'do not quit'"
 
 

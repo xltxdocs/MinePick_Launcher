@@ -28,7 +28,10 @@ Packaging/sandbox compatibility notes:
 - on network failure the partial files are kept, so the next attempt resumes from each offset via Range
   (discarded on verification failure);
 - only a thread pool is used (no multiprocessing.freeze_support needed under PyInstaller --onefile);
-- all target paths are provided by the caller (the user data directory is resolved at runtime, not via __file__).
+- all target paths are provided by the caller (the user data directory is resolved at runtime, not via __file__);
+- the batches run on `concurrent.futures.ThreadPoolExecutor`, **not** on Qt's `QThreadPool`, so a caller that
+  has to stop them before tearing its own objects down uses :func:`cancel_all_downloads` plus
+  :func:`wait_for_downloads` - waiting on the Qt pool alone never reaches these threads.
 """
 
 from __future__ import annotations
@@ -64,6 +67,15 @@ logger = logging.getLogger(__name__)
 
 class DownloadError(Exception):
     """Download failure (user-facing message)."""
+
+
+class DownloadCancelled(Exception):
+    """The process is shutting down, so the transfer stopped where it was.
+
+    Deliberately *not* a subclass of :class:`DownloadError`: a cancelled batch is not a failed download and
+    must not be reported to the user as one. The bytes already on disk stay in the `.part` files, so the
+    next launch resumes from them exactly like any other interrupted transfer.
+    """
 
 
 class _RangesUnsupported(Exception):
@@ -268,14 +280,50 @@ class _SpeedLimiter:
 
 _active_downloads = 0
 
+# Cancellation and drain state. One process-wide flag is enough: quitting is not per-download, and a
+# single flag cannot be left behind by a batch that ended abnormally. The count is the number of
+# *worker threads* currently inside a transfer, so a waiter can tell "still writing to disk" from
+# "finished" without guessing.
+_cancelled = threading.Event()
+_drain = threading.Condition()
+_in_flight = 0
+# Set only by cancel_all_downloads(): a "no new transfer may start" latch that outlives the flag above.
+_shutting_down = False
 
-def active_download_count() -> int:
-    """How many download batches are running right now.
 
-    Kept in the launcher layer because the GUI asks about it (the quit confirmation) while the core
-    must stay UI-agnostic; a single integer is enough for that question.
+class _CancelScope:
+    """Run one unit of transfer work as a cancellable, countable unit.
+
+    Entering bumps the public activity count, clears the cancellation flag - a flag left over from an
+    earlier cancellation must not abort a batch that is only starting now (the GUI queues several
+    downloads, and the first one to be cancelled can leave the flag set while the next one is still on
+    its way) - and raises immediately when the process is already shutting down, so nothing is started
+    just to be stopped.
+
+    Leaving always releases the count, and turns a cancellation that arrived *during* the block into an
+    exception, even when the block happened to reach its normal end: an update that finished streaming
+    in the same instant the user quit must still not be installed.
     """
-    return _active_downloads
+
+    def __enter__(self) -> None:
+        global _active_downloads, _in_flight
+        _cancelled.clear()
+        with _drain:
+            if _shutting_down:
+                raise DownloadCancelled("shutting down")
+            _active_downloads += 1
+            _in_flight += 1
+
+    def __exit__(self, exc_type, exc, tb) -> bool:
+        global _active_downloads, _in_flight
+        with _drain:
+            _active_downloads -= 1
+            _in_flight -= 1
+            if _in_flight <= 0:
+                _drain.notify_all()
+        if exc_type is None and _cancelled.is_set():
+            raise DownloadCancelled("cancelled")
+        return False
 
 
 @contextmanager
@@ -286,13 +334,71 @@ def download_activity():
     so there is exactly one counter behind active_download_count(), and the quit confirmation sees all
     of them. try/finally, so an exception cannot leave the counter stuck above zero and keep asking the
     user about downloads that are no longer running.
+
+    It is also the cancellation and drain unit: everything that can still be writing to disk when the
+    user quits registers here.
     """
-    global _active_downloads
-    _active_downloads += 1
-    try:
+    with _CancelScope():
         yield
-    finally:
-        _active_downloads -= 1
+
+
+def active_download_count() -> int:
+    """How many download batches are running right now.
+
+    Kept in the launcher layer because the GUI asks about it (the quit confirmation) while the core
+    must stay UI-agnostic; a single integer is enough for that question.
+    """
+    return _active_downloads
+
+
+def cancel_all_downloads() -> int:
+    """Ask every transfer in flight to stop; return how many batches were running.
+
+    Cooperative and bounded: a worker notices on its next chunk, so the call itself never waits. The
+    bytes already on disk stay in the `.part` files and the next launch resumes from them. The latch it
+    sets makes every transfer *after* this one refuse to start, because by then the caller is tearing
+    the process - including Qt - down and a fresh download would be writing into that.
+    """
+    global _shutting_down
+    with _drain:
+        _shutting_down = True
+    _cancelled.set()
+    return _active_downloads
+
+
+def is_cancelled() -> bool:
+    """Whether the process has decided to stop transferring. One event read, safe from any thread."""
+    return _cancelled.is_set()
+
+
+def wait_for_downloads(timeout: float) -> bool:
+    """Wait up to `timeout` seconds for every transfer thread to leave; True when none is left.
+
+    Bounded on purpose: the caller is closing the application, and "the disk is busy" must never turn
+    into "the program will not close". A `False` return is the honest answer - a thread is still inside
+    a blocking socket read and cannot be interrupted - and the caller then closes anyway, having
+    cancelled first so that thread's next action is to stop rather than to touch anything of the
+    caller's.
+    """
+    deadline = time.monotonic() + max(0.0, timeout)
+    with _drain:
+        while _in_flight > 0:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return False
+            _drain.wait(remaining)
+        return True
+
+
+def reset_cancellation_for_tests() -> None:
+    """Only for tests: the latch is process-global, so a test suite must be able to clear it.
+
+    Never called by the application - once the process has decided to quit, nothing may un-decide it.
+    """
+    global _shutting_down
+    with _drain:
+        _shutting_down = False
+        _cancelled.clear()
 
 
 class _Progress:
@@ -319,7 +425,7 @@ class _Progress:
 
     def written(self, dest: Path, written: int, current: str) -> None:
         """Report `written` bytes for `dest` as done, adding only the part that is new."""
-        if self._progress is None:
+        if self._progress is None or _cancelled.is_set():
             return
         with self._lock:
             delta = written - self._reported.get(dest, 0)
@@ -339,7 +445,7 @@ class _Progress:
 
     def files_done(self, current: str, count: int = 1) -> None:
         """Report whole files as finished (a skipped file, a failure, a completed download)."""
-        if self._progress is None:
+        if self._progress is None or _cancelled.is_set():
             return
         with self._lock:
             self._state.done_files += count
@@ -419,12 +525,13 @@ class Downloader:
         progress: Callable[[DownloadProgress], None] | None = None,
     ) -> DownloadResult:
         client = self._client or _new_client()
-        global _active_downloads
-        _active_downloads += 1
         try:
-            return self._download(client, tasks, progress)
+            # The scope is the batch's registration for cancellation *and* its place in the activity
+            # count: a batch raising because the process is shutting down is a cancellation, not a
+            # failed download, so the caller can tell the two apart.
+            with download_activity():
+                return self._download(client, tasks, progress)
         finally:
-            _active_downloads -= 1
             if self._owns_client:
                 client.close()
 
@@ -610,6 +717,8 @@ class Downloader:
             offset = 0
         if offset >= span:
             return  # this shard is already complete
+        if _cancelled.is_set():
+            raise DownloadCancelled(url)
         headers = {"Range": f"bytes={first + offset}-{last}"}
         with client.stream("GET", url, headers=headers) as resp:
             if resp.status_code == 416:
@@ -623,6 +732,8 @@ class Downloader:
             mode = "ab" if offset else "wb"
             with shard.open(mode) as f:
                 for chunk in resp.iter_bytes(CHUNK):
+                    if _cancelled.is_set():
+                        raise DownloadCancelled(url)
                     f.write(chunk)
                     self._limiter.throttle(len(chunk))
 
@@ -640,6 +751,8 @@ class Downloader:
             offset = 0
         if offset:
             headers["Range"] = "bytes=" + str(offset) + "-"
+        if _cancelled.is_set():
+            raise DownloadCancelled(task.url)
         with client.stream("GET", task.url, headers=headers) as resp:
             if resp.status_code == 416 and offset:
                 # server considers the range invalid (.part may already be complete/too large): re-download from scratch
@@ -650,5 +763,10 @@ class Downloader:
             mode = "ab" if resp.status_code == 206 else "wb"  # non-206 means the server ignored the Range header
             with part.open(mode) as f:
                 for chunk in resp.iter_bytes(CHUNK):
+                    # The chunk boundary is the cancellation point: nothing is written after the flag is
+                    # set, and the bytes already flushed stay in the `.part` for the next launch. The
+                    # default path (no shutdown, no speed limit) costs one event check per 64 KB.
+                    if _cancelled.is_set():
+                        raise DownloadCancelled(task.url)
                     f.write(chunk)
                     self._limiter.throttle(len(chunk))

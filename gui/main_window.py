@@ -604,6 +604,12 @@ class MainWindow(QMainWindow):
         cancel = box.addButton(tr("quit.busy.cancel"), QMessageBox.ButtonRole.RejectRole)
         confirm = box.addButton(tr("quit.busy.confirm"), QMessageBox.ButtonRole.AcceptRole)
         box.setDefaultButton(cancel)  # the safe choice is the default one
+        # setDefaultButton() gives the "cancel" button the role, but this build paints no default
+        # indicator for it: with a stylesheet setting the fill, both buttons rendered pixel-identical
+        # (T-0004 E8 step 3). The property is what the stylesheet keys the visible ring on - see the
+        # defaultChoice rule in gui/resources/style.qss for why the standard :default state cannot be
+        # used here.
+        cancel.setProperty("defaultChoice", True)
         box.exec()
         return box.clickedButton() is confirm
 

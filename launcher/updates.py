@@ -235,10 +235,12 @@ def download_release_exe(release: ReleaseInfo, target_dir: Path, client=None, on
         partial.unlink(missing_ok=True)
 
     try:
-        from launcher.net.downloader import download_activity
+        from launcher.net.downloader import DownloadCancelled, download_activity, is_cancelled
 
         try:
             # Counted like any other download: quitting while an update is streaming in must ask too.
+            # The same scope is the cancellation point: a shutdown stops this stream where it is, and
+            # the partial file is cleaned up like any other abandoned update rather than installed.
             with download_activity(), client.stream("GET", release.exe_url) as response:
                 if response.status_code != 200:
                     raise UpdateError("http", f"HTTP {response.status_code}")
@@ -246,10 +248,15 @@ def download_release_exe(release: ReleaseInfo, target_dir: Path, client=None, on
                 done = 0
                 with partial.open("wb") as handle:
                     for chunk in response.iter_bytes(1 << 16):
+                        if is_cancelled():
+                            raise DownloadCancelled(release.exe_url)
                         handle.write(chunk)
                         done += len(chunk)
                         if on_progress is not None:
                             on_progress(done, total)
+        except DownloadCancelled:
+            _cleanup()
+            raise
         except UpdateError:
             _cleanup()
             raise
