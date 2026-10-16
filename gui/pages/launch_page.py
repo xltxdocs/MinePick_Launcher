@@ -429,8 +429,9 @@ class LaunchPage(QWidget):
             instance=resolved,
         )
         diagnose_after_exit(
-            self.window(), context, log_path=resolved.launch_dir / "logs" / "latest.log",
-            blur=cfg.blur_dialogs,
+            self.window(),
+            context,
+            log_path=resolved.launch_dir / "logs" / "latest.log",
         )
 
     def _on_launch_error(self, message: str) -> None:
@@ -446,4 +447,4 @@ class LaunchPage(QWidget):
         context = context_for_launch(
             version_id="", game_dir=game_dir, error_text=text, memory_gb=cfg.memory_gb
         )
-        diagnose_after_exit(self.window(), context, blur=cfg.blur_dialogs)
+        diagnose_after_exit(self.window(), context)

@@ -83,22 +83,6 @@ def test_backdrop_is_a_downscaled_snapshot(app):
         parent.close()
 
 
-def test_blur_disabled_degrades_to_a_plain_scrim(app):
-    """With the blur switched off the overlay must still open, just without a snapshot."""
-    parent = _window(app)
-    overlay = None
-    try:
-        overlay = BlurOverlay(parent, blur=False)
-        overlay.show_overlay()
-        app.processEvents()
-        assert overlay.isVisible()
-        assert overlay.snapshot is None
-    finally:
-        if overlay is not None:
-            overlay.hide_overlay()
-        parent.close()
-
-
 def test_clicking_the_backdrop_does_not_dismiss(app):
     parent = _window(app)
     overlay = None

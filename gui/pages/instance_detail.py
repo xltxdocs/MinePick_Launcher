@@ -1593,7 +1593,6 @@ class InstanceDetail(QWidget):
             self.window(),
             context,
             log_path=resolved.launch_dir / "logs" / "latest.log",
-            blur=cfg.blur_dialogs,
         )
         if dialog is not None:
             # Remember it inside the instance so the diagnostics tab can show it later

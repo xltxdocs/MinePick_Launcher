@@ -26,9 +26,8 @@ whole subtree on every frame.
 The snapshot is taken once, before the overlay becomes visible, and is simply
 rescaled while the window is resized. Re-grabbing a visible overlay would capture
 the overlay itself, and hiding it around the grab flickers — freezing the backdrop
-is both cheaper and predictable. If grabbing fails, or the caller disables the
-blur (the "blur dialogs" setting), the overlay degrades to a plain scrim and never
-fails to open.
+is both cheaper and predictable. If grabbing fails, the overlay degrades to a plain
+scrim and never fails to open.
 """
 
 from __future__ import annotations
@@ -70,12 +69,10 @@ class BlurOverlay(QWidget):
         self,
         parent: QWidget,
         *,
-        blur: bool = True,
         severity: str = "normal",
         card_width: int = CARD_WIDTH,
     ) -> None:
         super().__init__(parent)
-        self._blur = blur
         self._severity = severity if severity in SCRIM else "normal"
         self._snapshot: QPixmap | None = None
         self._card_width = card_width
@@ -102,7 +99,7 @@ class BlurOverlay(QWidget):
 
     @property
     def snapshot(self) -> QPixmap | None:
-        """The downscaled backdrop (None when the blur is off or grabbing failed)."""
+        """The downscaled backdrop (None when grabbing it failed)."""
         return self._snapshot
 
     def show_overlay(self) -> None:
@@ -135,7 +132,7 @@ class BlurOverlay(QWidget):
         """Grab and downscale the window; silently degrade to a plain scrim on failure."""
         parent = self.parentWidget()
         self._snapshot = None
-        if not self._blur or parent is None:
+        if parent is None:
             return
         pixmap = parent.grab()
         if pixmap.isNull() or pixmap.width() < BLUR_DOWNSCALE or pixmap.height() < BLUR_DOWNSCALE:

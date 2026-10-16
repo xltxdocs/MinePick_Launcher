@@ -146,7 +146,6 @@ class SettingsPage(QWidget):
             self.after_launch_combo.addItem(label, code)
         self.trim_memory_check = QCheckBox(tr("settings.trim_memory"))
         self.analysis_check = QCheckBox(tr("settings.auto_crash_analysis"))
-        self.blur_check = QCheckBox(tr("settings.blur_dialogs"))
         self.encrypt_check = QCheckBox(tr("settings.encrypt_tokens"))
         self.encrypt_button = QPushButton(tr("settings.encrypt_set"))
         self.encrypt_button.setObjectName("secondaryButton")
@@ -296,7 +295,6 @@ class SettingsPage(QWidget):
         layout.addWidget(self.demo_check)
         layout.addWidget(self.trim_memory_check)
         layout.addWidget(self.analysis_check)
-        layout.addWidget(self.blur_check)
         layout.addLayout(encrypt_row)
         layout.addLayout(buttons_row)
         layout.addStretch(1)
@@ -346,7 +344,6 @@ class SettingsPage(QWidget):
             self.demo_check,
             self.trim_memory_check,
             self.analysis_check,
-            self.blur_check,
             self.encrypt_check,
         ):
             on_change(check.toggled)
@@ -385,7 +382,6 @@ class SettingsPage(QWidget):
         self.after_launch_combo.setCurrentIndex(max(idx, 0))
         self.trim_memory_check.setChecked(cfg.trim_memory_on_launch)
         self.analysis_check.setChecked(cfg.auto_crash_analysis)
-        self.blur_check.setChecked(cfg.blur_dialogs)
         self.encrypt_check.setChecked(cfg.token_encryption)
         self._update_encrypt_button()
         index = self.language_combo.findData(cfg.game_language)
@@ -466,7 +462,6 @@ class SettingsPage(QWidget):
         cfg.after_launch_behavior = self.after_launch_combo.currentData() or "keep"
         cfg.trim_memory_on_launch = self.trim_memory_check.isChecked()
         cfg.auto_crash_analysis = self.analysis_check.isChecked()
-        cfg.blur_dialogs = self.blur_check.isChecked()
         cfg.game_language = self.language_combo.currentData()
         cfg.ui_language = self.ui_language_combo.currentData()
         cfg.download_speed_limit_kb = self.speed_limit_spin.value()

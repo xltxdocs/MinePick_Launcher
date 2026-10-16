@@ -216,11 +216,6 @@ def main() -> int:
         help="also render the crash diagnosis dialog over the instances page",
     )
     parser.add_argument(
-        "--no-blur",
-        action="store_true",
-        help="render the dialog without the blurred backdrop (shows the plain scrim)",
-    )
-    parser.add_argument(
         "--preview",
         default="",
         help="where to keep _preview data (defaults to --root; point at the work folder when rendering the released tree)",
@@ -370,13 +365,13 @@ def main() -> int:
         print(f"saved {target} ({pixmap.width()}x{pixmap.height()})")
 
     if args.dialog_shot:
-        _render_dialog_shot(app, window, Path(game_dir), out_dir, prefix, blur=not args.no_blur)
+        _render_dialog_shot(app, window, Path(game_dir), out_dir, prefix)
 
     window.close()
     return 0
 
 
-def _render_dialog_shot(app, window, game_dir: Path, out_dir: Path, prefix: str, *, blur: bool) -> None:
+def _render_dialog_shot(app, window, game_dir: Path, out_dir: Path, prefix: str) -> None:
     """Render the crash diagnosis dialog over the instances page.
 
     Uses one of the shipped sample logs so the picture shows a real diagnosis
@@ -404,7 +399,7 @@ def _render_dialog_shot(app, window, game_dir: Path, out_dir: Path, prefix: str,
             version_id="1.20.1", game_dir=game_dir, exit_code=1, started=time.time() - 60
         )
     )
-    dialog = CrashDiagnosisDialog(window, diagnosis, log_path=logs / "latest.log", blur=blur)
+    dialog = CrashDiagnosisDialog(window, diagnosis, log_path=logs / "latest.log")
     dialog.show()
     for _ in range(12):
         app.processEvents()

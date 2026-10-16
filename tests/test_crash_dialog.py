@@ -86,7 +86,7 @@ def test_failing_exit_shows_the_diagnosis(app, ws_tmp):
         context = context_for_launch(
             version_id="1.20.1", game_dir=game, exit_code=1, started=0.0
         )
-        dialog = diagnose_after_exit(window, context, blur=False)
+        dialog = diagnose_after_exit(window, context)
         assert dialog is not None
         app.processEvents()
         assert dialog.overlay.isVisible()
@@ -99,6 +99,40 @@ def test_failing_exit_shows_the_diagnosis(app, ws_tmp):
         QTest.qWait(EXIT_MS + 80)
         app.processEvents()
         assert not dialog.overlay.isVisible()
+    finally:
+        if dialog is not None:
+            dialog.close()
+        window.close()
+
+
+def test_a_stale_blur_setting_cannot_turn_the_blur_off(app, ws_tmp, monkeypatch):
+    """The "blur dialogs" setting is gone: the backdrop is always the blurred snapshot.
+
+    A configuration file written by an older version still carries ``blur_dialogs: false`` (the key
+    is deliberately left in the model, it is simply never read again and there is no migration), so
+    this pins the accepted consequence: such a user gets the blur too.
+    """
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data_stale_blur"))
+    from launcher import config as config_mod
+
+    cfg, cfg_path = config_mod.load()
+    cfg.blur_dialogs = False
+    config_mod.save(cfg, cfg_path)
+
+    game = _game_with_log(ws_tmp, "oom.latest.log")
+    window = QWidget()
+    window.resize(800, 600)
+    window.show()
+    app.processEvents()
+    dialog = None
+    try:
+        context = context_for_launch(
+            version_id="1.20.1", game_dir=game, exit_code=1, started=0.0
+        )
+        dialog = diagnose_after_exit(window, context)
+        assert dialog is not None
+        app.processEvents()
+        assert dialog.overlay.snapshot is not None  # a blurred backdrop, not the bare dimmed scrim
     finally:
         if dialog is not None:
             dialog.close()
@@ -242,7 +276,7 @@ def test_dialog_renders_from_a_prepared_diagnosis(app, ws_tmp):
         diagnosis = diagnose(
             context_for_launch(version_id="1.20.1", game_dir=game, exit_code=1, started=0.0)
         )
-        dialog = CrashDiagnosisDialog(window, diagnosis, blur=False)
+        dialog = CrashDiagnosisDialog(window, diagnosis)
         dialog.show()
         app.processEvents()
         assert dialog.code_label.text() == diagnosis.code

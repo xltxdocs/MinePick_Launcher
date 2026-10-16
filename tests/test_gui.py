@@ -324,6 +324,7 @@ def test_batch3_widgets_exist(app, monkeypatch, ws_tmp):
     assert settings.after_launch_combo is not None
     assert settings.after_launch_combo.count() == 3
     assert settings.trim_memory_check is not None
+    assert not hasattr(settings, "blur_check")  # the backdrop blur is unconditional now, not a setting
     # Spin boxes ignore the mouse wheel to avoid accidental value changes
     from gui.widgets import NoWheelDoubleSpinBox, NoWheelSpinBox
 

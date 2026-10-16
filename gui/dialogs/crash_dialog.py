@@ -66,12 +66,11 @@ class CrashDiagnosisDialog:
         diagnosis: Diagnosis,
         *,
         log_path: Path | None = None,
-        blur: bool = True,
     ) -> None:
         self._window = window
         self._diagnosis = diagnosis
         self._log_path = log_path
-        self._overlay = BlurOverlay(window, blur=blur, severity=self._severity())
+        self._overlay = BlurOverlay(window, severity=self._severity())
         self._body_lines = render_lines(diagnosis, i18n.tr)
         self._build()
 
@@ -198,7 +197,6 @@ def diagnose_after_exit(
     context,
     *,
     log_path: Path | None = None,
-    blur: bool = True,
     auto_analyse: bool = True,
 ) -> CrashDiagnosisDialog | None:
     """Run the knowledge base for a finished launch and show the dialog.
@@ -216,7 +214,7 @@ def diagnose_after_exit(
     diagnosis = diagnose(context)
     if not diagnosis.analysable and diagnosis.exit_code in (0, None):
         return None
-    dialog = CrashDiagnosisDialog(window, diagnosis, log_path=log_path, blur=blur)
+    dialog = CrashDiagnosisDialog(window, diagnosis, log_path=log_path)
     dialog.show()
     return dialog
 
