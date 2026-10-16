@@ -327,6 +327,9 @@ def write_install_script(
     step to ``apply-update.log`` next to itself. The worst case is "nothing changed" rather than
     "no launcher", and a silent no-op is impossible - the log says what happened. ``wait_pid``
     exists so tests can point the helper at a PID that is not running.
+
+    The restart line resets the PyInstaller environment on purpose; the comment next to it explains
+    why, and ``tests/test_updates.py`` guards both the line and its position.
     """
     new_exe, target_exe = Path(new_exe), Path(target_exe)
     script = new_exe.parent / "apply-update.cmd"
@@ -359,6 +362,14 @@ def write_install_script(
         f'if not exist "{target_exe}" move /y "{backup}" "{target_exe}" >> "%LOG%" 2>&1',
         ":done",
         'echo [%DATE% %TIME%] swap finished >> "%LOG%"',
+        # PyInstaller 6.9+ hands its private environment to every child of a frozen process, and a
+        # child started from the same executable is then treated as a *worker* of this process: it
+        # reuses our _MEI extraction directory instead of unpacking its own. That directory is
+        # deleted by our bootloader as we exit, so the restarted launcher dies with
+        # ERROR_MOD_NOT_FOUND (126) and a native "the specified module could not be found" box -
+        # the 0.3.1/0.4.0 report. The reset makes the restarted build unpack its own files.
+        # Quoted, like every other set here: unquoted, cmd folds the trailing space into the value.
+        'set "PYINSTALLER_RESET_ENVIRONMENT=1"',
         f'if "{int(bool(restart))}"=="1" start "" "{target_exe}"',
         # the only reliable way for a batch file to delete itself
         '(goto) 2>nul & del /f /q "%~f0"',
