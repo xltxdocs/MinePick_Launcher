@@ -267,7 +267,24 @@ QProgressBar {
     color: __FG_HINT__;
     font-size: 11px;
 }
-QProgressBar::chunk { background: __ACCENT__; border-radius: 7px; }
+/* The fill is a plain rectangle on purpose. It used to carry `border-radius: 7px` of its own, which is
+   not the frame's inner curve and cannot be: the frame's outer radius is RADIUS_LG (8px), so its groove
+   is a 7px curve inset by the 1px border, while the chunk is a *rectangle* the width of the value. An
+   independent radius on it therefore stops matching the frame as the value moves, and the two surfaces
+   disagree at both ends - measured on the real platform (tools/measure_progress_corners.py, confirmed
+   by an independent harness):
+     * left end: the chunk's own curve sits inside the frame's, so the fill's left edge is not straight.
+       Measured at 500/1000, the first fill pixel is at x=1 on the middle rows but at x=6 on the top row;
+       the profile is the same at 100% (measured identically at 50/1000 and 1000/1000), so the fill's
+       left end never settles into one shape while a download runs.
+     * right end: the fill finishes in a bevel instead of a straight edge - the last row puts it five
+       columns left of the middle rows (at 1000/1000: x=449 in the outermost measured row against x=451
+       in the middle) - so the fill's right edge changes shape from 100% to 99.9%.
+   Square, the chunk's geometry is the frame's geometry at every value: the frame draws the only corner
+   the control has, and the fill is a straight edge inside it (at 100% its right edge reaches x=451, the
+   frame's inner edge, one pixel short of the control's 452px outline). Same pixels at 0% and at 5% up to
+   the fill's edge, and the same rule for every value in between. See tests/test_progress_shape.py. */
+QProgressBar::chunk { background: __ACCENT__; }
 /* The bar's own fill and the right half of its outline: one control, two segments. */
 QLabel#downloadProgressText, QLabel#updateProgressText {
     background: __BG_LIST__;
