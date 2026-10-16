@@ -22,7 +22,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, QTimer
+from PySide6.QtCore import QEasingCurve, QEvent, QPropertyAnimation, Qt, QTimer
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
     QHBoxLayout,
@@ -50,6 +50,10 @@ from gui.wizard_overlay import BulletList, OptionGrid, WizardOverlay, WizardStep
 
 NAV_KEYS = ["launch", "instances", "versions", "java", "account", "mods", "settings", "about"]
 PAGE_FADE_MS = 150  # interactive, so it stays under the 200ms ceiling (guideline §2.3)
+# The floor every page fits at vertically. The layout cannot state it: the stack ignores its height
+# policy on purpose (see below), so only the widest *width* is a real layout requirement and the
+# height stays a deliberate, language-independent minimum.
+MIN_WINDOW_HEIGHT = 610
 
 
 class _LazyPages:
@@ -77,6 +81,10 @@ class _LazyPages:
         page = self._window._make_page(key)
         self._built[key] = page
         self._window._adopt_page(key, page)
+        # A page that has just arrived can be wider than the window, so the floor is recomputed here as
+        # well as on resize: with lazy construction this is the moment the layout learns its real width,
+        # and waiting for the platform to notice would leave the page painted into a narrower window.
+        self._window._enforce_layout_floor()
         return page
 
     def _materialise_all(self) -> None:
@@ -138,11 +146,16 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("MinePick Launcher")
         self.resize(1000, 600)
-        # Declared explicitly because the layout would otherwise derive the minimum from whichever pages
-        # happen to be built: with lazy construction that grows the moment someone visits a tall page and
-        # the window refuses to shrink afterwards. 1000x610 is the size the width audit holds every
-        # language to (tools/measure_min_width.py raises the window from its own minimum).
-        self.setMinimumSize(1000, 610)
+        # The floor is the layout's own requirement, and it is enforced in resizeEvent - never pinned to a
+        # constant. It used to be `setMinimumSize(1000, 610)`, which is below what the layout needs in six
+        # of the nine languages (fr_fr reaches 1164px, ru_ru 1152, es_es 1155, de_de 1110, ja_jp 1085,
+        # en_us 1048) and therefore *allowed* a 1000px window - Qt then painted the pages into a strip
+        # narrower than their minimum, which is what the user saw as clipped text on the instances page.
+        # The widest language has to fit without the user resizing anything: 1180px is that budget, and
+        # tools/measure_min_width.py is what holds every language to it. See _enforce_layout_floor for why
+        # this cannot simply be "let Qt derive the minimum" under lazy page construction.
+        self._floor_pass = False
+        self.setMinimumHeight(MIN_WINDOW_HEIGHT)
 
         from gui.widgets import StatusLabel, apply_no_focus_outline
 
@@ -158,10 +171,10 @@ class MainWindow(QMainWindow):
         nav_layout.addWidget(self.sidebar, 1)
 
         self.stack = QStackedWidget()
-        # The window's minimum must not depend on which pages happen to be built. A stacked widget
-        # reports the largest minimum of its children, so with lazy construction the floor would rise
-        # the moment a tall page was first visited - and the window would refuse to shrink again.
-        # Ignoring the height stops that; the explicit minimum above is the floor every page fits at.
+        # The window's height must not depend on which pages happen to be built. A stacked widget
+        # reports the largest minimum of its children, so with lazy construction a tall page would
+        # change the floor the moment it was first visited. Ignoring the height stops that; the width
+        # is a real requirement and is tracked per language in _enforce_layout_floor instead.
         self.stack.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Ignored)
 
         content = QWidget()
@@ -562,6 +575,55 @@ class MainWindow(QMainWindow):
         self.build_pages()
         self.statusBar().show()
         self.set_status(tr("status.ready"))
+
+    def event(self, event) -> bool:
+        # Qt refreshes a top-level's minimum size hint on its next layout pass, not at the moment a page
+        # is added - measured with en_us: the hint still read 547px while the instances page was already
+        # built, and became 1048px only after that pass. LayoutRequest is the pass, so the floor is
+        # recomputed there; without it the first grab after a wide page was built photographed the old
+        # width.
+        if event.type() == QEvent.Type.LayoutRequest:
+            self._enforce_layout_floor()
+        return super().event(event)
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._enforce_layout_floor()
+
+    def _enforce_layout_floor(self) -> None:
+        """Raise the window's minimum width to what the layout needs, and never lower it.
+
+        Why the minimum is enforced instead of left to Qt: with lazy page construction the layout's
+        requirement is not known at startup - it is 547px for en_us while only the launch page exists and
+        1048px once all eight do (fr_fr: 657px then 1164px). Qt derives a widget's floor from the pages
+        that happen to be built, so on its own the floor would depend on which pages the session has
+        visited. Growing it as pages arrive is what this does, and it only ever grows: a floor that
+        followed the layout back down would shrink the window under the page still in the stack.
+
+        The width is therefore exactly the layout's own requirement - per language, the widest page
+        decides (tools/measure_min_width.py measures the same number) - and the height keeps its
+        deliberate 610px floor from the constructor. Windows is still free to be *larger*: this is a
+        minimum, not a size. That is also what makes tools/shot_pages.py's ``resize(1000, 600)`` land on
+        the natural width again instead of on a clipped 1000px.
+        """
+        if self._floor_pass:  # setMinimumSize below re-enters through resizeEvent; stop here
+            return
+        self._floor_pass = True
+        try:
+            hinted = self.minimumSizeHint()
+            width = max(hinted.width(), self.minimumWidth())
+            height = max(MIN_WINDOW_HEIGHT, self.minimumHeight())
+            if (width, height) != (self.minimumWidth(), self.minimumHeight()):
+                self.setMinimumSize(width, height)
+                # Raising the minimum is a request, not a move, and on this Qt/Windows build it does not
+                # even resize a window that is already visible and smaller: measured with en_us, the floor
+                # went to 1048px while the shown window stayed 1000px wide, so a grab taken then is a grab
+                # of the clipped width. Widening explicitly makes the window take the floor now - the
+                # user's height and any larger width they chose are left alone.
+                if self.width() < width:
+                    self.resize(width, self.height())
+        finally:
+            self._floor_pass = False
 
     def keyPressEvent(self, event) -> None:
         """Accept keys that nothing in the window claimed.

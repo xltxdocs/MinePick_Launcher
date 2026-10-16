@@ -175,11 +175,24 @@ def test_wiring_does_not_build_the_peer_page(window):
     assert set(window.pages.built_keys()) == {"launch", "account"}
 
 
-def test_the_window_minimum_does_not_grow_when_pages_are_built(window, app):
-    before = (window.minimumWidth(), window.minimumHeight(), window.minimumSizeHint().height())
+def test_the_window_floor_tracks_the_layout_when_pages_are_built(window, app):
+    """The floor follows the layout as pages arrive - it is no longer a fixed 1000x610.
+
+    It used to assert `(minimumWidth(), minimumHeight()) == (1000, 610)`. That constant was the defect:
+    it is below what the layout needs in six of the nine languages (fr_fr reaches 1164px), so the window
+    could be made narrower than the page it was painting. What must hold instead is the floor never
+    sits below the layout's own requirement, and the height keeps the intentional 610px floor.
+    """
     for index in range(len(NAV_KEYS)):
         window.sidebar.setCurrentRow(index)
         app.processEvents()
-    after = (window.minimumWidth(), window.minimumHeight(), window.minimumSizeHint().height())
-    assert before == after, "the window floor must not depend on which pages have been visited"
-    assert (window.minimumWidth(), window.minimumHeight()) == (1000, 610)
+        assert window.minimumWidth() >= window.minimumSizeHint().width(), (
+            f"the floor fell behind the layout after visiting {NAV_KEYS[index]!r}"
+        )
+        assert window.minimumHeight() == 610
+    # and it stays put once every page exists: nothing below grows the floor silently
+    settled = window.minimumWidth()
+    for index in range(len(NAV_KEYS)):
+        window.sidebar.setCurrentRow(index)
+        app.processEvents()
+    assert window.minimumWidth() == settled, "the floor changed without a new page being built"

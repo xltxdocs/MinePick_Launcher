@@ -60,6 +60,8 @@ def measure_languages(languages: Iterable[str] = LANGUAGES) -> list[Measurement]
 
 
 def _measure_with_app(app, languages: Iterable[str]) -> list[Measurement]:
+    from PySide6.QtCore import Qt
+
     from gui import i18n
     from gui.main_window import NAV_KEYS, MainWindow
     from launcher import config
@@ -73,7 +75,18 @@ def _measure_with_app(app, languages: Iterable[str]) -> list[Measurement]:
 
         window = MainWindow()
         window.apply_window_mode()
-        app.processEvents()
+        # Every page first, then one real layout pass. The window states its floor from the layout, and
+        # Qt only refreshes a top-level's minimum size hint on a layout pass: a window that is never
+        # shown keeps reporting the launch page's own width (measured: 657px for fr_fr instead of the
+        # 1164px the layout needs once all eight pages exist). WA_DontShowOnScreen is the attribute the
+        # render tools and tests/conftest.py use to lay out and paint a real window without putting it
+        # on the desktop, so nothing here can reach a screen.
+        for key in NAV_KEYS:
+            window.pages.get(key)
+        window.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen, True)
+        window.show()
+        for _ in range(8):
+            app.processEvents()
         per_page = []
         for key in NAV_KEYS:
             page = window.pages.get(key)
