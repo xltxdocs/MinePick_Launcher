@@ -50,8 +50,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = ROOT / "tests"
 WORK = TESTS / ".work" / "no_screen_windows"
@@ -62,11 +60,27 @@ CHILD_DATA_DIR = ROOT / "build" / "no_screen_windows_child_data"
 #: nobody intended, while an assertion that ran and decided cannot.
 VERDICT_ENV = "NO_SCREEN_VERDICT"
 VERDICT_PATH = ROOT / "build" / "no_screen_verdict.txt"
-#: Set to "1" in a child to keep the suite from neutralising the quit confirmation. The negative
-#: self-check needs the real close path; the prevention check needs it neutralised.
-SKIP_NEUTRALISATION_ENV = "MCLAUNCHER_NO_SCREEN_FIREWALL"
 
 _CHILD_CONFTEST = """\
+# SPDX-FileCopyrightText: 2026 WDNDXLTX
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This file is part of MinePick Launcher.
+#
+# MinePick Launcher is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 3 of the License.
+#
+# MinePick Launcher is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with MinePick Launcher. If not, see <https://www.gnu.org/licenses/>.
+# The generated conftest.py lands on disk under tests/.work, which scripts/check_headers.py walks, so
+# this template carries the project's GPL header itself: the artefact is legal, not cleaned up after.
+
 # This directory only exists to be run by tests/test_no_screen_windows.py. The fixtures that police the
 # screen rule come from tests/conftest.py, which pytest loads as the parent conftest.
 """
@@ -98,6 +112,26 @@ def firewall():
 '''
 
 _CHILD_SHOWS_A_WINDOW = '''\
+# SPDX-FileCopyrightText: 2026 WDNDXLTX
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This file is part of MinePick Launcher.
+#
+# MinePick Launcher is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 3 of the License.
+#
+# MinePick Launcher is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with MinePick Launcher. If not, see <https://www.gnu.org/licenses/>.
+# Written to disk under tests/.work by this test, where scripts/check_headers.py scans it: the
+# generated module carries the project's header itself instead of being cleaned up afterwards.
+
+
 """Deliberate violation: a visible window in a test. The firewall must report it.
 
 The handle below judges the window as a real-platform window, which is the only way to make this child's
@@ -136,6 +170,26 @@ def test_shows_a_window(firewall):
 '''
 
 _CHILD_SHOWS_A_MARKED_WINDOW = '''\
+# SPDX-FileCopyrightText: 2026 WDNDXLTX
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This file is part of MinePick Launcher.
+#
+# MinePick Launcher is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 3 of the License.
+#
+# MinePick Launcher is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with MinePick Launcher. If not, see <https://www.gnu.org/licenses/>.
+# Written to disk under tests/.work by this test, where scripts/check_headers.py scans it: the
+# generated module carries the project's header itself instead of being cleaned up afterwards.
+
+
 """The legitimate shape: the same window marked WA_DontShowOnScreen. Must stay green."""
 
 import os
@@ -159,28 +213,48 @@ def test_shows_a_marked_window(firewall):
 '''
 
 _CHILD_CLOSE_PATH = '''\
+# SPDX-FileCopyrightText: 2026 WDNDXLTX
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This file is part of MinePick Launcher.
+#
+# MinePick Launcher is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 3 of the License.
+#
+# MinePick Launcher is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with MinePick Launcher. If not, see <https://www.gnu.org/licenses/>.
+# Written to disk under tests/.work by this test, where scripts/check_headers.py scans it: the
+# generated module carries the project's header itself instead of being cleaned up afterwards.
+
+
 """Close a real window while the download counter says work is in flight.
 
-``launcher.net.downloader.active_download_count`` is the single decision in ``gui/main_window.py:593``
-and it is process-global, so a download really running in another test is enough to make a close ask a
-question. The counter is set to 1 here on purpose: that is the state the report came from. The window is
-a real MainWindow, so the product's own close path runs.
+``launcher.net.downloader.active_download_count`` is the single decision in ``gui/main_window.py`` and it
+is process-global, so a download really running in another test is enough to make a close ask a question.
+The counter is set to 1 here on purpose: that is the state the report came from. The window is a real
+MainWindow, so the product's own close path runs.
 
-The window is switched to the shape the quit dialog itself has before it is closed, and that is the
-point of the test rather than a trick. Measured on the real platform (probe: show a window marked
-WA_DontShowOnScreen, then one that is not): the marked window emits **no** Show event at all, so a
-recorder cannot see it, while the unmarked one emits one. The product's dialog is unmarked - no parent
-attribute carries over to a top-level QMessageBox - and that is exactly why it can reach a desktop.
+What the close path must now do is *not build the dialog*. The window is kept off screen, and off screen
+there is nobody to ask: ``MainWindow._ancestor_is_kept_off_screen()`` sees the marker and refuses the quit
+without constructing a ``QMessageBox``. That is the fix for the report - a marked parent did not stop the
+box reaching the desktop, because a ``QMessageBox`` re-creates its own window and drops the attribute
+(measured: with the attribute set, ``IsWindowVisible`` on the box's own handle was still True, while the
+same attribute on a plain ``QWidget`` did keep it off screen).
 
 Two things keep this child incapable of putting anything on a desktop even so:
 
-* every window in it is marked WA_DontShowOnScreen before it is shown, and the only sequence that makes
-  Qt emit Show again - hide, clear the marker, show - keeps it off the desktop as well, so the recorded
-  event is Qt's, for a widget Qt still keeps off screen;
-* ``QMessageBox`` is replaced by a stand-in whose ``exec()`` returns immediately. The real dialog
-  blocks: measured with the neutralisation switched off, as a child pytest sitting inside ``box.exec()``
-  for the whole timeout of its run - the same hang a person saw as a window on the desktop. The stand-in
-  keeps the evidence (was the question asked?) and removes the block.
+* every window in it is marked WA_DontShowOnScreen before it is shown, and the marker is never cleared, so
+  Qt emits no Show event for any of them - measured on the real platform as well as here;
+* ``QMessageBox`` is replaced by a stand-in that records construction and returns from ``exec()``
+  immediately. A modal loop here would hang this child for its whole timeout, which is the same hang a
+  person saw as a window on the desktop. With the fix the stand-in must never be constructed at all, and
+  that is the assertion.
 """
 
 import os
@@ -233,59 +307,116 @@ def test_closing_a_window_while_a_download_runs(app, monkeypatch, ws_tmp, firewa
     window.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen, True)
     window.show()
     app.processEvents()
+    assert window._ancestor_is_kept_off_screen() is True, "the marker was not visible to the product"
 
-    if os.environ.get("MCLAUNCHER_NO_SCREEN_FIREWALL") == "1":
-        window.close()
-        app.processEvents()
-        assert asked and asked[0] == "built", (
-            "the close path never asked the quit question, so this proves nothing"
-        )
-        if app.platformName() == "offscreen":
-            # Nothing here can be shown, and Qt sends no Show event for a marked window - measured on
-            # the real platform as well as here. The recorder therefore has nothing to observe, and the
-            # real-platform half of this self-check is the opt-in run the parent makes.
-            assert firewall.events == [], firewall.events
-            pytest.skip(
-                "needs MCLAUNCHER_ALLOW_REAL_QT=1: the firewall's Show-event layer can only see an "
-                "unmarked window, and this child keeps every window marked"
-            )
-        # Real platform, and this is the shape the product's dialog has: no WA_DontShowOnScreen. The
-        # sequence is the only one measured to produce Qt's Show event without putting a window up:
-        # show marked, hide, clear the marker, show again. Clearing the marker and showing again
-        # *without* the hide produces no Show event, and a window that is simply shown unmarked does -
-        # but that one is on the desktop for as long as it is up, which is the very thing this file
-        # exists to prevent.
-        if window.testAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen):
-            window.hide()
-            app.processEvents()
-            window.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen, False)
-            window.show()
-            app.processEvents()
-        assert firewall.events, (
-            "the firewall did not record a window shown while a close path ran - this is the "
-            "observation that was missing when the quit dialog reached the desktop"
-        )
-        violation.extend(firewall.events)
-    else:
-        # The suite's prevention layer: the close path really ran and really built the dialog, and what
-        # the fixture guarantees is that no modal loop ran and nothing was on screen. This child's
-        # stand-in records both moments, so the assertion is about the sequence, not about absence.
-        window.close()
-        app.processEvents()
-        assert "exec" in asked, (
-            "the close path never reached exec(), so this child did not drive the dialogue it claims "
-            f"to: {asked}"
-        )
-        # exec() returned instead of looping, and it returned "no button" - so the close was refused,
-        # which is the safe answer and the one the product gives when nothing is clicked:
-        # _confirm_quit_while_downloading() returns False and CloseEvent is ignored.
-        assert window.isVisible() is True, "the refused close did not leave the window up"
-        assert firewall.events == [], (
-            f"the firewall reported a window on a real platform: {firewall.events}"
-        )
-        assert _widgets.QMessageBox is _RecordingMessageBox, (
-            "the run ended with the real QMessageBox back in place, so this measured the wrong class"
-        )
+    window.close()
+    app.processEvents()
+
+    assert asked == [], (
+        f"the close path built the quit dialog for a window that is kept off screen: {asked}. That box is "
+        f"a top-level window of its own and a QMessageBox does not honour WA_DontShowOnScreen, so building "
+        f"it is exactly what put a dialog on the desktop"
+    )
+    # Nothing was asked, so nothing was answered: the close must be refused, which is the safe answer and
+    # the one the product gives when nobody clicks anything.
+    assert window.isVisible() is True, "the refused close did not leave the window up"
+    assert firewall.events == [], (
+        f"the firewall reported a window on a real platform: {firewall.events}"
+    )
+    assert _widgets.QMessageBox is _RecordingMessageBox, (
+        "the run ended with the real QMessageBox back in place, so this measured the wrong class"
+    )
+'''
+
+# A genuine violation of the screen rule, for the firewall's own negative self-check. The window is
+# marked, shown, then un-marked and shown again - the only sequence measured to make Qt emit a Show event
+# for a window that is still not mapped. It exists so the firewall's Show-event layer keeps a real
+# violation to catch now that the product no longer produces one itself.
+_CHILD_FIREWALL_VIOLATION = '''\
+# SPDX-FileCopyrightText: 2026 WDNDXLTX
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This file is part of MinePick Launcher.
+#
+# MinePick Launcher is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 3 of the License.
+#
+# MinePick Launcher is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with MinePick Launcher. If not, see <https://www.gnu.org/licenses/>.
+# Written to disk under tests/.work by this test, where scripts/check_headers.py scans it: the
+# generated module carries the project's header itself instead of being cleaned up afterwards.
+
+
+"""Show a window the way a careless tool would: unmarked, while a test is running.
+
+The window is a MainWindow that was marked and shown first, then had the marker cleared and was shown
+again. Measured on the real platform: a window that is simply shown unmarked is on the desktop for as long
+as it is up, whereas hide -> clear the marker -> show emits Qt's Show event without mapping it, so this
+child is a violation the recorder can see and still cannot reach a desktop.
+"""
+
+import os
+
+import pytest
+from PySide6 import QtWidgets as _widgets
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QApplication, QMessageBox
+
+
+asked: list[str] = []
+
+
+class _RecordingMessageBox(QMessageBox):
+    """Keeps the child from ever running a modal loop, whatever the close path decides."""
+
+    def exec(self):
+        asked.append("exec")
+        return 0
+
+
+@pytest.fixture(scope="module")
+def app():
+    return QApplication.instance() or QApplication([])
+
+
+@pytest.fixture(autouse=True)
+def _record_the_question(monkeypatch):
+    monkeypatch.setattr(_widgets, "QMessageBox", _RecordingMessageBox)
+    asked.clear()
+    yield
+    asked.clear()
+
+
+def test_an_unmarked_window_is_a_violation(app, monkeypatch, ws_tmp, firewall):
+    from gui.main_window import MainWindow
+
+    monkeypatch.setenv("MCLAUNCHER_DATA_DIR", str(ws_tmp / "data"))
+    window = MainWindow()
+    window.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen, True)
+    window.show()
+    app.processEvents()
+
+    # The shape the product's own dialog had: a window of its own with no marker on it.
+    window.hide()
+    app.processEvents()
+    window.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen, False)
+    window.setWindowTitle("unmarked window probe")
+    window.show()
+    app.processEvents()
+
+    assert window.isVisible() is True, "the window was not shown, so this proves nothing"
+    assert window.testAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen) is False
+    assert firewall.events, (
+        "the firewall did not record an unmarked window shown while a test ran - this is the observation "
+        "that was missing when the quit dialog reached the desktop"
+    )
+    violation.extend(firewall.events)
 '''
 
 
@@ -315,7 +446,6 @@ def _probe_dir(monkeypatch, name: str) -> Path:
 def _run_child(
     directory: Path,
     *,
-    allow_the_real_close_path: bool = False,
     real_platform: bool = False,
 ) -> subprocess.CompletedProcess:
     """Run one child pytest and return its completed process.
@@ -324,6 +454,10 @@ def _run_child(
     with the environment variables that decide the screen rule pinned explicitly rather than inherited.
     ``real_platform`` is the suite's own opt-in (MCLAUNCHER_ALLOW_REAL_QT); only one caller uses it, and
     that child keeps every window it shows marked WA_DontShowOnScreen, so it cannot reach a desktop.
+
+    ``MCLAUNCHER_NO_SCREEN_FIREWALL`` - the suite's switch for its modal-dialog neutralisation - is *not*
+    set or cleared here. No child needs it any more: none of them drives a real ``QMessageBox``, so the
+    neutralisation cannot be what decides their result.
     """
     env = dict(os.environ)
     if real_platform:
@@ -332,10 +466,6 @@ def _run_child(
     else:
         env["QT_QPA_PLATFORM"] = "offscreen"
         env.pop("MCLAUNCHER_ALLOW_REAL_QT", None)
-    if allow_the_real_close_path:
-        env[SKIP_NEUTRALISATION_ENV] = "1"
-    else:
-        env.pop(SKIP_NEUTRALISATION_ENV, None)
     env["PYTHONIOENCODING"] = "utf-8"
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     env["MCLAUNCHER_DATA_DIR"] = str(CHILD_DATA_DIR)
@@ -391,13 +521,13 @@ def test_the_firewall_flags_a_visible_top_level_window():
             super().__init__()
             self._answers = (window, visible, dont_show)
 
-        def isWindow(self) -> bool:  # noqa: N802 - Qt's spelling
+        def isWindow(self) -> bool:
             return self._answers[0]
 
-        def isVisible(self) -> bool:  # noqa: N802 - Qt's spelling
+        def isVisible(self) -> bool:
             return self._answers[1]
 
-        def testAttribute(self, attribute) -> bool:  # noqa: N802 - Qt's spelling
+        def testAttribute(self, attribute) -> bool:
             assert attribute is Qt.WidgetAttribute.WA_DontShowOnScreen
             return self._answers[2]
 
@@ -497,10 +627,11 @@ def test_a_child_test_with_a_marked_window_stays_green(monkeypatch):
 def test_the_real_close_path_is_neutralised_in_the_suite(monkeypatch):
     """The prevention layer, driven for real.
 
-    A window is closed while the download counter says 1 - the state that makes the product ask - and
-    the run must stay clean, with no dialog constructed. The counter is the same process-global one
-    every download path registers in, so this is the state a download test leaves behind rather than a
-    made-up one.
+    A window is closed while the download counter says 1 - the state that makes the product ask - and the
+    run must stay clean. Since the window is kept off screen, "clean" now means the strongest form of it:
+    the close path must not build the quit dialog at all, and must refuse the close instead. The counter is
+    the same process-global one every download path registers in, so this is the state a download test
+    leaves behind rather than a made-up one.
     """
     child = _probe_dir(monkeypatch, "close_path_neutralised")
     _write(child / "test_close_path.py", _CHILD_CLOSE_PATH, _CHILD_FIREWALL_HANDLE)
@@ -513,34 +644,38 @@ def test_the_real_close_path_is_neutralised_in_the_suite(monkeypatch):
     assert "1 passed" in output, output
 
 
-def test_the_firewall_catches_what_a_forced_close_path_leaves(monkeypatch):
-    """The negative self-check for the report's own scenario, on the real platform.
+def test_the_firewall_catches_what_an_unmarked_window_leaves(monkeypatch):
+    """The negative self-check for the report's scenario, on the real platform.
 
-    Same child, same download state, same forced close path - and this time the child is granted the
-    suite's real-platform opt-in, so the firewall's layers have something to see. Two things must
-    happen, and both are asserted on the child's output:
+    The child shows a window with no ``WA_DontShowOnScreen`` on it - the shape the product's quit dialog
+    had, and the shape any careless tool still has - and this time it is granted the suite's real-platform
+    opt-in, so the firewall's layers have something to see. Two things must happen, and both are asserted
+    on the child's output:
 
-    * the child's own handle on the recorder catches the window the close path showed (the observation
-      that was missing when the quit dialog reached the desktop);
+    * the child's own handle on the recorder catches the window (the observation that was missing when the
+      quit dialog reached the desktop);
     * the suite's autouse firewall then fails that test at teardown and names the window.
 
-    The child cannot put anything on the desktop even with a real plugin: its MainWindow is marked
-    WA_DontShowOnScreen before it is shown, and the sequence that makes Qt emit Show keeps it that way
-    (a marked window emits no Show at all, so the hide/clear/show sequence is what makes the violation
-    observable). The dialog the product would build is replaced by a stand-in that returns from
-    ``exec()`` immediately.
-    """
-    child = _probe_dir(monkeypatch, "close_path_forced")
-    _write(child / "test_close_path.py", _CHILD_CLOSE_PATH, _CHILD_FIREWALL_HANDLE)
+    This no longer goes through the close path: the product refuses the quit before building the dialog
+    when the window is kept off screen (see the test above), so a violation has to be produced directly.
+    What it still proves is the layer that catches *any* unmarked window, which is what the render tools
+    and the whole suite depend on.
 
-    done = _run_child(child, allow_the_real_close_path=True, real_platform=True)
+    The child cannot put anything on the desktop even with a real plugin: the window is marked and shown
+    first, and the sequence that makes Qt emit Show - hide, clear the marker, show - keeps it unmapped, so
+    the recorded event is Qt's, for a widget Qt still keeps off screen.
+    """
+    child = _probe_dir(monkeypatch, "unmarked_window_forced")
+    _write(child / "test_unmarked.py", _CHILD_FIREWALL_VIOLATION, _CHILD_FIREWALL_HANDLE)
+
+    done = _run_child(child, real_platform=True)
     output = _output(done)
     assert done.returncode != 0, (
-        f"a window shown by a forced close path passed the firewall:\n{output}"
+        f"a window shown without WA_DontShowOnScreen passed the firewall:\n{output}"
     )
-    assert "did not record a window shown while a close path ran" not in output, output
+    assert "did not record an unmarked window" not in output, output
     assert "a window was on the desktop during this test" in output, output
-    assert "MainWindow" in output, f"the failure does not name the window:\n{output}"
+    assert "unmarked window probe" in output, f"the failure does not name the window:\n{output}"
     assert "1 error" in output, f"expected the firewall to fail the test at teardown:\n{output}"
 
 

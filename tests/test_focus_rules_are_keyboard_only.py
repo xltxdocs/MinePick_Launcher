@@ -38,7 +38,7 @@ import re
 from pathlib import Path
 
 import pytest
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QImage
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QListWidget, QListWidgetItem, QWidget
@@ -230,7 +230,14 @@ def sidebar_host(app):
     The window is shown on the offscreen platform - that is what keeps it off the desktop; it must not
     be replaced by ``WA_DontShowOnScreen``, because a window that is not shown does not take focus on a
     click, and these tests are clicks.
+
+    The theme is applied here, before the widgets exist, because it is the application stylesheet that
+    draws the focus ring at all: a rail built without one renders as its plain platform frame and paints
+    the same picture marked and unmarked (measured: 0 bytes of difference, a uniform 0xb8b8b8 box,
+    against 556 bytes of ring once the sheet is in place). The other tests in this module get the sheet
+    from the ``line_edit`` fixture; the activation tests below must not depend on whether that test ran.
     """
+    theme.apply_theme("light", None, None, "default")
     host = QWidget()
     host.resize(460, 340)
     sidebar = QListWidget(host)
@@ -351,3 +358,220 @@ def test_a_mouse_event_clears_a_keyboard_mark_whatever_put_it_there(app, sidebar
     assert sidebar.hasFocus(), "the click did not even focus the rail - the probe is wrong"
     assert not bool(sidebar.property("keyboardFocus")), "the mark outlived the mouse event that cleared it"
     assert _ring_area(sidebar) == unmarked, "the mouse event left the rail painted"
+
+
+# ---------------------------------------------------------------------------------------------------
+# Activation changes: a window going away and coming back is not an input either.
+#
+# The original filter handled a key press, a mouse event and both focus events; it had no branch for the
+# window or the application becoming (in)active. The reported sequence falls straight through that gap.
+# Minimising reports only ``WindowStateChange`` - the control keeps its focus and no ``FocusOut`` is
+# delivered - and coming back reports ``ApplicationActivate``, then ``WindowActivate``, then a
+# ``FocusIn`` whose reason is ``ActiveWindowFocusReason``. With nothing to clear it, the answer from
+# before the minimise was still standing when that ``FocusIn`` arrived, so the control was marked again
+# and the ring came back for a window the user had merely restored: measured on the real platform,
+# 16733 bytes against the unmarked baseline, where a mouse-only session differs by 39 bytes of noise.
+#
+# The fix is two branches. Deactivate clears the mark *and* the answer, because the flag is still the
+# old answer while the marks go - the same pair of actions the mouse branch performs, and the same
+# reason (the widget the platform focuses next can already be marked). Activate clears the answer only:
+# deactivation has already taken every mark and cleared the flag that would put one back, so clearing
+# marks again would be dead code, while clearing the answer is what stops the ring on the way back in.
+# ---------------------------------------------------------------------------------------------------
+
+# A ring's worth of changed pixels in a rail's outermost 8 scanlines, measured on this fixture: the
+# tracker's own mark changes 556 bytes there (1280 non-zero bytes unmarked, 1836 marked). The bar sits
+# well below that, so a ring fails it and the noise floor - antialiasing, a caret, a hover background,
+# none of which is what these tests are about - does not.
+RING_PIXELS = 64
+
+
+def _unmarked_focused_ring(app, sidebar, other) -> bytes:
+    """The rail's ring area while it is focused but carrying no mark - the baseline a ring shows up on.
+
+    Focus is parked on the other view first, so the rail really does take focus on the next line and a
+    repolish of a stale style cache cannot pass for a state change. The property reset is written out
+    rather than left to the fixture: this module's ``app`` fixture is module-scoped and the suite shares
+    one ``QApplication``, so the mark arrives here carrying whatever the test before it did.
+    """
+    app._focus_tracker._keyboard = False
+    sidebar.clearFocus()
+    QApplication.processEvents()
+    sidebar.setProperty("keyboardFocus", False)
+    _repolish(sidebar)
+    sidebar.setFocus(Qt.FocusReason.TabFocusReason)
+    QApplication.processEvents()
+    assert sidebar.hasFocus(), "the rail did not take focus - the probe is wrong"
+    assert not bool(sidebar.property("keyboardFocus")), "the baseline rail is marked, so it cannot show a ring"
+    return _ring_area(sidebar)
+
+
+def _mark_via_tracker(app, sidebar, other) -> bytes:
+    """Put the mark on the rail the way the tracker does: a key press, then focus arriving.
+
+    Returns the marked ring area. ``other`` takes the key press because any key press arms the tracker
+    and Shift types nothing, so the rail's own picture is not disturbed by a keystroke landing on it.
+    """
+    app._focus_tracker._keyboard = False
+    sidebar.clearFocus()
+    QApplication.processEvents()
+    QTest.keyClick(other, Qt.Key.Key_Shift)
+    QApplication.processEvents()
+    assert app._focus_tracker._keyboard, "the key press did not put the tracker in keyboard mode"
+    sidebar.setFocus(Qt.FocusReason.TabFocusReason)
+    QApplication.processEvents()
+    assert bool(sidebar.property("keyboardFocus")), "the rail was not marked before the window went away"
+    return _ring_area(sidebar)
+
+
+def _activation_cycle(app, host, widget) -> None:
+    """Drive the events the platform really sends when the window is minimised and restored.
+
+    ``widget`` is marked and in keyboard mode when this is called; it is left focused and unmarked. The
+    events go through ``QApplication.sendEvent``, the real delivery path, rather than a direct call into
+    the filter, so a tracker that is not installed as a filter fails these tests instead of passing
+    them. ``setFocus`` with a hand-picked reason is how a real focus move is reproduced here: the reason
+    is the one the platform sends on a restore and offscreen there is no window manager to produce it.
+    The tracker reacts to the event type alone - the reason is not read - but writing the platform's own
+    reason keeps this from drifting from the sequence it models.
+    """
+    widget.clearFocus()  # the FocusOut a deactivate reports when it does move focus
+    QApplication.processEvents()
+    for kind in (QEvent.Type.WindowDeactivate, QEvent.Type.ApplicationDeactivate):
+        QApplication.sendEvent(host, QEvent(kind))
+    QApplication.processEvents()
+    for kind in (QEvent.Type.ApplicationActivate, QEvent.Type.WindowActivate):
+        QApplication.sendEvent(host, QEvent(kind))
+    QApplication.processEvents()
+    widget.setFocus(Qt.FocusReason.ActiveWindowFocusReason)  # the fresh FocusIn on the way back
+    QApplication.processEvents()
+
+
+def test_an_activation_change_does_not_mark_the_control_again(app, sidebar_host):
+    """A key pressed before the window went away must not ring the control when it comes back.
+
+    The rail is marked by the tracker first - the state the report starts from, and the state the old
+    filter carried across the minimise - and the ring that mark paints is measured before it is trusted,
+    so the comparison below is known to be able to see a ring at all. It is then put through the
+    minimise/restore sequence and has to come back looking exactly like the same rail focused but
+    unmarked. The property assertion is the cheap half; the pixels are the half that matters, because
+    the reported bug leaves the property readable and it is the ring the user sees.
+    """
+    sidebar, other = sidebar_host["sidebar"], sidebar_host["other"]
+
+    unmarked = _unmarked_focused_ring(app, sidebar, other)
+    marked = _mark_via_tracker(app, sidebar, other)
+    painted = sum(1 for a, b in zip(marked, unmarked) if a != b)
+    assert painted >= RING_PIXELS, (
+        f"the keyboard mark painted no ring on this fixture: only {painted} bytes differ between the "
+        f"marked and the unmarked rail, so this test could not see the ring it is about"
+    )
+
+    _activation_cycle(app, sidebar_host["host"], sidebar)
+
+    assert sidebar.hasFocus(), "the restore sequence left the rail unfocused - the probe is wrong"
+    restored = _ring_area(sidebar)
+    changed = sum(1 for a, b in zip(restored, unmarked) if a != b)
+    assert not bool(sidebar.property("keyboardFocus")), (
+        "the control was marked as keyboard focus again just because its window came back to the "
+        "foreground - no key was pressed between the minimise and the restore "
+        f"(its ring area differs from the unmarked rail by {changed} bytes, against {painted} for the "
+        f"ring itself)"
+    )
+    assert app._focus_tracker._keyboard is False, (
+        "the restore left the tracker still answering 'keyboard', so the next activation would ring again"
+    )
+    assert changed < RING_PIXELS, (
+        f"the restored rail is not painted like an unmarked one: {changed} bytes of its ring area "
+        f"differ, against {painted} for the ring this fixture really does draw"
+    )
+
+
+def test_a_tab_press_after_an_activation_change_still_paints_focus(app, sidebar_host):
+    """The hard requirement: keyboard navigation must still be visible after the window comes back.
+
+    Clearing the answer on an activation change is only safe because the next key press puts it back,
+    so the first Tab after a restore has to ring its stop exactly as it did before. Both halves are
+    asserted - the mark is on the stop that took focus, and that mark paints, against the stop's own
+    unfocused rendering. A mark that never paints is the same defect as no mark, and the property alone
+    would pass on a rule that never wins.
+    """
+    sidebar, other = sidebar_host["sidebar"], sidebar_host["other"]
+    tracker = app._focus_tracker
+
+    _mark_via_tracker(app, sidebar, other)
+    _activation_cycle(app, sidebar_host["host"], sidebar)
+    assert not tracker._keyboard, "the restore did not clear the answer, so this is not the state under test"
+
+    QTest.keyClick(sidebar, Qt.Key.Key_Tab)
+    QApplication.processEvents()
+    focused = app.focusWidget()
+
+    assert focused is not None, "Tab left no widget focused at all"
+    assert tracker._keyboard, "the Tab press did not put the tracker back in keyboard mode"
+    assert bool(focused.property("keyboardFocus")), (
+        f"the first Tab after the window came back did not mark {type(focused).__name__}"
+    )
+    with_focus = _pixels(focused)
+    focused.clearFocus()
+    QApplication.processEvents()
+    without_focus = _pixels(focused)
+
+    changed = sum(1 for a, b in zip(with_focus, without_focus) if a != b)
+    assert changed >= RING_PIXELS, (
+        f"the Tab stop is invisible: only {changed} bytes differ between focused and unfocused "
+        f"{type(focused).__name__}, so the keyboard mark painted no ring"
+    )
+
+
+@pytest.mark.parametrize("pair", ["Window", "Application"])
+def test_the_application_level_activation_pair_clears_the_answer_too(app, sidebar_host, pair: str):
+    """Both report pairs behave the same, so neither can be the one that was forgotten.
+
+    The filter names four event types and the two halves of each pair do different jobs: the deactivate
+    half clears the mark and the answer, the activate half clears the answer alone. A pair wired up for
+    one level only - ``WindowDeactivate`` handled but ``ApplicationDeactivate`` not, or an activate
+    branch that clears marks - would look correct in a test that drives the other level. This drives
+    each pair on its own, and the assertion that says the half did its job is the rail's own picture:
+    marked before, unmarked after, with the mark's ring measured first so the comparison is known to be
+    able to see one.
+    """
+    sidebar, other = sidebar_host["sidebar"], sidebar_host["other"]
+    host = sidebar_host["host"]
+    tracker = app._focus_tracker
+
+    unmarked = _unmarked_focused_ring(app, sidebar, other)
+    marked = _mark_via_tracker(app, sidebar, other)
+    painted = sum(1 for a, b in zip(marked, unmarked) if a != b)
+    assert painted >= RING_PIXELS, (
+        f"the keyboard mark painted no ring on this fixture: only {painted} bytes differ between the "
+        f"marked and the unmarked rail, so this test could not see the ring it is about"
+    )
+
+    sidebar.clearFocus()
+    QApplication.processEvents()
+    deactivate = {"Window": QEvent.Type.WindowDeactivate, "Application": QEvent.Type.ApplicationDeactivate}[pair]
+    activate = {"Window": QEvent.Type.WindowActivate, "Application": QEvent.Type.ApplicationActivate}[pair]
+
+    QApplication.sendEvent(host, QEvent(deactivate))
+    QApplication.processEvents()
+    assert not bool(sidebar.property("keyboardFocus")), (
+        f"{deactivate.name} did not clear the mark: the rail is still painted as keyboard focus"
+    )
+    assert tracker._keyboard is False, f"{deactivate.name} did not clear the tracker's answer"
+
+    QApplication.sendEvent(host, QEvent(activate))
+    QApplication.processEvents()
+    assert tracker._keyboard is False, f"{activate.name} put the answer back, so the next focus event would ring"
+
+    sidebar.setFocus(Qt.FocusReason.ActiveWindowFocusReason)
+    QApplication.processEvents()
+    changed = sum(1 for a, b in zip(_ring_area(sidebar), unmarked) if a != b)
+    assert changed < RING_PIXELS, (
+        f"{activate.name} left the rail looking marked: {changed} bytes of its ring area differ from "
+        f"the unmarked rail, against {painted} for the ring itself"
+    )
+
+
+
+

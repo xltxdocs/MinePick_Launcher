@@ -155,7 +155,7 @@ class _ScreenWindowRecorder:
         outer = self
 
         class _Recorder(QObject):
-            def eventFilter(self, obj, event) -> bool:  # noqa: N802 - Qt's spelling
+            def eventFilter(self, obj, event) -> bool:
                 return outer._inspect(obj, event)
 
         self._object = _Recorder()
@@ -278,10 +278,13 @@ def _no_modal_dialogs(monkeypatch):
     What it prevents is the accidental one:
 
     * a test closes a window while the download tests (tests/test_shutdown_safety.py,
-      tests/test_updates.py) left a download in flight, and ``gui/main_window.py:616-621`` asks a
-      question nobody answers. Measured: that dialog is a real top-level window even when the window it
-      belongs to is WA_DontShowOnScreen, and a modal dialog left unanswered does not fail a suite - it
-      hangs it until a human clicks it;
+      tests/test_updates.py) left a download in flight, and the quit confirmation in
+      ``gui/main_window.py`` asks a question nobody answers. Measured: that dialog is a real top-level
+      window even when the window it belongs to is WA_DontShowOnScreen - a QMessageBox re-creates its own
+      window and drops the attribute - and a modal dialog left unanswered does not fail a suite, it hangs
+      it until a human clicks it. The product now refuses the quit without building the box when its
+      window is kept off screen (tests/test_quit_dialog_offscreen.py pins that), which removes the case
+      this fixture was written for but not the hazard: a window that is *not* marked still asks;
     * the same call building a modal QMessageBox inside a test that only wanted the close path.
 
     An earlier version of this fixture replaced ``MainWindow._confirm_quit_while_downloading`` itself.
@@ -290,9 +293,12 @@ def _no_modal_dialogs(monkeypatch):
     ``QMessageBox.exec`` instead keeps every source-level assertion honest while still guaranteeing that
     a constructed dialog can neither block nor be answered.
 
-    ``MCLAUNCHER_NO_SCREEN_FIREWALL=1`` switches it off; that exists for one caller, the negative
-    self-check in tests/test_no_screen_windows.py, which has to drive the real close path to show the
-    firewall catching what it leaves behind.
+    ``MCLAUNCHER_NO_SCREEN_FIREWALL=1`` switches it off. It is the suite's dedicated escape hatch for this
+    fixture and is deliberately kept, but nothing in the suite sets it any more: the negative self-check
+    in tests/test_no_screen_windows.py used to drive the real close path through the dialog, and since the
+    product now refuses the quit before building the box when its window is kept off screen, no child
+    reaches a ``QMessageBox`` at all. The switch is what a future probe that does need the real dialog
+    would reach for, so it stays documented here rather than removed with its last caller.
     """
     if os.environ.get("MCLAUNCHER_NO_SCREEN_FIREWALL") == "1":
         return

@@ -746,6 +746,29 @@ class KeyboardFocusTracker(QObject):
         QEvent.Type.TabletPress,
     )
 
+    # The window losing the foreground. Not a mouse event, but the same answer: leaving for another
+    # application is pointer work, never keyboard navigation, so the stale "keyboard" answer has to go
+    # with it. Clearing the mark is the other half - the window may be staying focused where it is (a
+    # restore does not have to move focus at all), and a ring left lit on a widget nothing is looking
+    # at any more is exactly the false focus cue this class exists to prevent.
+    _DEACTIVATE = (
+        QEvent.Type.WindowDeactivate,
+        QEvent.Type.ApplicationDeactivate,
+    )
+
+    # The window regaining the foreground. Only the flag is cleared here: no mark can be stale at this
+    # point (deactivation already took every one of them), and clearing the marks too would be dead
+    # code that reads as if it did something. What it stops is the false ring on the way *back*:
+    # Windows reports the window as activated - and Qt re-sends FocusIn with
+    # Qt.FocusReason.ActiveWindowFocusReason to the control that never lost focus - without any key
+    # having been pressed, so a flag left over from before the minimise re-marks that control and lights
+    # the ring. Measured on the real platform: the marked control comes back ringed, 16733 bytes against
+    # the unmarked baseline, while a mouse-only session differs by 39 bytes (noise); after the fix, 41.
+    _ACTIVATE = (
+        QEvent.Type.WindowActivate,
+        QEvent.Type.ApplicationActivate,
+    )
+
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self._keyboard = False
@@ -760,6 +783,17 @@ class KeyboardFocusTracker(QObject):
             self._keyboard = True
         elif kind in self._MOUSE_INPUT:
             self._clear_marks()
+            self._keyboard = False
+        elif kind in self._DEACTIVATE:
+            # Same pair of actions as the mouse branch, for the same reason: the flag is still the old
+            # answer while _clear_marks runs, which is what makes it take the mark off the focused
+            # control even when this tracker's list never held it.
+            self._clear_marks()
+            self._keyboard = False
+        elif kind in self._ACTIVATE:
+            # Deliberately not _clear_marks: see _DEACTIVATE/_ACTIVATE above. A key press is what puts
+            # the answer back, so keyboard navigation that follows - the first Tab after a restore -
+            # still paints its ring.
             self._keyboard = False
         elif kind == QEvent.Type.FocusIn and isinstance(obj, self._INTERACTIVE):
             self._mark(obj, self._keyboard)

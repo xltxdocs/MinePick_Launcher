@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, QTimer
@@ -580,6 +581,22 @@ class MainWindow(QMainWindow):
             return
         super().keyPressEvent(event)
 
+    def _ancestor_is_kept_off_screen(self) -> bool:
+        """Is this window (or any window above it) marked ``WA_DontShowOnScreen``?
+
+        That attribute is how the render tools and the test suite lay out and paint a real window without
+        putting it on the desktop (``tools/snapshot_ui_render.py``, ``tools/shot_pages_real.py`` and
+        ``tests/conftest.py`` all rely on it). It stays on the window that was marked, so the check walks
+        parents: the marker is set on the top-level window before ``show()``, and a child added later has
+        to find it rather than look at itself.
+        """
+        widget = self
+        while widget is not None:
+            if widget.testAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen):
+                return True
+            widget = widget.parentWidget()
+        return False
+
     def _confirm_quit_while_downloading(self) -> bool:
         """Ask before quitting when downloads are still running. Returns True when it is fine to close.
 
@@ -587,6 +604,9 @@ class MainWindow(QMainWindow):
         next time), so the only real choices are "wait" and "quit now" - the dialog exists so the second
         one is deliberate. Nothing runs it when no download is active: the count is zero and the whole
         thing is one integer comparison.
+
+        When the window is kept off screen there is nobody to ask, and the question is not asked at all:
+        see the call site for why carrying the attribute onto the dialog does not work.
         """
         from launcher.net import downloader
 
@@ -597,6 +617,19 @@ class MainWindow(QMainWindow):
 
         from gui.i18n import tr
 
+        if self._ancestor_is_kept_off_screen():
+            # Never build the box at all. Carrying WA_DontShowOnScreen onto it does NOT work: measured on
+            # this Qt/Windows build with IsWindowVisible() on the box's own handle - a plain QWidget
+            # honours the attribute (False), a childless QMessageBox with the attribute set does not
+            # (True), because it re-creates its own window. Making it a child instead does not help
+            # either. So offscreen tooling and tests must not reach the dialog at all; refusing the quit
+            # is the same conservative answer the dialog gives when nobody clicks anything.
+            logging.getLogger(__name__).info(
+                "quit confirmation skipped: an ancestor is WA_DontShowOnScreen, so this interaction has "
+                "no one to ask (%d download(s) active) - refusing the quit",
+                active,
+            )
+            return False
         box = QMessageBox(self)
         box.setIcon(QMessageBox.Icon.Question)
         box.setWindowTitle(tr("quit.busy.confirm"))
