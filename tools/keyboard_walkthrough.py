@@ -525,7 +525,33 @@ def _has_focus_rule_name(kind: str, object_name: str, selectors: list[str]) -> b
     return False
 
 
+def _utf8_streams() -> None:
+    """Make anything this tool prints survive a console that cannot encode it.
+
+    The report lines are the *interface's* text, so they are whatever language the run renders in -
+    "Instanzen suchen", "Aprilscherz", "Создать" - while a redirected stdout on Windows defaults to the
+    OEM code page (GBK on a Chinese system). A character that code page lacks raised UnicodeEncodeError
+    *after* the report had already been written, so a complete, valid run exited 1 because of a print:
+    ``tests/test_keyboard_focus.py`` runs this tool as a subprocess over the shared preview data, which
+    is why one leaked non-ASCII language there surfaced as three suite ERRORs.
+
+    UTF-8 is what the caller decodes (tests/test_keyboard_focus.py and the language batch renderer both
+    pass ``encoding="utf-8"``), and ``errors="replace"`` means a console that still cannot represent a
+    glyph prints a placeholder instead of killing the run. Reconfiguring is best-effort: a stream
+    without ``reconfigure`` (a StringIO a test swapped in, a pipe wrapper) keeps whatever it already has.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):  # detached or already-closed stream: print however it prints
+            pass
+
+
 def main() -> int:
+    _utf8_streams()
     parser = argparse.ArgumentParser(description="Record a keyboard-only walkthrough of every page.")
     parser.add_argument("--root", default=".", help="checkout root (default: current directory)")
     parser.add_argument("--out", required=True, help="where to write the Markdown report")
