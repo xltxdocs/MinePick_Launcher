@@ -111,8 +111,8 @@ recursos de Modrinth y CurseForge, cargadores Fabric/Forge/NeoForge/Quilt, insta
   `MPL-Crash-####` para fallos del juego)
 - La explicación aparece en un diálogo sobre un fondo desenfocado y se puede exportar como informe (los
   tokens de acceso y las rutas del usuario se enmascaran) o copiar como código más resumen; el análisis
-  automático y el desenfoque se pueden desactivar por separado, y cada diagnóstico se registra por
-  instancia. El análisis es local: no se sube nada
+  automático se puede desactivar, y cada diagnóstico se registra por instancia. El análisis es local:
+  no se sube nada
 
 ### Recursos
 - Mods, paquetes de recursos, shaders y modpacks de **Modrinth** y **CurseForge**, top 30 por descargas en cada pestaña,

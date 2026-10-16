@@ -108,8 +108,8 @@ einzelne portable EXE.
   `MPL-Crash-####` für Abstürze auf Spiel-Seite)
 - Die Erklärung erscheint in einem Dialog über einem weichgezeichneten Hintergrund und kann als Bericht
   exportiert (Zugriffstoken und Benutzerpfade werden maskiert) oder als Code plus Zusammenfassung kopiert
-  werden; die automatische Analyse und die Weichzeichnung lassen sich jeweils abschalten, und jede
-  Diagnose wird pro Instanz aufgezeichnet. Die Analyse erfolgt lokal — nichts wird hochgeladen
+  werden; die automatische Analyse lässt sich abschalten, und jede Diagnose wird pro Instanz
+  aufgezeichnet. Die Analyse erfolgt lokal — nichts wird hochgeladen
 
 ### Ressourcen
 - Mods, Ressourcenpakete, Shader und Modpacks von **Modrinth** und **CurseForge**, pro Tab die Top 30 nach

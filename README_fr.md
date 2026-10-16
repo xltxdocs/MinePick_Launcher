@@ -117,8 +117,8 @@ dans un seul EXE portable.
   `MPL-Crash-####` pour les plantages côté jeu)
 - L'explication s'affiche dans une fenêtre par-dessus un arrière-plan flouté et peut être exportée sous
   forme de rapport (jetons d'accès et chemins utilisateur masqués) ou copiée sous forme de code d'erreur et
-  de résumé ; l'analyse automatique et le flou peuvent être désactivés indépendamment, et chaque diagnostic
-  est enregistré pour l'instance concernée. L'analyse est locale — rien n'est envoyé
+  de résumé ; l'analyse automatique peut être désactivée, et chaque diagnostic est enregistré pour
+  l'instance concernée. L'analyse est locale — rien n'est envoyé
 
 ### Ressources
 - Mods, packs de ressources, shaders et modpacks depuis **Modrinth** et **CurseForge**, top 30 des plus téléchargés

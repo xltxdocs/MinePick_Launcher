@@ -23,8 +23,13 @@ the two can never drift apart. Proper nouns (project, library and service names)
 the description of each entry is an i18n key.
 
 The wording of the "inspiration and community" entries is part of the licence hygiene of this project:
-the PCL entry states explicitly that this is an independent implementation that contains none of the
-upstream source code, and that statement must stay equivalent in every translation.
+the PCL and PCL CE entries both state explicitly that this is an independent implementation that
+contains none of the upstream source code, and that statement must stay equivalent in every
+translation. They are listed separately, and with separate wording, because they are two different
+projects: the mainline entry credits the information architecture of the about/update pages, while the
+community-edition entry is the one this project's interface took its cues from. They are kept apart
+also because the community edition is not a strict equivalent of the mainline project and upstream
+asks that community-edition issues not be reported there.
 """
 
 from __future__ import annotations
@@ -77,8 +82,13 @@ SERVICES: tuple[Credit, ...] = (
 
 COMMUNITY: tuple[Credit, ...] = (
     Credit(
-        "Plain Craft Launcher 2 (PCL2) & PCL Community Edition (PCL CE)",
+        "Plain Craft Launcher 2 (PCL2)",
         "about.credit.pcl",
+        url="https://github.com/Meloong-Git/PCL",
+    ),
+    Credit(
+        "PCL Community Edition (PCL CE)",
+        "about.credit.pcl_ce",
         url="https://github.com/PCL-Community/PCL-CE",
     ),
     Credit(

@@ -107,8 +107,8 @@ single portable EXE.
   base and explains **what probably happened, why and what to do about it**, with a stable error code
   (`MPL-Launch-####` for launcher-side failures, `MPL-Crash-####` for game-side crashes)
 - The explanation appears in a dialog over a blurred backdrop and can be exported as a report (access
-  tokens and user paths are masked) or copied as code plus summary; the automatic analysis and the blur
-  can each be switched off, and every diagnosis is recorded per instance. Analysis is local — nothing is
+  tokens and user paths are masked) or copied as code plus summary; the automatic analysis
+  can be switched off, and every diagnosis is recorded per instance. Analysis is local — nothing is
   uploaded
 
 ### Resources

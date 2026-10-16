@@ -59,11 +59,12 @@ def test_every_credit_has_a_translated_description() -> None:
 
 def test_community_credit_keeps_the_legal_sentence() -> None:
     """The 'independent implementation, no upstream source code' statement survives translation."""
-    key = "about.credit.pcl"
-    for code, marker in INDEPENDENT_MARKERS.items():
-        value = i18n.TRANSLATIONS[code][key]
-        assert marker in value, f"{code}: the legal sentence was weakened or dropped"
-    assert "independently implemented" in i18n.TRANSLATIONS["en_us"][key]
+    legal_keys = ("about.credit.pcl", "about.credit.pcl_ce")
+    for key in legal_keys:
+        for code, marker in INDEPENDENT_MARKERS.items():
+            value = i18n.TRANSLATIONS[code][key]
+            assert marker in value, f"{code} {key}: the legal sentence was weakened or dropped"
+        assert "independently implemented" in i18n.TRANSLATIONS["en_us"][key]
 
 
 def test_credits_include_the_mandated_names() -> None:

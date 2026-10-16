@@ -99,9 +99,13 @@ MinePick Launcher 本体以 **GPL-3.0-only** 发布（见 [LICENSE](LICENSE)）�
 
 ## Inspiration and community / 灵感与社区
 
-- **Plain Craft Launcher 2 (PCL2) & PCL Community Edition (PCL CE)**
-  - the inspiration for how this launcher organises its interface and its about/update pages. The technology stacks differ (C#/WPF versus Python/PySide6); this project is independently implemented and contains none of the upstream source code.
-  - 本项目在界面组织与「关于 / 更新」信息架构上的灵感来源。技术栈不同（C#/WPF 与 Python/PySide6），本项目完全独立实现，未包含上游源代码。
+- **Plain Craft Launcher 2 (PCL2)**
+  - the inspiration for the information architecture of this launcher's about/update pages. The technology stacks differ (C#/WPF versus Python/PySide6); this project is independently implemented and contains none of the upstream source code.
+  - 本项目的「关于 / 更新」页面信息架构参考了它。技术栈不同（C#/WPF 与 Python/PySide6），本项目完全独立实现，未包含上游源代码。
+  - <https://github.com/Meloong-Git/PCL>
+- **PCL Community Edition (PCL CE)**
+  - the community edition; this project's interface took its cues from it. The technology stacks differ (C#/WPF versus Python/PySide6); this project is independently implemented and contains none of the upstream source code.
+  - 社区版；本项目的界面参考了它。技术栈不同（C#/WPF 与 Python/PySide6），本项目完全独立实现，未包含上游源代码。
   - <https://github.com/PCL-Community/PCL-CE>
 - **MinePick Launcher Classic**
   - the predecessor of this launcher, archived.

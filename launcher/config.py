@@ -78,7 +78,7 @@ class LauncherConfig(BaseModel):
     )
     blur_dialogs: bool = Field(
         default=True,
-        description="Blur the window behind in-window dialogs (crash diagnosis); off = plain dimmed backdrop",
+        description="Blur the window behind in-window dialogs (crash diagnosis); the backdrop is always blurred, so the setting only remains for config compatibility and is no longer read",
     )
     game_language: str = Field(
         default="",
