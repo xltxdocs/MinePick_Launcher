@@ -6,7 +6,7 @@ A portable Minecraft launcher built with Python + PySide6: Microsoft/offline acc
 Modrinth & CurseForge resources, Fabric/Forge/NeoForge/Quilt loaders, isolated instances — packaged as a
 single portable EXE.
 
-**Current release: 0.4.0** — a GUI build only: this repository ships no command-line executable.
+**Current release: 0.4.1** — a GUI build only: this repository ships no command-line executable.
 
 ## Screenshots
 
@@ -31,7 +31,7 @@ single portable EXE.
     <td colspan="2"><img src="docs/screenshots/diagnosis_en.png" width="720" alt="Crash diagnosis dialog"/></td>
   </tr>
   <tr>
-    <td colspan="2" align="center"><sub>Crash diagnosis, over a blurred backdrop</sub></td>
+    <td colspan="2" align="center"><sub>The crash diagnosis dialog</sub></td>
   </tr>
 </table>
 
@@ -41,8 +41,8 @@ single portable EXE.
   (step rail on the left, content on the right, action bar at the bottom) instead of a separate
   dialog, and it closes and hands control back to the main window when you finish
 - **Custom window frame** — the title bar is drawn by the launcher itself, so the chrome matches
-  the theme; it carries only the window title and the minimize/close buttons, while the pickaxe icon
-  is used for the taskbar, the file icon and dialogs
+  the theme; it carries no icon, just the window title on the left and the minimize/close buttons on
+  the right, while the pickaxe icon is used for the taskbar, the file icon and dialogs
 - **Customisable look** — accent colour (any hex value, eight presets, or the system colour picker),
   UI font (every installed family, the most common ones pinned on top, type to filter), corner radius (compact / default /
   round), theme (dark / light / follow the system)
@@ -63,13 +63,14 @@ single portable EXE.
   application. What we claim is the subset of its A/AA criteria that applies to a desktop program.
 - Checked automatically on every change: text/background pairs enumerated from the colour tokens
   (both themes × eight accent presets; body text ≥4.5:1, non-text ≥3:1), click targets ≥24×24 px
-  (76 controls in a real desktop run, all passing), full keyboard reach with a visible focus indicator
+  (checked on a real desktop, all passing), full keyboard reach with a visible focus indicator
   at every keyboard-reachable stop and no gaps, a readable name on every interactive control, tooltips
   that can be hovered and never expire on their own, and status messages announced to assistive
   technology.
-- **Not done**: a manual screen-reader walkthrough (NVDA / Narrator). The items that need a real desktop
-  to confirm (per-stop focus-ring checks, how the tables and dropdowns are announced, and how the tooltip
-  behaves under a real window manager) are listed in the release notes.
+- **Not done**: a manual screen-reader walkthrough (NVDA / Narrator). What a real desktop still has to
+  confirm is narrowed to two items: **how the tables and the "source" dropdowns are announced in
+  sequence** (the status messages themselves are already confirmed announced), and how the tooltip
+  behaves under a real window manager.
 - Known issue: closing the program while a download or update is still running can crash it. See the
   release notes.
 
@@ -106,7 +107,7 @@ single portable EXE.
   any `hs_err` file and the output of the run it just watched, matches them against a built-in knowledge
   base and explains **what probably happened, why and what to do about it**, with a stable error code
   (`MPL-Launch-####` for launcher-side failures, `MPL-Crash-####` for game-side crashes)
-- The explanation appears in a dialog over a blurred backdrop and can be exported as a report (access
+- The explanation appears in a dialog and can be exported as a report (access
   tokens and user paths are masked) or copied as code plus summary; the automatic analysis
   can be switched off, and every diagnosis is recorded per instance. Analysis is local — nothing is
   uploaded

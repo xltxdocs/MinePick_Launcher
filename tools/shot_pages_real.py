@@ -134,6 +134,9 @@ def main(argv: list[str] | None = None) -> int:
         shot_pages.wait_for_workers(app, QThreadPool.globalInstance(), 3.0)
         QApplication.processEvents()
         target = out / f"{index}_{key}.png"
+        # Same rule as tools/shot_pages.py: no focus, and no keyboardFocus mark, may reach a picture.
+        shot_pages.defocus_for_shot(window, window.pages[key])
+        shot_pages.assert_no_focus_mark(window, window.pages[key])
         window.grab().save(str(target))
         print(f"  {args.theme} {key:10} -> {target.name}")
 
@@ -161,6 +164,10 @@ def main(argv: list[str] | None = None) -> int:
         QApplication.processEvents()
         overlay_only = out / "wizard_overlay.png"
         with_page = out / "wizard_with_page.png"
+        # the overlay is a focus stop of its own (gui/overlay.py calls setFocus on it), so it is
+        # de-focused with the same rule as a page before either picture is taken
+        shot_pages.defocus_for_shot(overlay, window)
+        shot_pages.assert_no_focus_mark(overlay, window)
         overlay.grab().save(str(overlay_only))
         # grab the window limited to the overlay's own rectangle, so the two images are the same size
         # and can be compared pixel for pixel: an opaque overlay must match exactly
@@ -179,6 +186,9 @@ def main(argv: list[str] | None = None) -> int:
             combo.showPopup()
             QApplication.processEvents()
             target = out / f"popup_{combo.objectName() or 'combo'}.png"
+            # opening a popup moves focus into the combo (PopupFocusReason), so the same rule applies
+            shot_pages.defocus_for_shot(combo, popup, window)
+            shot_pages.assert_no_focus_mark(combo, popup, window)
             popup.grab().save(str(target))
             print(f"  {args.theme} popup     -> {target.name}")
             combo.hidePopup()

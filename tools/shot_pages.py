@@ -191,6 +191,124 @@ def _scroll_page_to_bottom(page) -> None:
         bar.setValue(bar.maximum())
 
 
+#: Property the focus ring is gated on, set by ``gui.widgets.KeyboardFocusTracker`` (see the
+#: ``[keyboardFocus="true"]`` block at the end of the stylesheets). A published picture must never
+#: carry it: the ring means "the keyboard put focus here", and a renderer has no user.
+FOCUS_MARK = "keyboardFocus"
+
+
+def _shot_widgets(root) -> list:
+    """``root`` plus its descendant widgets, skipping anything that is not a widget at all."""
+    from PySide6.QtWidgets import QWidget
+
+    if not isinstance(root, QWidget):
+        return []
+    return [root, *root.findChildren(QWidget)]
+
+
+def marked_widgets(root):
+    """Every widget at or below ``root`` still carrying the keyboard-focus mark.
+
+    Read-only, and deliberately independent of the tracker: it looks at the property itself, so a mark
+    set by hand - or by a tracker this process never installed - is found exactly the same way.
+    """
+    from PySide6.QtWidgets import QApplication
+
+    widgets = _shot_widgets(root)
+    found = []
+    for widget in widgets:
+        try:
+            if bool(widget.property(FOCUS_MARK)):
+                found.append(widget)
+        except RuntimeError:  # a wrapper whose C++ side is already gone
+            continue
+    focused = QApplication.focusWidget() if QApplication.instance() is not None else None
+    if focused is not None and all(w is not focused for w in widgets):
+        widgets.append(focused)
+        if bool(focused.property(FOCUS_MARK)):
+            found.append(focused)
+    return found
+
+
+def describe_widget(widget) -> str:
+    """``QListWidget#sidebar``-style label for a message a human has to act on."""
+    if widget is None:
+        return "None"
+    name = widget.objectName()
+    kind = type(widget).__name__
+    return f"{kind}#{name}" if name else kind
+
+
+def defocus_for_shot(*roots) -> None:
+    """Take every trace of focus out of the widgets before a grab.
+
+    Two separate things draw a focus ring, and a screenshot must have neither:
+
+    * the *focus itself* - a window that comes up puts focus on the first control in the tab order
+      (the navigation rail, which is where a plain ``:focus`` rule would light up), and a dialog puts it
+      on its default button. The focused widget is handed back with ``clearFocus()``, which leaves the
+      window with no focused control at all rather than moving the focus to another one that would then
+      draw its own ring;
+    * the ``keyboardFocus`` *mark* the focus ring is really gated on, which is a property and therefore
+      outlives the focus that caused it. Every widget is unmarked with the same
+      ``setProperty`` + ``unpolish``/``polish`` pair ``gui.widgets.KeyboardFocusTracker._mark`` uses, so
+      the repaint is exactly the one the tracker itself would produce.
+
+    Also clears the renderer's own leftovers: a widget marked by an earlier grab would otherwise keep
+    its ring in the next picture.
+    """
+    from PySide6.QtWidgets import QApplication
+
+    app = QApplication.instance()
+    if app is not None:
+        focused = app.focusWidget()
+        if focused is not None:
+            focused.clearFocus()
+    seen = []
+    for root in roots:
+        seen.extend(_shot_widgets(root))
+    focused = app.focusWidget() if app is not None else None
+    if focused is not None:
+        seen.append(focused)
+    for widget in seen:
+        try:
+            if not bool(widget.property(FOCUS_MARK)):
+                continue
+            widget.setProperty(FOCUS_MARK, False)
+            style = widget.style()
+            if style is not None:
+                style.unpolish(widget)
+                style.polish(widget)
+        except RuntimeError:  # dead wrapper: nothing left to unmark
+            continue
+    # give the unpolish/polish repaints their turn before the pixels are read
+    for _ in range(4):
+        app.processEvents()
+
+
+def assert_no_focus_mark(*roots) -> None:
+    """Fail loudly if any widget in the tree still carries the keyboard-focus mark.
+
+    This is the guard, not a review step: the pictures are referenced by nine READMEs, so a focus ring
+    that reached one of them used to be found by a human eye, after publication. From here on a ring
+    that a *renderer* can produce at all stops the render with the offending widget named, which is a
+    failure the person who introduced it sees immediately.
+    """
+    marked = marked_widgets(roots[0] if roots else None)
+    for extra in roots[1:]:
+        for widget in marked_widgets(extra):
+            if all(w is not widget for w in marked):
+                marked.append(widget)
+    if not marked:
+        return
+    names = ", ".join(sorted({describe_widget(w) for w in marked}))
+    raise SystemExit(
+        f"refusing to save: {len(marked)} widget(s) still carry {FOCUS_MARK}=true "
+        f"({names}); the grab would carry a keyboard focus ring. "
+        "Call defocus_for_shot() before grabbing, and find who set the mark."
+    )
+
+
 def main() -> int:
     sys.stdout.reconfigure(errors="replace")  # never crash on console encoding
     parser = argparse.ArgumentParser()
@@ -359,6 +477,10 @@ def main() -> int:
             for _ in range(4):
                 app.processEvents()
                 time.sleep(0.05)
+        # No focus ring can reach a published picture: defocus first, then refuse to save if any
+        # keyboardFocus mark survived (see defocus_for_shot/assert_no_focus_mark).
+        defocus_for_shot(window, window.pages[name])
+        assert_no_focus_mark(window, window.pages[name])
         pixmap = window.grab()
         target = out_dir / f"{prefix}{index}_{name}.png"
         pixmap.save(str(target))
@@ -404,6 +526,10 @@ def _render_dialog_shot(app, window, game_dir: Path, out_dir: Path, prefix: str)
     for _ in range(12):
         app.processEvents()
         time.sleep(0.05)
+    # The dialog is part of the picture too: its own default button is marked from the FocusIn a
+    # dialog sends when it opens, so the same rule applies before this grab.
+    defocus_for_shot(window, dialog)
+    assert_no_focus_mark(window, dialog)
     pixmap = window.grab()
     target = out_dir / f"{prefix}9_dialog.png"  # index 9 keeps the driver's name pattern intact
     pixmap.save(str(target))

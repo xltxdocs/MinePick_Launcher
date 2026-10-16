@@ -6,7 +6,7 @@ Un lanceur Minecraft portable écrit en Python + PySide6 : comptes Microsoft/hor
 ressources Modrinth et CurseForge, chargeurs Fabric/Forge/NeoForge/Quilt, instances isolées — le tout empaqueté
 dans un seul EXE portable.
 
-**Version actuelle : 0.4.0** — version GUI uniquement : ce dépôt ne contient aucun exécutable CLI.
+**Version actuelle : 0.4.1** — version GUI uniquement : ce dépôt ne contient aucun exécutable CLI.
 
 ## Captures d'écran
 
@@ -31,7 +31,7 @@ dans un seul EXE portable.
     <td colspan="2"><img src="docs/screenshots/diagnosis_fr.png" width="720" alt="Fenêtre de diagnostic de plantage"/></td>
   </tr>
   <tr>
-    <td colspan="2" align="center"><sub>Diagnostic de plantage, sur un arrière-plan flouté</sub></td>
+    <td colspan="2" align="center"><sub>La fenêtre de diagnostic de plantage</sub></td>
   </tr>
 </table>
 
@@ -69,10 +69,10 @@ dans un seul EXE portable.
   visible sur **chaque arrêt atteignable au clavier**, sans aucun manque, un nom lisible sur chaque contrôle interactif,
   des infobulles que l'on peut **survoler sans qu'elles disparaissent**, et des messages d'état annoncés aux technologies
   d'assistance.
-- **Non fait** : une vérification manuelle avec un lecteur d'écran (NVDA / Narrateur). Les points à vérifier sur
-  une machine réelle (contrôle de l'anneau de focus arrêt par arrêt, ordre d'annonce des tableaux et des listes
-  déroulantes, comportement de l'infobulle dans un vrai gestionnaire de fenêtres) sont énumérés dans les notes de
-  version.
+- **Non fait** : une vérification manuelle avec un lecteur d'écran (NVDA / Narrateur). Il ne reste que deux points à
+  confirmer sur une machine réelle : **l'ordre d'annonce des tableaux et de la liste déroulante « source »**
+  (**l'annonce des messages d'état est déjà confirmée sur machine réelle**) et le comportement de l'infobulle dans un
+  vrai gestionnaire de fenêtres.
 - Problèmes connus : fermer le programme pendant un téléchargement ou une mise à jour peut provoquer un plantage. Voir
   les notes de version.
 
@@ -115,7 +115,7 @@ dans un seul EXE portable.
   confronte à une base de connaissances intégrée et explique **ce qui s'est probablement passé, pourquoi et
   que faire**, avec un code d'erreur stable (`MPL-Launch-####` pour les échecs côté lanceur,
   `MPL-Crash-####` pour les plantages côté jeu)
-- L'explication s'affiche dans une fenêtre par-dessus un arrière-plan flouté et peut être exportée sous
+- L'explication s'affiche dans une fenêtre et peut être exportée sous
   forme de rapport (jetons d'accès et chemins utilisateur masqués) ou copiée sous forme de code d'erreur et
   de résumé ; l'analyse automatique peut être désactivée, et chaque diagnostic est enregistré pour
   l'instance concernée. L'analyse est locale — rien n'est envoyé

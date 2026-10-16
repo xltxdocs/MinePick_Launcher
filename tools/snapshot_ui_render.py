@@ -12,8 +12,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License along
-# with MinePick Launcher. If not, see <https://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with MinePick Launcher. If not, see <https://www.gnu.org/licenses/>.
 
 """Render every page and record every widget's geometry, for a before/after pixel comparison.
 
@@ -151,6 +151,11 @@ def main(argv: list[str] | None = None) -> int:
     theme_module.apply_theme(args.theme, None, None, "default")
     from gui.main_window import NAV_KEYS, MainWindow
 
+    # Imported inside main() on purpose: creating the QApplication above must come first, and the tool
+    # runs on the real platform, so importing Qt-using modules at module scope is what the platform
+    # check above is meant to run before.
+    from tools import shot_pages
+
     window = MainWindow()
     window.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen, True)
     window.resize(1000, 610)
@@ -185,6 +190,11 @@ def main(argv: list[str] | None = None) -> int:
         QApplication.processEvents()
         page = window.pages[key]
         image = out / f"pages_{args.theme}_{args.state}_{index}_{key}.png"
+        # A comparison render must not carry a focus ring: it would show up as a difference between two
+        # checkout states that has nothing to do with the change under test. Same rule as the README
+        # renderer (tools/shot_pages.py), and it refuses to write rather than write a ring.
+        shot_pages.defocus_for_shot(window, page)
+        shot_pages.assert_no_focus_mark(window, page)
         page.grab().save(str(image))
         report["pages"][key] = {
             "widgets": _walk(page),

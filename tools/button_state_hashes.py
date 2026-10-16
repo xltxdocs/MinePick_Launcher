@@ -135,6 +135,10 @@ def main() -> int:
     app.setStyle("Fusion")
     from gui import theme
 
+    # The shared rule that keeps a focus ring out of a grab: the digest below is the *unfocused*
+    # rendering, and this is how that claim is checked instead of assumed.
+    from tools.shot_pages import assert_no_focus_mark
+
     host = QWidget()
     host.resize(420, 440)
     host.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen, True)
@@ -160,6 +164,10 @@ def main() -> int:
             style.polish(widget)
             widget.update()
             app.processEvents()
+            # The digest is about the *unfocused* rendering: prove nothing in the tree still carries the
+            # mark the focus ring is gated on, rather than trusting the clear above (tools/shot_pages.py
+            # has the same rule the README renderer uses).
+            assert_no_focus_mark(host)
             image = widget.grab().toImage().convertToFormat(QImage.Format.Format_RGB32)
             print(
                 f"  {name:22} {image.width():>4}x{image.height():<4} "

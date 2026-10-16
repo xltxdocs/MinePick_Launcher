@@ -6,7 +6,7 @@ Un launcher portátil de Minecraft creado con Python + PySide6: cuentas de Micro
 recursos de Modrinth y CurseForge, cargadores Fabric/Forge/NeoForge/Quilt, instancias aisladas — empaquetado como un
 único EXE portátil.
 
-**Versión actual: 0.4.0** — solo compilación con GUI: este repositorio no incluye ningún ejecutable de CLI.
+**Versión actual: 0.4.1** — solo compilación con GUI: este repositorio no incluye ningún ejecutable de CLI.
 
 ## Capturas de pantalla
 
@@ -31,7 +31,7 @@ recursos de Modrinth y CurseForge, cargadores Fabric/Forge/NeoForge/Quilt, insta
     <td colspan="2"><img src="docs/screenshots/diagnosis_es.png" width="720" alt="Cuadro de diálogo de diagnóstico de fallos"/></td>
   </tr>
   <tr>
-    <td colspan="2" align="center"><sub>Diagnóstico de fallos, sobre un fondo desenfocado</sub></td>
+    <td colspan="2" align="center"><sub>El cuadro de diálogo de diagnóstico de fallos</sub></td>
   </tr>
 </table>
 
@@ -68,9 +68,10 @@ recursos de Modrinth y CurseForge, cargadores Fabric/Forge/NeoForge/Quilt, insta
   en **cada punto alcanzable con el teclado**, sin ninguno sin foco, un nombre legible en cada control interactivo,
   información emergente que **se puede sobrevolar sin que desaparezca**, y mensajes de estado anunciados a las tecnologías
   de asistencia.
-- **No hecho**: una revisión manual con lector de pantalla (NVDA / Narrador). Los puntos que hay que verificar en una
-  máquina real (comprobación del anillo de foco punto por punto, orden de anuncio de las tablas y los desplegables,
-  comportamiento de la información emergente en un gestor de ventanas real) se enumeran en las notas de la versión.
+- **No hecho**: una revisión manual con lector de pantalla (NVDA / Narrador). Solo quedan dos puntos por confirmar en
+  una máquina real: **el orden de anuncio de las tablas y del desplegable «origen»** (**el anuncio de los mensajes de
+  estado ya está confirmado en máquina real**) y el comportamiento de la información emergente en un gestor de
+  ventanas real.
 - Problemas conocidos: cerrar el programa mientras hay una descarga o actualización en curso puede provocar un fallo.
   Véanse las notas de la versión.
 
@@ -109,7 +110,7 @@ recursos de Modrinth y CurseForge, cargadores Fabric/Forge/NeoForge/Quilt, insta
   compara con una base de conocimiento integrada y explica **qué ha pasado probablemente, por qué y qué
   hacer al respecto**, con un código de error estable (`MPL-Launch-####` para fallos del launcher,
   `MPL-Crash-####` para fallos del juego)
-- La explicación aparece en un diálogo sobre un fondo desenfocado y se puede exportar como informe (los
+- La explicación aparece en un diálogo y se puede exportar como informe (los
   tokens de acceso y las rutas del usuario se enmascaran) o copiar como código más resumen; el análisis
   automático se puede desactivar, y cada diagnóstico se registra por instancia. El análisis es local:
   no se sube nada

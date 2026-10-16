@@ -240,6 +240,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"cannot import the launcher from {root}: {exc}", file=sys.stderr)
         return 2
 
+    # The page and slot pictures this tool writes are evidence too, so they carry no focus ring (the
+    # shared rule lives in tools/shot_pages.py, the same pair the README renderer uses).
+    from tools import shot_pages
+
     app = create_app([])
     platform = app.platformName()
     if platform == "offscreen":
@@ -331,6 +335,8 @@ def main(argv: list[str] | None = None) -> int:
                 app.processEvents()
 
             origin = label.mapTo(window, QPoint(0, 0))
+            shot_pages.defocus_for_shot(window, page)
+            shot_pages.assert_no_focus_mark(window, page)
             pixmap = window.grab()
             tag = f"{theme_name}_{file_tag(state)}"
             for name, image in (

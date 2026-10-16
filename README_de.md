@@ -6,7 +6,7 @@ Ein portabler Minecraft-Launcher auf Basis von Python + PySide6: Microsoft-/Offl
 Modrinth- & CurseForge-Ressourcen, Fabric/Forge/NeoForge/Quilt-Loader, isolierte Instanzen — verpackt als
 einzelne portable EXE.
 
-**Aktuelle Version: 0.4.0** — nur ein GUI-Build: eine Befehlszeilen-EXE enthält dieses Repository nicht.
+**Aktuelle Version: 0.4.1** — nur ein GUI-Build: eine Befehlszeilen-EXE enthält dieses Repository nicht.
 
 ## Screenshots
 
@@ -31,7 +31,7 @@ einzelne portable EXE.
     <td colspan="2"><img src="docs/screenshots/diagnosis_de.png" width="720" alt="Absturzdiagnose-Dialog"/></td>
   </tr>
   <tr>
-    <td colspan="2" align="center"><sub>Absturzdiagnose, über einem weichgezeichneten Hintergrund</sub></td>
+    <td colspan="2" align="center"><sub>Der Absturzdiagnose-Dialog</sub></td>
   </tr>
 </table>
 
@@ -62,13 +62,14 @@ einzelne portable EXE.
 - Wir **behaupten keine „WCAG-2.2-AA-Konformität“** —— WCAG ist für Webinhalte geschrieben, dies ist eine
   Desktop-Anwendung. Wir beanspruchen die Teilmenge ihrer A-/AA-Kriterien, die **auf ein Desktop-Programm zutrifft**.
 - Bei jeder Änderung automatisch geprüft: Text-/Hintergrund-Paare werden **aus den Farbrollen aufgezählt** (beide Themes ×
-  acht Akzentfarben; Text ≥4,5:1, Nicht-Text ≥3:1), Klickziele ≥24×24 px (76 Elemente in einem echten Lauf, alle
+  acht Akzentfarben; Text ≥4,5:1, Nicht-Text ≥3:1), Klickziele ≥24×24 px (auf echter Hardware geprüft, alle
   bestanden), vollständige Tastaturbedienung mit sichtbarem Fokus an **jeder per Tastatur erreichbaren Fokusposition**,
   ohne Lücke, ein lesbarer Name an jedem bedienbaren Element, Tooltips, die man **überfahren kann, ohne dass sie
   verschwinden**, und Statusmeldungen, die an Hilfstechnologien gemeldet werden.
-- **Nicht gemacht**: ein manueller Durchgang mit einem Screenreader (NVDA / Narrator). Die Punkte, die auf echter
-  Hardware zu prüfen sind (Fokusring Position für Position, Ansagereihenfolge von Tabellen und Aufklapplisten,
-  Verhalten des Tooltips unter einem echten Fenstermanager), sind in den Versionshinweisen aufgeführt.
+- **Nicht gemacht**: ein manueller Durchgang mit einem Screenreader (NVDA / Narrator). Die Ansage der
+  Statusmeldungen wurde auf echter Hardware bestätigt (Narrator liest sie vor, und ohne Narrator entstehen
+  keine Systemtöne). Auf echter Hardware noch offen sind nur zwei Punkte: die Ansagereihenfolge von Tabellen
+  und Aufklapplisten und das Verhalten des Tooltips unter einem echten Fenstermanager.
 - Bekannte Probleme: Das Beenden während eines laufenden Downloads oder Updates kann einen Absturz verursachen. Siehe
   Versionshinweise.
 
@@ -106,7 +107,7 @@ einzelne portable EXE.
   sie mit einer eingebauten Wissensdatenbank ab und erklärt **was wahrscheinlich passiert ist, warum und
   was dagegen zu tun ist** — mit stabilem Fehlercode (`MPL-Launch-####` für Fehler auf Launcher-Seite,
   `MPL-Crash-####` für Abstürze auf Spiel-Seite)
-- Die Erklärung erscheint in einem Dialog über einem weichgezeichneten Hintergrund und kann als Bericht
+- Die Erklärung erscheint in einem Dialog und kann als Bericht
   exportiert (Zugriffstoken und Benutzerpfade werden maskiert) oder als Code plus Zusammenfassung kopiert
   werden; die automatische Analyse lässt sich abschalten, und jede Diagnose wird pro Instanz
   aufgezeichnet. Die Analyse erfolgt lokal — nichts wird hochgeladen

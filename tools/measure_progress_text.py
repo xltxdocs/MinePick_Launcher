@@ -196,6 +196,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"cannot import the launcher from {root}: {exc}", file=sys.stderr)
         return 2
 
+    # The page picture this tool writes is evidence too, so it carries no focus ring (the shared rule
+    # lives in tools/shot_pages.py: the README renderer uses the same pair).
+    from tools import shot_pages
+
     app = create_app([])
     platform = app.platformName()
     if platform == "offscreen":
@@ -229,8 +233,9 @@ def main(argv: list[str] | None = None) -> int:
             bar.setRange(0, 1000)
             for _ in range(6):
                 app.processEvents()
+            shot_pages.defocus_for_shot(window, page)
+            shot_pages.assert_no_focus_mark(window, page)
             window.grab().save(str(out / f"page_{theme_name}_{accent or 'default'}.png"))
-
             for value in values:
                 bar.setValue(value * 10)
                 for _ in range(5):
