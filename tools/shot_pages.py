@@ -171,6 +171,56 @@ def ensure_preview(root: Path, game_dir: Path | None = None) -> tuple[Path, Path
     return data, game
 
 
+#: The launcher's default interface language, and the language a render uses when ``--language`` is
+#: not given. A fixed default is the point: the preview data dir is shared by every render, so "keep
+#: whatever the last run left on disk" is exactly how a German render used to turn the next one German.
+DEFAULT_LANGUAGE = "zh_cn"
+
+
+def prepare_render_config(
+    data_dir: Path,
+    *,
+    language: str,
+    theme: str,
+    accent: str,
+    font: str,
+    radius: str,
+    game_dir: Path,
+) -> None:
+    """Write every render-deciding config key **before** the application is created.
+
+    ``create_app()`` calls ``config.load()`` itself, and it reads both ``ui_language`` and
+    ``wizard_done`` at that moment - too early for a write that happens later in this script (the old
+    code wrote theme/font/radius after ``create_app`` and never wrote the language at all). The preview
+    data dir is per ``--preview`` tree but shared by consecutive renders, so each render has to state
+    its own values instead of inheriting the previous run's.
+
+    ``wizard_done`` belongs in this list because while it is false ``create_app()`` overwrites
+    ``ui_language`` with the system language ([P21]): a render that writes the language but not this
+    flag would still come out in the machine's language. ``game_language`` and
+    ``language_initialized`` are here for the same kind of reason: the settings page shows the former,
+    and the latter is what stops the one-time auto-initializer from writing a different game language
+    after this function has already set it.
+    """
+    from launcher import config
+
+    cfg, cfg_path = config.load(data_dir / config.CONFIG_FILENAME)
+    cfg.ui_language = language
+    # The settings page also displays game_language, and create_app() initializes it once from
+    # ui_language on first launch - i.e. the first language ever rendered would otherwise be pinned
+    # into every later language's screenshot. Write both, and tell the one-time initializer that it
+    # is done so it cannot write a different language after this function returns.
+    cfg.game_language = language
+    cfg.language_initialized = True
+    cfg.wizard_done = True
+    cfg.game_dir = str(game_dir)
+    cfg.theme = theme
+    cfg.accent_color = accent
+    cfg.ui_font = font
+    cfg.ui_radius = radius
+    config.save(cfg, cfg_path)
+
+
 def wait_for_workers(app, pool, seconds: float = 20.0) -> None:
     deadline = time.time() + seconds
     while time.time() < deadline:
@@ -314,6 +364,15 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", required=True, help="project tree to import from")
     parser.add_argument("--out", required=True, help="output directory for PNGs")
+    parser.add_argument(
+        "--language",
+        "--lang",
+        default=DEFAULT_LANGUAGE,
+        help=(
+            "interface language to render; written into the preview config before the app is created "
+            f"(default: {DEFAULT_LANGUAGE})"
+        ),
+    )
     parser.add_argument("--theme", default="dark", choices=["dark", "light"])
     parser.add_argument("--label", default="", help="filename prefix")
     parser.add_argument("--accent", default="", help="custom accent color, e.g. #3b82f6")
@@ -359,6 +418,26 @@ def main() -> int:
     os.environ["MCLAUNCHER_DATA_DIR"] = str(data_dir)
     os.environ["MINECRAFT_GAME_DIR"] = str(game_dir)
 
+    from gui import i18n
+
+    known_languages = {code for code, _name in i18n.UI_LANGUAGES}
+    if args.language not in known_languages:
+        parser.error(
+            f"unknown language {args.language!r}; choose one of {', '.join(sorted(known_languages))}"
+        )
+    # Before anything imports/creates the QApplication: create_app() loads this file and decides the UI
+    # language + theme from it, so a later write would only affect the *next* render (the leak this
+    # fixes). radius is always written too: an omitted --radius used to inherit the previous value.
+    prepare_render_config(
+        data_dir,
+        language=args.language,
+        theme=args.theme,
+        accent=args.accent,
+        font=args.font,
+        radius=args.radius or "default",
+        game_dir=game_dir,
+    )
+
     from PySide6.QtCore import QThreadPool
 
     from gui.pages import java_page, mods_page, versions_page
@@ -393,7 +472,16 @@ def main() -> int:
     from gui.theme import apply_theme
 
     app = create_app([])
-    apply_theme(args.theme, args.accent, args.font, args.radius or "default")
+    # The app now proves it read the language this render asked for. Without this guard a regression that
+    # moves the write after create_app() would silently produce pictures in the previous language again;
+    # failing here names the two languages instead.
+    started_language = i18n.current_language()
+    if started_language != args.language:
+        raise SystemExit(
+            f"refusing to render: asked for {args.language!r}, but the application started in "
+            f"{started_language!r}; prepare_render_config() must run before create_app()"
+        )
+    print(f"language {started_language}")
 
     # the offscreen platform ships almost no font families: register the system CJK fonts
     # explicitly, otherwise every Chinese label renders as tofu boxes
@@ -418,17 +506,10 @@ def main() -> int:
     from launcher import config
     from launcher.auth import AccountStore, create_offline_account
 
-    cfg, cfg_path = config.load()
-    cfg.game_dir = str(game_dir)
-    cfg.theme = args.theme
-    cfg.accent_color = args.accent
-    cfg.ui_font = args.font
-    if args.radius:
-        cfg.ui_radius = args.radius
-    # wizard_done is left untouched on purpose: rendering must not decide whether the
-    # first-run wizard still shows in the preview
-    config.save(cfg, cfg_path)
-    apply_theme(args.theme, args.accent, args.font, cfg.ui_radius)
+    # The config was written before create_app(); re-apply the theme here because the CJK fonts were
+    # registered just above (they are not available when create_app() applies the theme).
+    cfg, _ = config.load()
+    apply_theme(cfg.theme, cfg.accent_color, cfg.ui_font, cfg.ui_radius)
     store = AccountStore()
     accounts = store.load()
     if not accounts:
