@@ -386,7 +386,7 @@ CONFINED_REASON = (
     "directory structure.\" with TEMP redirected, \"Could not create temporary directory!\" otherwise, "
     "and an empty _MEI folder either way (tools/smoke_exe.py:94-113 measured the same wall). A "
     "windowed build reports that with a native Error box, so this test skips instead of putting one on "
-    f"screen. Run it in an ordinary terminal: set {SLOW_ENV}=1 && python -m pytest "
+    f"screen. Run it in a full-access session (or an ordinary terminal): set {SLOW_ENV}=1 && python -m pytest "
     "tests/test_updates.py -k restart"
 )
 
